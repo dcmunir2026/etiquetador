@@ -1,0 +1,31 @@
+{
+  "name": "etiquetador",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-project data labeling platform with centralized administration.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @etiquetador/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @etiquetador/web test:e2e",
+    "db:generate": "pnpm --filter @etiquetador/db generate",
+    "db:migrate": "pnpm --filter @etiquetador/db migrate",
+    "db:studio": "pnpm --filter @etiquetador/db studio",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "typecheck": "pnpm -r typecheck",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  }
+}

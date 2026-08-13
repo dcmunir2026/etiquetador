@@ -1,0 +1,58 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build outputs
+.next/
+out/
+build/
+dist/
+.turbo/
+
+# testing
+coverage/
+.nyc_output/
+
+# misc
+.DS_Store
+*.pem
+*.log
+*.tsbuildinfo
+
+# local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# vercel
+.vercel
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Drizzle / Postgres
+*.sql
+!migrations/*.sql
+
+# Logs
+logs/
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing artifacts
+playwright-report/
+test-results/
+
+# Coverage
+.nyc_output/
+coverage/
