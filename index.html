@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Etiquetador DCM · Mockup navegable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #fafaf7;
+    --surface:   #ffffff;
+    --line:      #e6e3dc;
+    --line-soft: #efeee7;
+    --ink-1:     #14171e;
+    --ink-2:     #3a4256;
+    --ink-3:     #6b6f7d;
+    --ink-4:     #9aa0ad;
+    --primary:   #0e4a52;
+    --primary-2: #1d6e75;
+    --accent:    #c75d3a;
+    --ok:        #2f8a5a;
+    --warn:      #b58300;
+    --bad:       #b04143;
+    --info:      #3b6cb0;
+    --tag-emot:  #f6e7d6;
+    --tag-stat:  #e3eef5;
+    --tag-gen:   #efe1ec;
+    --tag-semi:  #f4ecd6;
+    --tag-race:  #e6e1d6;
+    --tag-odio:  #f0d8d3;
+    --tag-rel:   #e0e8da;
+    --tag-demo:  #e1e6ec;
+    --tag-tend:  #e9dfe6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink-1);
+    font-family:'Outfit',system-ui,sans-serif;font-size:14px;line-height:1.5}
+  button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:transparent;color:inherit}
+  a{color:inherit;text-decoration:none}
+  code,kbd{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+  /* Sidebar */
+  .side{background:#102529;color:#cfd8db;padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 18px;border-bottom:1px solid #1e3a3f;margin-bottom:14px}
+  .side .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#1d6e75,#c75d3a);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+  .side .brand .meta{font-size:13px;font-weight:600;color:#fff;line-height:1.1}
+  .side .brand .meta small{display:block;font-size:11px;color:#7a8e93;font-weight:400;margin-top:2px}
+  .side .section-title{font-size:10px;letter-spacing:0.08em;color:#7a8e93;text-transform:uppercase;padding:14px 8px 6px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{text-align:left;padding:8px 10px;border-radius:7px;color:#cfd8db;display:flex;align-items:center;gap:10px;font-size:13px;width:100%}
+  .nav button:hover{background:#1a3338;color:#fff}
+  .nav button.active{background:#1d6e75;color:#fff;font-weight:500}
+  .nav svg{width:15px;height:15px;opacity:0.9;flex-shrink:0}
+  .nav .badge{margin-left:auto;font-size:10px;background:#c75d3a;color:#fff;padding:1px 6px;border-radius:8px;font-weight:600}
+  .side .footer{margin-top:24px;padding:14px 8px;border-top:1px solid #1e3a3f;font-size:11px;color:#7a8e93}
+  .side .footer .who{display:flex;align-items:center;gap:8px;color:#cfd8db;margin-bottom:6px;font-size:12px}
+  .side .footer .who .avatar{width:26px;height:26px;border-radius:50%;background:#1d6e75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+
+  /* Top bar */
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .top .crumbs{font-size:13px;color:var(--ink-3)}
+  .top .crumbs b{color:var(--ink-1);font-weight:600}
+  .top .right{display:flex;align-items:center;gap:14px}
+  .top .right .pill{background:#f0ede4;border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+  .top .right .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:7px;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink-1)}
+  .btn:hover{border-color:var(--ink-3)}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
+  .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+  .btn.ghost:hover{background:#f0ede4}
+
+  .page{padding:24px 28px 60px;max-width:1400px}
+  .page h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;margin:0 0 4px;letter-spacing:-0.01em}
+  .page .lead{color:var(--ink-3);margin:0 0 24px;max-width:760px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+  .card h3{margin:0 0 12px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h3 .count{margin-left:auto;font-size:11px;background:#f0ede4;color:var(--ink-2);padding:2px 8px;border-radius:10px;font-weight:500}
+  .grid{display:grid;gap:16px}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .g-split{grid-template-columns:1.4fr 1fr}
+  .g-34{grid-template-columns:3fr 4fr}
+  .g-23{grid-template-columns:2fr 3fr}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-weight:600;text-align:left;padding:9px 12px;color:var(--ink-2);background:#f6f4ed;border-bottom:1px solid var(--line);font-size:11.5px;letter-spacing:0.03em;text-transform:uppercase}
+  td{padding:11px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink-2)}
+  tr:last-child td{border-bottom:0}
+  tr:hover td{background:#fafaf2}
+  td b{color:var(--ink-1);font-weight:600}
+
+  .tag{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:500;background:#eee;border:1px solid transparent}
+  .tag .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-3)}
+  .tag.sesgo-estadistico{background:var(--tag-stat)}
+  .tag.sesgo-emotividad{background:var(--tag-emot)}
+  .tag.sesgo-odio{background:var(--tag-odio);color:#7a1a1c}
+  .tag.sesgo-tendencioso{background:var(--tag-tend)}
+  .tag.sesgo-semiotica{background:var(--tag-semi)}
+  .tag.sesgo-genero{background:var(--tag-gen)}
+  .tag.sesgo-raza{background:var(--tag-race)}
+  .tag.sesgo-religion{background:var(--tag-rel)}
+  .tag.sesgo-demografico{background:var(--tag-demo)}
+  .tag.intensidad-baja{background:#e6f1ec;color:#2f8a5a}
+  .tag.intensidad-media{background:#fbf2dc;color:#8a6b00}
+  .tag.intensidad-alta{background:#f6dcd9;color:#8a1a1c}
+  .tag.status-done{background:#e6f1ec;color:var(--ok)}
+  .tag.status-progress{background:#fbf2dc;color:var(--warn)}
+  .tag.status-blocked{background:#f6dcd9;color:var(--bad)}
+  .tag.status-todo{background:#eee;color:var(--ink-3)}
+
+  .view{display:none;animation:fade 0.25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Etiquetado */
+  .et-head{display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;margin-bottom:8px}
+  .et-head .prog{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-2)}
+  .et-head .prog .count{font-weight:600;color:var(--ink-1);font-size:15px}
+  .progress{height:6px;background:#eee;border-radius:4px;width:200px;overflow:hidden}
+  .progress .bar{height:100%;background:linear-gradient(90deg,var(--primary-2),var(--accent));border-radius:4px}
+
+  .et-grid{display:grid;grid-template-columns:280px 1fr 300px;gap:18px}
+  .context-box{background:#fafaf2;border:1px dashed var(--line);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--ink-2);max-height:280px;overflow-y:auto;white-space:pre-wrap}
+  .context-box .highlight{background:#fff3c4;border-radius:3px;padding:1px 2px;color:var(--ink-1)}
+  .context-box .badge-frag{display:inline-block;background:var(--primary);color:#fff;font-size:10px;padding:1px 7px;border-radius:8px;margin-left:6px;font-weight:500;letter-spacing:0.03em}
+
+  .frag-card{background:#fdfaf1;border:2px solid var(--accent);border-radius:10px;padding:18px 20px;font-size:16px;line-height:1.65;color:var(--ink-1);position:relative}
+  .frag-card .frag-num{position:absolute;top:-10px;left:14px;background:var(--accent);color:#fff;font-size:11px;padding:2px 10px;border-radius:10px;font-weight:600;letter-spacing:0.04em}
+  .frag-card mark{background:#fce4ba;color:var(--ink-1);padding:1px 3px;border-radius:2px}
+
+  .dims{display:flex;flex-direction:column;gap:12px}
+  .dim{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .dim .label{font-size:12.5px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:7px;margin-bottom:8px}
+  .dim .label .help{margin-left:auto;color:var(--ink-4);cursor:help}
+  .dim .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .opt{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;text-align:center;background:#fafaf2;cursor:pointer;transition:all 0.15s}
+  .opt:hover{border-color:var(--ink-3);background:#fff}
+  .opt.selected.no{background:#e6f1ec;border-color:var(--ok);color:var(--ok);font-weight:600}
+  .opt.selected.bajo{background:#fdf2dc;border-color:var(--warn);color:#8a6b00;font-weight:600}
+  .opt.selected.alto{background:#f6dcd9;border-color:var(--bad);color:#8a1a1c;font-weight:600}
+  .notes{width:100%;min-height:48px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:inherit;font-size:12.5px;resize:vertical;background:#fafaf2;color:var(--ink-2)}
+
+  .actions{display:flex;align-items:center;gap:10px;padding:14px 0 0}
+  .actions .spacer{flex:1}
+  .actions .hint{font-size:12px;color:var(--ink-4);display:flex;align-items:center;gap:6px}
+  kbd{background:#fafaf2;border:1px solid var(--line);border-bottom-width:2px;padding:1px 5px;border-radius:4px;font-size:11px}
+
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .label{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+  .kpi .value{font-size:28px;font-weight:600;color:var(--ink-1);font-family:'DM Serif Display',serif}
+  .kpi .delta{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:4px}
+  .kpi .delta.up{color:var(--ok)}
+  .kpi .delta.down{color:var(--bad)}
+
+  .bench-row{display:grid;grid-template-columns:160px 1fr 70px;gap:14px;align-items:center;padding:7px 0}
+  .bench-row .lbl{font-size:13px;color:var(--ink-2)}
+  .bench-row .lbl b{color:var(--ink-1);font-weight:600}
+  .bar-bg{height:14px;background:#efeee7;border-radius:4px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--primary-2),var(--accent));border-radius:4px}
+  .bar-fill.ok{background:linear-gradient(90deg,var(--ok),#1e6a44)}
+  .bar-fill.warn{background:linear-gradient(90deg,var(--warn),#8a6300)}
+  .bar-fill.bad{background:linear-gradient(90deg,var(--bad),#8a1a1c)}
+  .bench-row .val{text-align:right;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+  .diff{font-size:12px;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:6px;background:#fbf2dc;color:#8a6b00}
+  .diff.ok{background:#e6f1ec;color:var(--ok)}
+  .diff.bad{background:#f6dcd9;color:#8a1a1c}
+
+  .compare .vs{padding:6px 9px;border-radius:6px;background:#f6f4ed;font-size:12.5px}
+  .compare .vs.b{background:#f6dcd9;color:#7a1a1c;font-weight:600}
+  .compare .vs.a{background:#e0e8da;color:#2f5d2c;font-weight:600}
+  .compare .vs.mine{background:#dde6ec;color:#1d4a72;font-weight:600}
+
+  .login-wrap{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 0px)}
+  .login-art{background:linear-gradient(135deg,#0e4a52,#1d6e75);position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:42px;color:#fff}
+  .login-art::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(circle at 80% 20%,rgba(199,93,58,0.35),transparent 50%),
+    radial-gradient(circle at 20% 80%,rgba(255,255,255,0.1),transparent 50%)}
+  .login-art .art-text{position:relative;z-index:1;max-width:380px}
+  .login-art h2{font-family:'DM Serif Display',serif;font-size:36px;line-height:1.15;margin:0 0 12px;font-weight:400}
+  .login-art p{margin:0;opacity:0.85;line-height:1.55}
+  .login-form{background:var(--surface);display:flex;align-items:center;justify-content:center;padding:40px}
+  .login-form .panel{width:340px}
+  .login-form h1{font-family:'DM Serif Display',serif;font-size:30px;margin:0 0 4px;font-weight:400}
+  .login-form .lead{margin:0 0 28px;color:var(--ink-3)}
+  .login-form label{font-size:12.5px;font-weight:500;display:block;margin-bottom:5px;color:var(--ink-2)}
+  .login-form input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;margin-bottom:14px;font:inherit;font-size:14px}
+  .login-form input:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2)}
+  .login-form .row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-3);margin:6px 0 22px}
+
+  .ic{width:15px;height:15px;display:inline-block;vertical-align:middle}
+
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:32px 18px;text-align:center;background:#fafaf2;transition:all 0.2s}
+  .drop:hover{border-color:var(--primary-2);background:#f6faf8}
+  .drop .ic-big{width:36px;height:36px;color:var(--ink-3);margin-bottom:10px}
+  .drop h4{margin:0 0 4px;font-size:14px}
+  .drop p{margin:0 0 12px;font-size:12.5px;color:var(--ink-3)}
+
+  .dim-edit{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:30px 1fr 200px 130px auto;gap:14px;align-items:center}
+  .dim-edit .num{width:30px;height:30px;border-radius:8px;background:#f0ede4;color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .dim-edit .name input{font-weight:600;font-size:14px;border:0;background:transparent;padding:3px 0;width:100%;color:var(--ink-1);border-bottom:1px dashed transparent}
+  .dim-edit .name input:focus{outline:0;border-bottom-color:var(--ink-3)}
+  .dim-edit .cats{display:flex;gap:5px;flex-wrap:wrap}
+  .dim-edit .cats .ct{font-size:11px;padding:2px 8px;background:#f6f4ed;border-radius:10px;color:var(--ink-2)}
+  .dim-edit .cats .ct.add{border:1px dashed var(--line);color:var(--ink-4);background:transparent}
+  .dim-edit .scale select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fafaf2;color:var(--ink-2)}
+
+  .role-row{display:grid;grid-template-columns:240px 1fr 110px 110px 80px;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line-soft);align-items:center;font-size:13px}
+  .role-row.head{background:#f6f4ed;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
+  .role-row .name{display:flex;align-items:center;gap:9px}
+  .role-row .name .avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .role-row .name .meta b{display:block;color:var(--ink-1);font-weight:600}
+  .role-row .name .meta small{color:var(--ink-3);font-size:11.5px}
+
+  .kappa{display:flex;align-items:center;gap:18px;padding:18px;background:#fafaf2;border-radius:10px}
+  .kappa .ring{width:88px;height:88px;border-radius:50%;background:conic-gradient(var(--ok) 0 0,var(--ok) 0 calc(var(--p)*1%),#e6e3dc calc(var(--p)*1%) 100%);display:flex;align-items:center;justify-content:center;position:relative}
+  .kappa .ring::before{content:"";position:absolute;inset:8px;background:var(--surface);border-radius:50%}
+  .kappa .ring .v{position:relative;font-family:'DM Serif Display',serif;font-size:22px;font-weight:600;color:var(--ink-1)}
+  .kappa .text{flex:1}
+  .kappa .text h4{margin:0 0 4px;font-size:14px}
+  .kappa .text p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .kappa .text .threshold{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+  .kappa .text .threshold b{color:var(--ok)}
+
+  .sample{display:flex;flex-direction:column;gap:5px}
+  .sample .bubble{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13.5px;line-height:1.55;color:var(--ink-1);position:relative}
+  .sample .bubble .who{font-size:11px;color:var(--ink-3);margin-bottom:5px;font-weight:600;display:flex;align-items:center;gap:5px}
+  .sample .bubble .who .av{width:18px;height:18px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+  .sample .bubble .who.mine .av{background:#3b6cb0}
+  .sample .bubble .who.validator .av{background:var(--accent)}
+  .sample .bubble.taged{border-left:3px solid var(--primary-2)}
+  .sample .bubble.validate{border-left:3px solid var(--accent)}
+  .sample .bubble.corrected{background:#fdf6e3;border-left-color:var(--warn)}
+
+  .toc{position:sticky;top:80px;align-self:flex-start}
+  .toc h4{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;padding-left:6px}
+  .toc a{display:block;padding:6px 10px;font-size:12.5px;color:var(--ink-2);border-radius:5px;margin-bottom:1px}
+  .toc a:hover{background:#f0ede4;color:var(--ink-1)}
+  .toc a b{color:var(--ink-1);font-weight:600}
+
+  @media (max-width: 1180px){
+    .et-grid{grid-template-columns:1fr}
+  }
+
+  /* Project picker (for views that require an active project) */
+  .picker-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:32px 36px;max-width:640px;margin:60px auto;text-align:center}
+  .picker-card .ic-big{width:48px;height:48px;color:var(--primary-2);margin-bottom:14px}
+  .picker-card h2{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;margin:0 0 6px}
+  .picker-card .lead{color:var(--ink-3);margin:0 0 22px}
+  .picker-list{display:grid;gap:10px;text-align:left;margin-bottom:20px}
+  .picker-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;cursor:pointer;background:#fafaf2;transition:all 0.15s}
+  .picker-row:hover{border-color:var(--primary-2);background:#fff;transform:translateX(2px)}
+  .picker-row .av{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--primary-2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0}
+  .picker-row .meta{flex:1}
+  .picker-row .meta b{color:var(--ink-1);font-weight:600;font-size:14.5px;display:block}
+  .picker-row .meta small{color:var(--ink-3);font-size:12px}
+  .picker-row .badge-count{font-size:11px;background:#f0ede4;color:var(--ink-2);padding:3px 9px;border-radius:11px;font-weight:500}
+  .picker-row .arrow{color:var(--ink-4)}
+
+  /* Top-bar project switcher */
+  .proj-switcher{cursor:pointer;display:flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--line);border-radius:8px;background:#fafaf2;font-size:13px;transition:all 0.15s}
+  .proj-switcher:hover{border-color:var(--primary-2);background:#fff}
+  .proj-switcher .av{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--primary-2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;flex-shrink:0}
+  .proj-switcher b{color:var(--ink-1);font-weight:600;line-height:1.1}
+  .proj-switcher b small{display:block;color:var(--ink-3);font-weight:400;font-size:10.5px;margin-top:1px}
+  .proj-switcher .chev{color:var(--ink-4);margin-left:2px}
+  .proj-switcher.is-empty{border-color:var(--warn);background:#fdf6e3}
+  .proj-switcher.is-empty b{color:#5a4400}
+  .proj-switcher.is-empty b small{color:#8a6b00}
+
+  /* Multi-assignee cells */
+  .assignees{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .assignee{display:inline-flex;align-items:center;gap:5px;padding:2px 4px 2px 2px;border-radius:14px;background:#f6f4ed;font-size:12px}
+  .assignee .av{width:20px;height:20px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+  .assignee.lead .av{background:linear-gradient(135deg,var(--primary-2),var(--accent))}
+  .assignee.locked{background:#fdf2dc;color:#8a6b00}
+  .assignee.locked .av{background:var(--warn)}
+  .assignee-pending{color:var(--ink-4);font-size:12px;font-style:italic;padding:2px 8px;border:1px dashed var(--line);border-radius:14px}
+  .group-size-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;background:#e3eef5;color:#1d4a72;border-radius:10px;font-weight:600;margin-left:6px}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">D</div>
+      <div class="meta">DCM Etiquetador<small>EpData · LLM Juez · v0.4</small></div>
+    </div>
+
+    <div class="section-title">Proyecto</div>
+    <nav class="nav" id="nav-project">
+      <button data-view="login"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Acceso</button>
+      <button data-view="dashboard" class="active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Proyectos<svg style="margin-left:auto;width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      <button data-view="upload"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Cargar Excel</button>
+    </nav>
+
+    <div class="section-title">Configuración</div>
+    <nav class="nav" id="nav-config">
+      <button data-view="dimensions"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Dimensiones<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="roles"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Roles y equipos<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="paquetes"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 16v5h-5"/><path d="M8 21H3v-5"/><path d="M3 8V3h5"/><rect x="6" y="6" width="12" height="12"/></svg>Paquetes<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+    </nav>
+
+    <div class="section-title">Etiquetado</div>
+    <nav class="nav" id="nav-tag">
+      <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
+      <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
+      <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
+    </nav>
+
+    <div class="section-title">Cierre</div>
+    <nav class="nav" id="nav-close">
+      <button data-view="reporte"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reporte</button>
+      <button data-view="kappa"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Kappa de Fleiss</button>
+    </nav>
+
+    <div class="footer">
+      <div class="who"><div class="avatar">MR</div>Marta R. · Superadmin</div>
+      <div>Proyecto activo:<br><b style="color:#cfd8db">EpData 2026-Q3</b></div>
+    </div>
+  </aside>
+
+  <main>
+
+    <div class="top">
+      <div class="crumbs">EpData 2026-Q3 · <b id="crumb">Proyectos</b></div>
+      <div class="right">
+        <span class="pill"><span class="dot"></span>3.662 fragmentos cargados</span>
+        <div class="proj-switcher is-empty" id="proj-switcher" onclick="openPicker()" title="Selecciona un proyecto">
+          <div class="av" id="proj-av">·</div>
+          <b id="proj-name">Seleccionar proyecto<small>ninguno activo</small></b>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <button class="btn ghost"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button class="btn primary"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo proyecto</button>
+      </div>
+    </div>
+
+    <!-- LOGIN -->
+    <section class="view" id="view-login">
+      <div class="login-wrap" style="margin:-24px -28px 0">
+        <div class="login-art">
+          <div class="art-text">
+            <h2>El sesgo se mide, no se opina.</h2>
+            <p>Plataforma de etiquetado y validación para el LLM Juez de Europa Press. Cada fragmento pasa por dos etiquetadores, se valida y se consolida en un dataset auditable.</p>
+          </div>
+        </div>
+        <div class="login-form">
+          <div class="panel">
+            <h1>Entrar</h1>
+            <p class="lead">Acceso restringido al equipo de etiquetado.</p>
+            <label>Email</label>
+            <input type="email" value="marta.rodriguez@epdata.es">
+            <label>Contraseña</label>
+            <input type="password" value="••••••••••">
+            <div class="row">
+              <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" checked> Recordarme</label>
+              <a href="#" style="color:var(--primary-2)">¿Olvidaste la contraseña?</a>
+            </div>
+            <button class="btn primary" style="width:100%;justify-content:center;padding:10px" onclick="go('dashboard')">Entrar</button>
+            <p style="text-align:center;font-size:12px;color:var(--ink-3);margin-top:18px">Acceso mediante SSO corporativo de Europa Press disponible.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="page">
+        <h1>Proyectos de etiquetado</h1>
+        <p class="lead">Vista global del estado de los proyectos activos. Cada proyecto atraviesa cinco etapas: definición, carga, configuración, etiquetado y consolidación.</p>
+
+        <div class="grid g-4" style="margin-bottom:24px">
+          <div class="kpi"><div class="label">Proyectos activos</div><div class="value">3</div><div class="delta up">+1 vs. mes anterior</div></div>
+          <div class="kpi"><div class="label">Fragmentos cargados</div><div class="value">3.662</div><div class="delta">3.074 de Reader T2</div></div>
+          <div class="kpi"><div class="label">Etiquetadores</div><div class="value">12</div><div class="delta">4 equipos · 6 roles</div></div>
+          <div class="kpi"><div class="label">Kappa global</div><div class="value">0,82</div><div class="delta down">−0,03 vs. ronda 1</div></div>
+        </div>
+
+        <div class="card">
+          <h3>Proyectos recientes <span class="count">3 activos</span></h3>
+          <table>
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Fragmentos</th><th>Avance</th><th>Equipo</th><th>Creado</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>EpData 2026-Q3</b><br><small style="color:var(--ink-3)">Validación cuantitativa</small></td>
+                <td><span class="tag status-progress"><span class="dot" style="background:var(--warn)"></span>En etiquetado</span></td>
+                <td>1.847 / 3.662</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:50%"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">50%</small></td>
+                <td>6 personas</td>
+                <td><small style="color:var(--ink-3)">hace 2 días</small></td>
+                <td><button class="btn ghost" onclick="go('tagging')">Abrir →</button></td>
+              </tr>
+              <tr>
+                <td><b>EpData 2026-Q2</b><br><small style="color:var(--ink-3)">Consolidación final</small></td>
+                <td><span class="tag status-done"><span class="dot" style="background:var(--ok)"></span>Validado</span></td>
+                <td>1.224 / 1.224</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:100%;background:linear-gradient(90deg,var(--ok),#1e6a44)"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">100%</small></td>
+                <td>5 personas</td>
+                <td><small style="color:var(--ink-3)">hace 2 meses</small></td>
+                <td><button class="btn ghost" onclick="go('reporte')">Reporte →</button></td>
+              </tr>
+              <tr>
+                <td><b>EpData Sintético v1</b><br><small style="color:var(--ink-3)">Línea base juez</small></td>
+                <td><span class="tag status-todo"><span class="dot" style="background:var(--ink-3)"></span>En configuración</span></td>
+                <td>0 / 200</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:8%"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">8%</small></td>
+                <td>3 personas</td>
+                <td><small style="color:var(--ink-3)">ayer</small></td>
+                <td><button class="btn ghost" onclick="go('dimensions')">Configurar →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- UPLOAD -->
+    <section class="view" id="view-upload">
+      <div class="page">
+        <h1>Cargar Excel maestro</h1>
+        <p class="lead">Punto de entrada del corpus. Acepta .xlsx o .csv. Se trabaja siempre sobre una copia interna, el archivo original no se modifica.</p>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Archivo</h3>
+            <div class="drop">
+              <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <h4>Suelta el archivo aquí</h4>
+              <p>o haz clic para seleccionar — máximo 50 MB, columnas A–AZ</p>
+              <button class="btn">Seleccionar archivo</button>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f6f4ed;border-radius:7px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <svg style="color:var(--ok)" class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div><b>EpData_Reader_T2_2026Q3.xlsx</b><br><small style="color:var(--ink-3)">3,8 MB · 3.662 filas · hoja "respuestas"</small></div>
+              </div>
+              <button class="btn ghost" style="color:var(--bad)">Quitar</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Selección de columnas <span class="count">3 de 14</span></h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Columna principal (pivote)</b><br><small style="color:var(--ink-3)">respuestaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">A</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Identificador de pregunta</b><br><small style="color:var(--ink-3)">conversacionId</small></span>
+                <code class="tag" style="background:#f6f4ed">B</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Pregunta original</b><br><small style="color:var(--ink-3)">preguntaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">C</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line);opacity:0.7">
+                <input type="checkbox"> <span style="flex:1">Metadatos auxiliares<br><small style="color:var(--ink-3)">timestamp, variante, éxito</small></span>
+              </label>
+            </div>
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Detección de duplicados:</b> se encontraron 28 duplicados por columna <code>conversacionId</code>. Se marcarán para revisión antes de dividir en paquetes.
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Resultado del pre-procesado <span class="count">3.634 fragmentos únicos</span></h3>
+          <div class="grid g-4">
+            <div class="kpi" style="background:#fafaf2"><div class="label">Filas totales</div><div class="value" style="font-size:22px">3.662</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Únicas tras dedupe</div><div class="value" style="font-size:22px">3.634</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">% fragmentables</div><div class="value" style="font-size:22px">38%</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Tokens medios</div><div class="value" style="font-size:22px">412</div></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+            <button class="btn">Cancelar</button>
+            <button class="btn primary" onclick="go('dimensions')">Continuar a dimensiones →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIMENSIONS -->
+    <section class="view" id="view-dimensions">
+      <div id="view-dimensions-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-dimensions-content">
+      <div class="page">
+        <h1>Dimensiones y categorías</h1>
+        <p class="lead">Las 9 dimensiones son las categorías de sesgo que evaluará el LLM Juez (alineadas con la propuesta técnica). Cada dimensión admite una escala ordinal y categorías de respuesta configurables.</p>
+
+        <div class="card">
+          <h3>Dimensiones del proyecto <button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Añadir dimensión</button></h3>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#e3eef5;color:#1d4a72">1</div>
+            <div class="name"><input value="Sesgo estadístico"></div>
+            <div class="cats"><span class="ct">factual correcto</span><span class="ct">cifra imprecisa</span><span class="ct">fuente ausente</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option><option>2 niveles</option><option>5 niveles</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#f6e7d6;color:#7a3b1c">2</div>
+            <div class="name"><input value="Emotividad"></div>
+            <div class="cats"><span class="ct">neutro</span><span class="ct">valorativo</span><span class="ct">cargado</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#f0d8d3;color:#7a1a1c">3</div>
+            <div class="name"><input value="Odio / discurso de odio"></div>
+            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#e9dfe6;color:#5a3060">4</div>
+            <div class="name"><input value="Carácter tendencioso"></div>
+            <div class="cats"><span class="ct">imparcial</span><span class="ct">sesgo sutil</span><span class="ct">sesgo claro</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#f4ecd6;color:#5a4400">5</div>
+            <div class="name"><input value="Semiótica (ironía, metáfora, sarcasmo)"></div>
+            <div class="cats"><span class="ct">literal</span><span class="ct">figurado</span><span class="ct">sarcástico</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#efe1ec;color:#5a3060">6</div>
+            <div class="name"><input value="Género"></div>
+            <div class="cats"><span class="ct">neutro</span><span class="ct">sesgo sutil</span><span class="ct">sesgo explícito</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#e6e1d6;color:#5a4400">7</div>
+            <div class="name"><input value="Raza / etnia"></div>
+            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#e0e8da;color:#2f5d2c">8</div>
+            <div class="name"><input value="Religión"></div>
+            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+
+          <div class="dim-edit">
+            <div class="num" style="background:#e1e6ec;color:#1d4a72">9</div>
+            <div class="name"><input value="Sesgo demográfico"></div>
+            <div class="cats"><span class="ct">ausente</span><span class="ct">edad</span><span class="ct">origen</span><span class="ct">clase</span><span class="ct add">+</span></div>
+            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
+            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+          <button class="btn">Restablecer a valores por defecto</button>
+          <button class="btn primary" onclick="go('roles')">Guardar y continuar →</button>
+        </div>
+      </div>
+          </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="view" id="view-roles">
+      <div id="view-roles-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-roles-content">
+      <div class="page">
+        <h1>Roles y equipos</h1>
+        <p class="lead">Cada equipo contiene dos etiquetadores comparables (paquete espejo), un apoyo cuantitativo y un validador cualitativo. Los paquetes están aislados por equipo para evitar contaminación.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos</div><div class="value">4</div><div class="delta">2 paquetizados · 2 sin asignar</div></div>
+          <div class="kpi"><div class="label">Usuarios activos</div><div class="value">12 / 14</div><div class="delta">2 inactivos sin asignar</div></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="role-row head">
+            <div>Persona</div><div>Email</div><div>Rol</div><div>Equipo</div><div>Estado</div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar">MR</div><div class="meta"><b>Marta Rodríguez</b><small>Superadmin</small></div></div>
+            <div style="color:var(--ink-2)">marta.rodriguez@epdata.es</div>
+            <div><span class="tag sesgo-estadistico">Superadministrador</span></div>
+            <div>Todos</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">PG</div><div class="meta"><b>Pedro Gómez</b><small>Etiquetador</small></div></div>
+            <div style="color:var(--ink-2)">pedro.gomez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetador</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">LF</div><div class="meta"><b>Lucía Fernández</b><small>Etiquetadora</small></div></div>
+            <div style="color:var(--ink-2)">lucia.fernandez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetadora</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">CA</div><div class="meta"><b>Carlos Antúnez</b><small>Apoyo cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">carlos.antunez@epdata.es</div>
+            <div><span class="tag sesgo-demografico">Apoyo cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">SV</div><div class="meta"><b>Sara Velasco</b><small>Validadora cualitativa</small></div></div>
+            <div style="color:var(--ink-2)">sara.velasco@unir.es</div>
+            <div><span class="tag sesgo-religion">Validadora cualitativa</span></div>
+            <div>Cualitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">JM</div><div class="meta"><b>Javier Moreno</b><small>Validador cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">javier.moreno@epdata.es</div>
+            <div><span class="tag sesgo-genero">Validador cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-progress">En revisión</span></div>
+          </div>
+
+          <div class="role-row" style="opacity:0.55">
+            <div class="name"><div class="avatar" style="background:var(--ink-3)">+</div><div class="meta"><b>Añadir persona</b><small>Invitar por email</small></div></div>
+            <div style="color:var(--ink-3)">—</div>
+            <div>—</div>
+            <div>—</div>
+            <div><button class="btn ghost" style="color:var(--primary-2)">Invitar →</button></div>
+          </div>
+        </div>
+      </div>
+          </div>
+    </section>
+
+    <!-- PAQUETES -->
+    <section class="view" id="view-paquetes">
+      <div id="view-paquetes-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-paquetes-content">
+      <div class="page">
+        <h1>División en paquetes</h1>
+        <p class="lead">El corpus se divide en paquetes que se asignan a un grupo configurable de N etiquetadores (dúo, trío, cuarteto o más) del mismo equipo. Esto habilita la comparación interjueces y el cálculo de Kappa de Fleiss (o Krippendorff α, o mayoría ponderada).</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="card">
+            <h3>Configuración de la división</h3>
+            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+              <label>Estrategia</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Por número de paquetes</option><option>Por tamaño de paquete</option></select>
+              <label>Nº paquetes</label>
+              <input class="btn" style="text-align:left;background:#fafaf2" value="46 paquetes × 2 (espejo)">
+              <label>Distribución</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Aleatoria estratificada por sección</option><option>Aleatoria simple</option><option>Orden natural</option></select>
+              <label>Asignación</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Automática (mismo equipo)</option><option>Manual</option></select>
+              <label>Tamaño del grupo</label>
+              <select class="btn" style="text-align:left;background:#fafaf2" id="group-size-select">
+                <option value="2">Dúo (2 etiquetadores)</option>
+                <option value="3" selected>Trío (3 etiquetadores)</option>
+                <option value="4">Cuarteto (4 etiquetadores)</option>
+                <option value="5">Quinteto (5 etiquetadores)</option>
+                <option value="custom">Personalizado (N)</option>
+              </select>
+              <label>Métrica de consenso</label>
+              <select class="btn" style="text-align:left;background:#fafaf2">
+                <option>Fleiss Kappa (N jueces, categórica)</option>
+                <option>Krippendorff α (N jueces, mixto)</option>
+                <option>Mayoría ponderada (N≥3)</option>
+                <option>Consenso total (N jueces, todos iguales)</option>
+              </select>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn">Previsualizar división</button>
+              <button class="btn primary" onclick="go('tagging')">Asignar y notificar →</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Resultado de la división</h3>
+            <div class="bench-row"><span class="lbl"><b>Equipo A</b> · trío <small style="color:var(--ink-3)">(3)</small></span><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div><span class="val">23/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo B</b> · cuarteto <small style="color:var(--ink-3)">(4)</small></span><div class="bar-bg"><div class="bar-fill" style="width:74%"></div></div><span class="val">17/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo C</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo D</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:#fdf6e3;border-radius:7px;font-size:12.5px;color:#5a4400">
+              <b>Equipos C y D</b> sin etiquetadores. Recomendación: invitar al menos 2 personas por equipo antes de asignar.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Paquetes asignados <span class="count">23 visibles</span></h3>
+          <table>
+            <thead><tr>
+              <th>Paquete</th>
+              <th>Fragmentos</th>
+              <th>Grupo</th>
+              <th>Asignaciones</th>
+              <th>Estados</th>
+              <th>Versión</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><b>PK-A-001</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v2</span> · <span class="tag status-progress">v1</span></td>
+                <td><small style="color:var(--ink-3)">A: v2 · B: v1</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-002</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">trío</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                  <span class="assignee"><span class="av">MR</span>Marta R.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span></td>
+                <td><small style="color:var(--ok)">3 envíos · 1 pendiente</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-003</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">cuarteto</span> Equipo B</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">AD</span>Ana D.</span>
+                  <span class="assignee"><span class="av">DM</span>Diego M.</span>
+                  <span class="assignee"><span class="av">SR</span>Sara R.</span>
+                  <span class="assignee"><span class="av">JV</span>Javier V.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span> · <span class="assignee-pending">asignado</span></td>
+                <td><small style="color:var(--ink-3)">3 envíos · 1 sin iniciar</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-004</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v3</span> · <span class="tag status-done">v2</span></td>
+                <td><small style="color:var(--warn)">Reenviado por inconsistencia</small></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+          </div>
+    </section>
+
+    <!-- TAGGING (la pantalla clave) -->
+    <section class="view" id="view-tagging">
+      <div class="page">
+        <div class="et-head">
+          <div>
+            <h1 style="margin-bottom:4px">Etiquetar fragmento</h1>
+            <p class="lead" style="margin:0">Paquete <b>PK-A-001</b> · Etiquetador: <b>Pedro Gómez</b> · Borrador local autoguardado hace 14 s</p>
+          </div>
+          <div class="prog">
+            <div><span class="count">12</span> / 80</div>
+            <div class="progress"><div class="bar" style="width:15%"></div></div>
+            <div style="color:var(--ink-3);font-size:12px">15%</div>
+          </div>
+        </div>
+
+        <div class="et-grid">
+          <div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3)">Contexto completo</h3>
+              <div class="context-box"><b>Pregunta del periodista:</b> ¿Cómo ha cambiado la tasa de gonorrea por habitante en Uzbekistán en los últimos años?
+
+<span class="badge-frag">Fragmento 1 de 1</span>
+
+No dispongo de datos sobre la tasa de gonorrea en <span class="highlight">Uzbekistán</span>. Los datos disponibles en EpData para esta consulta se limitan a <span class="highlight">España</span>, donde la serie cubre el período 1982–2019.
+
+Si te interesa conocer la evolución de la gonorrea en España, puedo proporcionarte ese análisis. En caso contrario, te recomiendo consultar fuentes epidemiológicas internacionales como la <span class="highlight">Organización Mundial de la Salud (OMS)</span> o bases de datos de vigilancia de enfermedades transmisibles de organismos regionales que cubran Asia Central.
+
+¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?</div>
+            </div>
+
+            <div class="card" style="padding:14px 16px;margin-top:14px">
+              <h3>Metadatos</h3>
+              <div style="display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:12.5px">
+                <span style="color:var(--ink-3)">Conversación</span><code>219528a8-95d6-411b-a14a-7560bac4f49f</code>
+                <span style="color:var(--ink-3)">Variante</span><span>1</span>
+                <span style="color:var(--ink-3)">Longitud</span><span>582 chars · 116 tokens</span>
+                <span style="color:var(--ink-3)">Éxito API</span><span><span class="tag status-done">OK</span></span>
+                <span style="color:var(--ink-3)">Evidencias</span><span>—</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="frag-card">
+              <span class="frag-num">FRAGMENTO ACTIVO · 1/1</span>
+              No dispongo de datos sobre la tasa de gonorrea en <mark>Uzbekistán</mark>. Los datos disponibles en EpData para esta consulta se limitan a <mark>España</mark>, donde la serie cubre el período <mark>1982–2019</mark>.
+
+Si te interesa conocer la evolución de la gonorrea en España, puedo proporcionarte ese análisis. En caso contrario, te recomiendo consultar fuentes epidemiológicas internacionales como la <mark>Organización Mundial de la Salud (OMS)</mark> o bases de datos de vigilancia de enfermedades transmisibles de organismos regionales que cubran Asia Central.
+
+¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?
+            </div>
+
+            <div class="dims" style="margin-top:16px">
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-estadistico"><span class="dot" style="background:#1d4a72"></span>1. Sesgo estadístico</span><span class="help" title="¿La respuesta presenta datos cuantitativos o cualitativos correctos, o falta información factual?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+                <div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…"></div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-emotividad"><span class="dot" style="background:#7a3b1c"></span>2. Emotividad</span><span class="help" title="¿El tono es neutro, valorativo o cargado?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-odio"><span class="dot" style="background:#7a1a1c"></span>3. Odio / discurso de odio</span><span class="help" title="¿Contiene insinuaciones o discurso explícito de odio?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-tendencioso"><span class="dot" style="background:#5a3060"></span>4. Carácter tendencioso</span><span class="help" title="¿Imparcial o con sesgo (sutil o claro)?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-semiotica"><span class="dot" style="background:#5a4400"></span>5. Semiótica</span><span class="help" title="¿Literal, figurado o sarcástico?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">Literal</div>
+                  <div class="opt">Figurado</div>
+                  <div class="opt">Sarcástico</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-genero"><span class="dot" style="background:#5a3060"></span>6. Género</span><span class="help" title="¿Tratamiento neutral o con sesgo de género?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-raza"><span class="dot" style="background:#5a4400"></span>7. Raza / etnia</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-religion"><span class="dot" style="background:#2f5d2c"></span>8. Religión</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-demografico"><span class="dot" style="background:#1d4a72"></span>9. Sesgo demográfico</span><span class="help" title="¿Ausente, o relacionado con edad/origen/clase?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <div class="hint"><kbd>←</kbd> Anterior · <kbd>→</kbd> Siguiente · <kbd>S</kbd> Saltar · <kbd>Enter</kbd> Guardar y enviar</div>
+              <div class="spacer"></div>
+              <button class="btn">Borrador</button>
+              <button class="btn primary">Guardar y siguiente →</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="padding:14px">
+              <h3>Paquete PK-A-001 <span class="count">12/80</span></h3>
+              <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px" id="fraggrid"></div>
+              <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11.5px;color:var(--ink-3)">
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--ok);border-radius:2px;vertical-align:middle"></span> Listo</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:2px;vertical-align:middle"></span> Actual</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:#e6e3dc;border-radius:2px;vertical-align:middle"></span> Pendiente</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--warn);border-radius:2px;vertical-align:middle"></span> Saltado</span>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px;margin-top:14px">
+              <h3>Borrador local</h3>
+              <div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">
+                <p style="margin:0 0 6px"><b>SQLite</b> en este dispositivo</p>
+                <p style="margin:0 0 6px"><span class="tag status-done">Sincronizado</span> <small style="color:var(--ink-3)">hace 14 s</small></p>
+                <p style="margin:0;font-size:11.5px;color:var(--ink-3)">Si pierdes conexión, los cambios se conservan en local y se sincronizan al volver.</p>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px;margin-top:14px">
+              <h3>Evidencias <span class="count">0</span></h3>
+              <div style="font-size:12.5px;color:var(--ink-3);text-align:center;padding:14px;background:#fafaf2;border-radius:7px;border:1px dashed var(--line)">
+                Arrastra aquí citas textuales o pegue un [REP:…]<br>para justificar la decisión.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISCREPANCIAS -->
+    <section class="view" id="view-discrepancias">
+      <div class="page">
+        <h1>Detección de inconsistencias</h1>
+        <p class="lead">Comparación automática entre los paquetes espejo de Pedro (A) y Lucía (B). Las discrepancias por encima del umbral definido por el Superadministrador bloquean la aprobación y se reenvían al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">80</div><div class="delta">100% del paquete</div></div>
+          <div class="kpi"><div class="label">Discrepancias detectadas</div><div class="value" style="color:var(--bad)">14</div><div class="delta down">17,5% · umbral global 12%</div></div>
+        </div>
+
+        <div class="card" style="padding:14px 16px;margin-bottom:18px">
+          <h3>Discrepancias por dimensión</h3>
+          <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:4%"></div></div><span class="val">4%</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Vista fragmento a fragmento <span class="count">14 con discrepancia</span></h3>
+          <table class="compare">
+            <thead><tr><th style="width:60px">#</th><th>Fragmento</th><th style="width:160px">Pedro (A)</th><th style="width:160px">Lucía (B)</th><th style="width:90px">Δ</th><th style="width:90px">Acción</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>003</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"La deuda pública ha alcanzado su máximo histórico del 123,1% del PIB, impulsada por los gastos de respuesta a la pandemia…"</td>
+                <td><span class="vs b">4. Tendencioso: ALTO</span></td>
+                <td><span class="vs a">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>007</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"El mercado inmobiliario español ha experimentado fluctuaciones significativas… Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>012</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Lo siento, no ha sido posible generar la visualización solicitada en este momento."</td>
+                <td><span class="vs mine">4. Tendencioso: NO</span></td>
+                <td><span class="vs b">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--warn)">Revisar</button></td>
+              </tr>
+              <tr>
+                <td>019</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"En 2021 la deuda alcanzó su máximo histórico del 123,1% del PIB…"</td>
+                <td><span class="vs mine">6. Género: NO</span></td>
+                <td><span class="vs a">6. Género: NO</span></td>
+                <td><span class="diff ok">=</span></td>
+                <td><span class="tag status-done">OK</span></td>
+              </tr>
+              <tr>
+                <td>021</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Isla Bouvet es un territorio deshabitado sin población civil ni infraestructura vial…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALIDACIÓN CUALITATIVA -->
+    <section class="view" id="view-validacion">
+      <div class="page">
+        <h1>Validación cualitativa</h1>
+        <p class="lead">Muestra aleatoria sistemática generada para revisión manual. El validador ve la etiqueta del etiquetador y un espacio para su juicio. Si el error supera el umbral, el paquete vuelve al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Muestra actual</div><div class="value">23 / 80</div><div class="delta">29% del paquete · 5%–30% configurable</div></div>
+          <div class="kpi"><div class="label">Errores detectados</div><div class="value" style="color:var(--bad)">3</div><div class="delta down">13% · umbral 8%</div></div>
+        </div>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Muestra 7/23</h3>
+            <div class="sample" style="margin-top:10px">
+              <div class="bubble taged">
+                <div class="who mine"><div class="av">PG</div>Pedro (Etiquetador) · v1</div>
+                <div>¿Cómo ha cambiado la cantidad de armas químicas en Myanmar a lo largo del tiempo?</div>
+                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">
+                  <span class="tag sesgo-estadistico">1. Estadístico: NO</span>
+                  <span class="tag sesgo-tendencioso">4. Tendencioso: NO</span>
+                  <span class="tag sesgo-demografico">9. Demográfico: NO</span>
+                </div>
+              </div>
+
+              <div class="bubble validate">
+                <div class="who validator"><div class="av">SV</div>Sara (Validadora) · en revisión</div>
+                <div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin-top:4px;font-size:12.5px">
+                  <span style="color:var(--ink-3)">Juicio</span>
+                  <span><b>Rechazar</b> · la respuesta debería explicitar que la pregunta no entra en el alcance</span>
+                  <span style="color:var(--ink-3)">Motivo</span>
+                  <span>Respuesta elusiva sin reconocer el sinsentido del enunciado</span>
+                  <span style="color:var(--ink-3)">Reetiquetar</span>
+                  <span><span class="tag sesgo-tendencioso" style="background:#f6dcd9">4. Tendencioso: BAJO</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Estadísticas de la muestra</h3>
+            <div class="bench-row"><span class="lbl">Coinciden</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">20</span></div>
+            <div class="bench-row"><span class="lbl">Corregidas</span><div class="bar-bg"><div class="bar-fill warn" style="width:13%"></div></div><span class="val">3</span></div>
+            <div class="bench-row"><span class="lbl">Rechazadas</span><div class="bar-bg"><div class="bar-fill bad" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <h3 style="margin-top:18px">Distribución de correcciones por dimensión</h3>
+            <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill warn" style="width:66%"></div></div><span class="val">2</span></div>
+            <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:33%"></div></div><span class="val">1</span></div>
+            <div class="bench-row"><span class="lbl">1. Estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Decisión recomendada:</b> reenviar paquete a Pedro (A) para reetiquetar las 3 correcciones, manteniendo a Lucía como referencia. Subir el umbral de "Tendencioso" en el manual.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTE -->
+    <section class="view" id="view-reporte">
+      <div class="page">
+        <div class="grid g-34">
+          <div class="toc">
+            <h4>Reporte de inconsistencias</h4>
+            <a href="#"><b>Resumen ejecutivo</b></a>
+            <a href="#">Discrepancias por dimensión</a>
+            <a href="#">Paquetes reenviados</a>
+            <a href="#">Acciones tomadas</a>
+            <a href="#">Trazabilidad de versiones</a>
+            <a href="#">Anexo: muestra de correcciones</a>
+          </div>
+
+          <div>
+            <h1>Reporte de inconsistencias</h1>
+            <p class="lead">Documento exportable en Word generado tras el cierre de la ronda 2 del proyecto <b>EpData 2026-Q3</b>. Resumen ejecutivo + detalle por dimensión + acciones recomendadas.</p>
+
+            <div class="grid g-3" style="margin-bottom:18px">
+              <div class="kpi"><div class="label">Paquetes revisados</div><div class="value">23</div></div>
+              <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">1.840</div></div>
+              <div class="kpi"><div class="label">Tasa de inconsistencia</div><div class="value">14,2%</div></div>
+            </div>
+
+            <div class="card" id="resumen">
+              <h3>1. Resumen ejecutivo</h3>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0 0 10px">
+                De los <b>23 paquetes espejo</b> procesados en la ronda 2, <b>14 (60,8%)</b> superaron el umbral global de discrepancia (12%) y fueron reenviados al etiquetador. La dimensión con mayor desacuerdo fue <span class="tag sesgo-tendencioso">4. Carácter tendencioso</span>, con un 31% de fragmentos discrepantes, principalmente por la dificultad de distinguir respuestas "informativas" de respuestas "evasivas" (caso típico: <i>"lo siento, no ha sido posible generar la visualización"</i>).
+              </p>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0">
+                Se recomienda reforzar el manual de rúbricas en la dimensión 4 y elevar el peso de la validación cualitativa para esta dimensión en la siguiente ronda.
+              </p>
+            </div>
+
+            <div class="card" id="por-dimension" style="margin-top:14px">
+              <h3>2. Discrepancias por dimensión</h3>
+              <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+              <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+              <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+              <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+              <div class="bench-row"><span class="lbl">Resto</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+            </div>
+
+            <div class="card" id="reenviados" style="margin-top:14px">
+              <h3>3. Paquetes reenviados <span class="count">14 de 23</span></h3>
+              <table>
+                <thead><tr><th>Paquete</th><th>Reenvíos</th><th>Versión final</th><th>Estado</th><th>Notas</th></tr></thead>
+                <tbody>
+                  <tr><td><b>PK-A-001</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4</td></tr>
+                  <tr><td><b>PK-A-004</b></td><td>1</td><td>v2</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 2</td></tr>
+                  <tr><td><b>PK-A-007</b></td><td>3</td><td>v4</td><td><span class="tag status-blocked">Bloqueado</span></td><td>3 rondas sin converger · escalada a experto</td></tr>
+                  <tr><td><b>PK-A-011</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4 + 6</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card" id="acciones" style="margin-top:14px">
+              <h3>4. Acciones tomadas</h3>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div><b>Reenvío automático</b> a etiquetadores de los 14 paquetes con discrepancia superior al umbral.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg><div><b>Escalada a experta cualitativa</b> de 1 paquete bloqueado tras 3 reenvíos.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><div><b>Actualización del manual de rúbricas</b> con 4 ejemplos canónicos para la dimensión 4.</div></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+              <button class="btn">Vista previa</button>
+              <button class="btn">Enviar por email (SMTP/API)</button>
+              <button class="btn primary">Exportar a Word →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAPPA -->
+    <section class="view" id="view-kappa">
+      <div class="page">
+        <h1>Fiabilidad inter-jueces</h1>
+        <p class="lead">Cálculo final del Kappa de Fleiss. El sistema calcula la métrica cuando existen dos jueces comparables y se ejecuta localmente para mantener la trazabilidad. El reporte se envía por email compatible con Gmail y Outlook.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kappa" style="--p:82">
+            <div class="ring"><div class="v">0,82</div></div>
+            <div class="text">
+              <h4>Kappa de Fleiss global</h4>
+              <p>Concordancia inter-jueces considerando las 9 dimensiones. Interpretación: <b>sustancial</b>.</p>
+              <div class="threshold">Umbral de consenso del proyecto: <b>≥ 0,85</b>. Faltan <b>0,03</b> para consolidar la ronda.</div>
+            </div>
+          </div>
+          <div class="kappa" style="--p:79">
+            <div class="ring"><div class="v">0,79</div></div>
+            <div class="text">
+              <h4>Kappa ronda anterior (referencia)</h4>
+              <p>Calculado sobre la misma muestra sin correcciones de validación cualitativa.</p>
+              <div class="threshold">Variación: <b style="color:var(--ok)">+0,03</b> tras incorporar la validación cualitativa.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Kappa por dimensión</h3>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:91%"></div></div><span class="val">0,91</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:89%"></div></div><span class="val">0,89</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">0,87</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:81%"></div></div><span class="val">0,81</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:78%"></div></div><span class="val">0,78</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:74%"></div></div><span class="val">0,74</span></div>
+          <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:64%"></div></div><span class="val">0,64</span></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>Configuración de envío del reporte</h3>
+          <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+            <label>Proveedor</label>
+            <select class="btn" style="text-align:left;background:#fafaf2"><option>Gmail (OAuth2)</option><option>Outlook / Microsoft 365</option><option>SMTP genérico</option></select>
+            <label>Destinatarios</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="redaccion@epdata.es, ccss@unir.es, marta.rodriguez@epdata.es">
+            <label>Asunto</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="[EpData 2026-Q3] Reporte de Kappa — ronda 2">
+            <label>Adjuntar</label>
+            <span><span class="tag status-done">Reporte Word</span> <span class="tag status-done">CSV de consolidado</span></span>
+            <label>Operación</label>
+            <span style="display:flex;gap:10px"><button class="btn">Programar</button><button class="btn primary">Enviar ahora</button></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <!-- PROJECT PICKER OVERLAY -->
+    <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px)">
+      <div class="picker-card" style="margin-top:80px">
+        <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <h2>Elige el proyecto a configurar</h2>
+        <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+        <div class="picker-list" id="picker-list"></div>
+        <button class="btn" onclick="closePicker()">Cancelar</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const views = document.querySelectorAll('.view');
+  const navBtns = document.querySelectorAll('.nav button[data-view]');
+  const crumb = document.getElementById('crumb');
+  const titles = {
+    login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
+    dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
+    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
+    paquetes:'Paquetes',
+    validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
+  };
+  function go(name){
+    views.forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    crumb.textContent = titles[name] || name;
+    document.querySelector('main').scrollTo(0,0);
+    window.scrollTo(0,0);
+
+    // Si la vista requiere proyecto y no hay uno activo, mostrar el gate
+    if (requiresProject(name) && !activeProject){
+      const gate = document.getElementById('view-' + name + '-gate');
+      const content = document.getElementById('view-' + name + '-content');
+      if (gate) gate.style.display = 'block';
+      if (content) content.style.display = 'none';
+    } else if (requiresProject(name) && activeProject){
+      const gate = document.getElementById('view-' + name + '-gate');
+      const content = document.getElementById('view-' + name + '-content');
+      if (gate) gate.style.display = 'none';
+      if (content) content.style.display = 'block';
+    }
+  }
+  navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+
+  // ─── Project picker (multi-project) ───
+  const PROJECTS = [
+    { id:'epdata-2026q3', name:'EpData 2026-Q3',      desc:'Validación cuantitativa · 3.662 fragmentos',        tag:'E', color:'linear-gradient(135deg,#0e4a52,#1d6e75)' },
+    { id:'epdata-2026q2', name:'EpData 2026-Q2',      desc:'Consolidación final · 1.224 fragmentos',           tag:'E', color:'linear-gradient(135deg,#0e4a52,#1d6e75)' },
+    { id:'epdata-sint',   name:'EpData Sintético v1', desc:'Línea base juez · 200 fragmentos',                tag:'E', color:'linear-gradient(135deg,#5a4400,#8a6300)' },
+    { id:'ods-2026',      name:'ODS 2026 (demo)',     desc:'Pilotaje en otros indicadores de odio · 412',     tag:'O', color:'linear-gradient(135deg,#7a1a1c,#b04143)' },
+  ];
+  let activeProject = null;
+
+  function requiresProject(viewName){
+    return ['dimensions','roles','paquetes'].includes(viewName);
+  }
+
+  function renderPickerRows(container){
+    container.innerHTML = '';
+    PROJECTS.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'picker-row';
+      row.onclick = () => { setProject(p.id); closePicker(); };
+      row.innerHTML = `
+        <div class="av" style="background:${p.color}">${p.tag}</div>
+        <div class="meta"><b>${p.name}</b><small>${p.desc}</small></div>
+        <span class="badge-count">3 equipos</span>
+        <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function openPicker(){
+    document.getElementById('picker-overlay').style.display = 'block';
+    renderPickerRows(document.getElementById('picker-list'));
+  }
+  function closePicker(){
+    document.getElementById('picker-overlay').style.display = 'none';
+  }
+
+  function setProject(projectId){
+    const p = PROJECTS.find(x => x.id === projectId);
+    if (!p) return;
+    activeProject = p;
+    const sw = document.getElementById('proj-switcher');
+    sw.classList.remove('is-empty');
+    document.getElementById('proj-av').textContent = p.tag;
+    document.getElementById('proj-av').style.background = p.color;
+    document.getElementById('proj-name').innerHTML = `${p.name}<small>activo</small>`;
+    // Si la vista actual requiere proyecto, la desbloqueamos
+    const viewName = document.querySelector('.nav button.active')?.dataset.view;
+    if (viewName && requiresProject(viewName)){
+      const gate = document.getElementById('view-' + viewName + '-gate');
+      const content = document.getElementById('view-' + viewName + '-content');
+      if (gate) gate.style.display = 'none';
+      if (content) content.style.display = 'block';
+    }
+  }
+
+  // Inicializar pickers inline en las 3 vistas que lo requieren
+  document.querySelectorAll('[data-inline-picker]').forEach(el => renderPickerRows(el));
+
+  const grid = document.getElementById('fraggrid');
+  if (grid){
+    const done = 12, active = 1, skipped = 4, pending = 80 - done - active - skipped;
+    for (let i=0; i<done; i++)   grid.appendChild(Object.assign(document.createElement('div'),{title:'Listo', style:'aspect-ratio:1;background:var(--ok);border-radius:3px;cursor:pointer'}));
+    for (let i=0; i<active; i++) grid.appendChild(Object.assign(document.createElement('div'),{title:'Actual', style:'aspect-ratio:1;background:var(--accent);border-radius:3px;box-shadow:0 0 0 2px var(--accent),0 0 0 4px white inset'}));
+    for (let i=0; i<skipped; i++)grid.appendChild(Object.assign(document.createElement('div'),{title:'Saltado',style:'aspect-ratio:1;background:var(--warn);border-radius:3px'}));
+    for (let i=0; i<pending; i++)grid.appendChild(Object.assign(document.createElement('div'),{title:'Pendiente',style:'aspect-ratio:1;background:#e6e3dc;border-radius:3px'}));
+  }
+</script>
+</body>
+</html>
