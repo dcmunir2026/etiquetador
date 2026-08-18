@@ -323,6 +323,80 @@
   .seg-help{background:#fdf6e3;border:1px solid #e8d59a;border-left:3px solid var(--warn);padding:11px 13px;border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400;margin-top:14px}
   .seg-help b{color:#5a4400}
 
+
+  /* Taxonomy creation wizard */
+  .wiz-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0;max-width:min(720px,calc(100vw - 32px));width:100%;margin:24px auto;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden}
+  .wiz-header{padding:22px 28px 18px;border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .wiz-header h2{font-size:19px;font-weight:600;margin:0 0 4px;color:var(--ink-1)}
+  .wiz-header p{margin:0;font-size:12.5px;color:var(--ink-3)}
+
+  .wiz-steps{display:flex;align-items:center;gap:0;padding:18px 28px;background:#fafaf2;border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .wiz-step{display:flex;align-items:center;gap:10px;flex:1;position:relative}
+  .wiz-step .wiz-num{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid var(--line);color:var(--ink-3);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+  .wiz-step .wiz-label{font-size:11.5px;color:var(--ink-3);font-weight:500;white-space:nowrap}
+  .wiz-step:not(:last-child)::after{content:'';flex:1;height:1px;background:var(--line);margin:0 8px}
+  .wiz-step.active .wiz-num{background:var(--primary-2);border-color:var(--primary-2);color:#fff}
+  .wiz-step.active .wiz-label{color:var(--ink-1);font-weight:600}
+  .wiz-step.done .wiz-num{background:#1c8a4a;border-color:#1c8a4a;color:#fff}
+  .wiz-step.done .wiz-num::before{content:'✓';font-size:14px}
+  .wiz-step.done .wiz-num span{display:none}
+  .wiz-step.done .wiz-label{color:var(--ink-2)}
+
+  .wiz-body{padding:24px 28px;overflow-y:auto;flex:1 1 auto;min-height:0}
+  .wiz-step-panel{display:none}
+  .wiz-step-panel.active{display:block}
+
+  .wiz-row{margin-bottom:18px}
+  .wiz-row label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+  .wiz-row label .req{color:#c0392b;margin-left:2px}
+  .wiz-row input[type=text],.wiz-row textarea,.wiz-row select{width:100%;font:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);box-sizing:border-box}
+  .wiz-row input:focus,.wiz-row textarea:focus,.wiz-row select:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .wiz-row textarea{min-height:70px;resize:vertical;font-family:inherit;line-height:1.5}
+  .wiz-row .wiz-hint{font-size:11.5px;color:var(--ink-4);margin-top:5px}
+  .wiz-row .wiz-err{font-size:11.5px;color:#c0392b;margin-top:5px;display:none}
+  .wiz-row.has-error input,.wiz-row.has-error textarea{border-color:#c0392b}
+  .wiz-row.has-error .wiz-err{display:block}
+
+  .wiz-scale-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .wiz-scale-card{padding:14px 16px;border:2px solid var(--line);border-radius:9px;cursor:pointer;background:#fafaf2;transition:all 0.15s}
+  .wiz-scale-card:hover{border-color:var(--primary-2);background:#fff}
+  .wiz-scale-card.selected{border-color:var(--primary-2);background:#eaf2f8}
+  .wiz-scale-card .sc-title{font-size:13px;font-weight:600;color:var(--ink-1);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+  .wiz-scale-card .sc-pill{font-size:10px;background:var(--primary);color:#fff;padding:1px 7px;border-radius:8px;font-weight:500}
+  .wiz-scale-card .sc-desc{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+  .wiz-scale-card .sc-ex{font-size:10.5px;color:var(--ink-4);margin-top:5px;font-style:italic}
+
+  .wiz-value-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafaf2;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+  .wiz-value-row .v-num{width:24px;height:24px;background:#fff;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2);flex-shrink:0}
+  .wiz-value-row .v-color{width:30px;height:30px;border-radius:6px;flex-shrink:0;cursor:pointer;position:relative;border:1px solid rgba(0,0,0,0.1)}
+  .wiz-value-row .v-color input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+  .wiz-value-row input.v-name{flex:1;font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:#fff}
+  .wiz-value-row input.v-name:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2)}
+  .wiz-value-row .v-del{background:transparent;border:0;width:26px;height:26px;border-radius:5px;cursor:pointer;color:var(--ink-3);font-size:14px}
+  .wiz-value-row .v-del:hover{background:#fbe6e6;color:#c0392b}
+
+  .wiz-color-suggest{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap}
+  .wiz-color-suggest .swatch{width:20px;height:20px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,0.1)}
+  .wiz-color-suggest .swatch.active{outline:2px solid var(--ink-1);outline-offset:1px}
+  .wiz-color-suggest .lbl{font-size:10.5px;color:var(--ink-4);margin-right:4px}
+
+  .wiz-summary{background:#fafaf2;border:1px solid var(--line);border-radius:9px;padding:16px 18px;margin-bottom:16px}
+  .wiz-summary .sm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+  .wiz-summary .sm-row:last-child{border-bottom:0}
+  .wiz-summary .sm-label{color:var(--ink-3);font-weight:500}
+  .wiz-summary .sm-value{color:var(--ink-1);text-align:right;max-width:60%;font-weight:500}
+  .wiz-summary .sm-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .wiz-summary .sm-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-size:10.5px;color:#fff;font-weight:500}
+  .wiz-summary .sm-chip .sm-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.5)}
+
+  .wiz-toggle{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:#fafaf2;border:1px solid var(--line);border-radius:7px;margin-top:10px}
+  .wiz-toggle input{margin-top:2px;accent-color:var(--primary-2);width:15px;height:15px;cursor:pointer}
+  .wiz-toggle label{margin:0;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
+  .wiz-toggle .tg-sub{font-size:11px;color:var(--ink-4);margin-top:2px;display:block}
+
+  .wiz-footer{padding:14px 28px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;background:#fafaf2;flex-shrink:0}
+  .wiz-footer .wiz-actions{display:flex;gap:10px}
+
   @media (max-width: 1180px){
     .et-grid{grid-template-columns:1fr}
   }
@@ -776,7 +850,7 @@
             <option>Estado: todas</option>
             <option>Estado: archivadas</option>
           </select>
-          <button class="btn primary" onclick="alert('En la versión real, este botón abre un wizard de creación de taxonomía (4 pasos: nombre, escala, valores, descripción).')">+ Nueva taxonomía</button>
+          <button class="btn primary" onclick="openTaxonomyWizard()">+ Nueva taxonomía</button>
         </div>
 
         <div class="tax-grid" id="tax-grid">
@@ -1659,6 +1733,154 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     </div>
 
     <!-- TAXONOMY PICKER OVERLAY -->
+    <!-- TAXONOMY WIZARD (creación) -->
+    <div id="tax-wizard-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:60;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="wiz-card">
+        <div class="wiz-header">
+          <h2>Crear nueva taxonomía</h2>
+          <p>Las taxonomías son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
+        </div>
+
+        <div class="wiz-steps">
+          <div class="wiz-step active" data-step="1">
+            <div class="wiz-num"><span>1</span></div>
+            <div class="wiz-label">Nombre</div>
+          </div>
+          <div class="wiz-step" data-step="2">
+            <div class="wiz-num"><span>2</span></div>
+            <div class="wiz-label">Escala</div>
+          </div>
+          <div class="wiz-step" data-step="3">
+            <div class="wiz-num"><span>3</span></div>
+            <div class="wiz-label">Valores</div>
+          </div>
+          <div class="wiz-step" data-step="4">
+            <div class="wiz-num"><span>4</span></div>
+            <div class="wiz-label">Descripción</div>
+          </div>
+        </div>
+
+        <div class="wiz-body">
+          <!-- STEP 1: Nombre -->
+          <div class="wiz-step-panel active" data-panel="1">
+            <div class="wiz-row" id="wiz-row-name">
+              <label>Nombre de la taxonomía <span class="req">*</span></label>
+              <input type="text" id="wiz-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
+              <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
+              <div class="wiz-err">El nombre es obligatorio.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Slug (identificador interno)</label>
+              <input type="text" id="wiz-slug" placeholder="sesgo-de-odio" />
+              <div class="wiz-hint">Solo letras, números y guiones. Se usa en URLs y en la API.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción breve</label>
+              <textarea id="wiz-short-desc" placeholder="Una línea que aparecerá en el catálogo."></textarea>
+              <div class="wiz-hint">Opcional. Hasta 200 caracteres.</div>
+            </div>
+          </div>
+
+          <!-- STEP 2: Escala -->
+          <div class="wiz-step-panel" data-panel="2">
+            <div class="wiz-row">
+              <label>Tipo de escala <span class="req">*</span></label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la taxonomía y cómo se puntúan.</div>
+              <div class="wiz-scale-grid" id="wiz-scale-grid">
+                <div class="wiz-scale-card" data-scale="boolean" onclick="selectScale('boolean')">
+                  <div class="sc-title">Booleano <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Sí / No. Para presencia de un rasgo.</div>
+                  <div class="sc-ex">Ej. "¿Contiene error factual?"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="binary" onclick="selectScale('binary')">
+                  <div class="sc-title">Binario <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Positivo / Negativo. Para polaridad.</div>
+                  <div class="sc-ex">Ej. "Tono: positivo vs negativo"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="3-level" onclick="selectScale('3-level')">
+                  <div class="sc-title">Tres niveles <span class="sc-pill">3 valores</span></div>
+                  <div class="sc-desc">Bajo / Medio / Alto. Para intensidad.</div>
+                  <div class="sc-ex">Ej. "Sesgo: bajo, medio, alto"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="5-level" onclick="selectScale('5-level')">
+                  <div class="sc-title">Cinco niveles <span class="sc-pill">5 valores</span></div>
+                  <div class="sc-desc">Escala Likert estándar para matices.</div>
+                  <div class="sc-ex">Ej. "Calidad periodística"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="likert" onclick="selectScale('likert')">
+                  <div class="sc-title">Likert 1–7 <span class="sc-pill">7 valores</span></div>
+                  <div class="sc-desc">Para análisis fino o psicometría.</div>
+                  <div class="sc-ex">Ej. "Credibilidad percibida"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="text" onclick="selectScale('text')">
+                  <div class="sc-title">Texto libre <span class="sc-pill">N valores</span></div>
+                  <div class="sc-desc">El anotador escribe el valor manualmente.</div>
+                  <div class="sc-ex">Ej. "Etiqueta abierta"</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 3: Valores -->
+          <div class="wiz-step-panel" data-panel="3">
+            <div class="wiz-row">
+              <label>Valores de la taxonomía</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:10px" id="wiz-values-hint">Define cada valor con su nombre y color. Aparecerán como opciones al anotar.</div>
+              <div id="wiz-values-list"></div>
+              <button class="btn-mini" id="wiz-add-value" onclick="addWizValue()">+ Añadir valor</button>
+              <div class="wiz-hint" style="margin-top:8px" id="wiz-values-count"></div>
+              <div class="wiz-err" id="wiz-values-err">Al menos un valor debe tener nombre.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Paleta sugerida</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:8px">Aplica a los valores automáticamente si no los has personalizado.</div>
+              <div class="wiz-color-suggest" id="wiz-palette-suggest"></div>
+            </div>
+          </div>
+
+          <!-- STEP 4: Descripción y resumen -->
+          <div class="wiz-step-panel" data-panel="4">
+            <div class="wiz-row">
+              <label>Resumen</label>
+              <div class="wiz-summary" id="wiz-summary"></div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción completa</label>
+              <textarea id="wiz-long-desc" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
+              <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Visibilidad inicial</label>
+              <div class="wiz-toggle">
+                <input type="checkbox" id="wiz-visible" checked />
+                <div>
+                  <label for="wiz-visible">Visible para project admin desde el inicio</label>
+                  <span class="tg-sub">Si lo desactivas, solo tú (super admin) la verás hasta que la asignes.</span>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-row">
+              <label>Plantilla sugerida <span style="color:var(--ink-4);font-weight:400">(rellenar automáticamente)</span></label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn-mini" onclick="fillWizTemplate('hate')">Plantilla: Sesgo de odio</button>
+                <button class="btn-mini" onclick="fillWizTemplate('quality')">Plantilla: Calidad periodística</button>
+                <button class="btn-mini" onclick="fillWizTemplate('emotion')">Plantilla: Tono emocional</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wiz-footer">
+          <button class="btn" id="wiz-btn-cancel" onclick="closeTaxonomyWizard()">Cancelar</button>
+          <div class="wiz-actions">
+            <button class="btn" id="wiz-btn-prev" onclick="wizPrev()" style="display:none">← Atrás</button>
+            <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
+            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear taxonomía</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="taxonomy-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="picker-card" style="margin-top:24px;text-align:left">
         <h2 style="text-align:center">Asignar taxonomías del catálogo</h2>
@@ -1854,6 +2076,271 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     tax.assignedTo = tax.assignedTo.filter(id => id !== activeProject.id);
     // In a real app: DELETE /api/projects/[id]/taxonomies/[taxId]
     renderProjectTaxonomies();
+  }
+
+  // ─── Taxonomy creation wizard (4 pasos) ───
+  const WIZ_PALETTE = ['#d97757','#a85a35','#7d6c4f','#3d8268','#5b8fb8','#8b6db5','#c79d3c','#9c5b8b'];
+  const WIZ_SCALE_DEFAULTS = {
+    'boolean':  [{name:'Sí', color:'#d97757'}, {name:'No', color:'#3d8268'}],
+    'binary':   [{name:'Positivo', color:'#3d8268'}, {name:'Negativo', color:'#d97757'}],
+    '3-level':  [{name:'Bajo', color:'#3d8268'}, {name:'Medio', color:'#c79d3c'}, {name:'Alto', color:'#d97757'}],
+    '5-level':  [{name:'Muy bajo', color:'#1c8a4a'}, {name:'Bajo', color:'#3d8268'}, {name:'Medio', color:'#c79d3c'}, {name:'Alto', color:'#a85a35'}, {name:'Muy alto', color:'#c0392b'}],
+    'likert':   Array.from({length:7}, (_,i)=>({name:`${i+1}`, color:`hsl(${20 + i*15}, 55%, ${50 - i*3}%)`})),
+    'text':     [{name:'(texto libre)', color:'#7d6c4f'}]
+  };
+  const WIZ_SCALE_LABEL = {
+    'boolean':'Booleano (2 valores)','binary':'Binario (2 valores)','3-level':'Tres niveles (3 valores)',
+    '5-level':'Cinco niveles (5 valores)','likert':'Likert 1-7 (7 valores)','text':'Texto libre (N valores)'
+  };
+  const WIZ_TEMPLATES = {
+    hate: 'Esta taxonomía identifica expresiones de odio o rechazo dirigidas a grupos protegidos (raza, religión, género, orientación sexual, etnia, nacionalidad, discapacidad). NO se considera odio: críticas políticas,报道 negativo de hechos, uso de vocabulario crudo sin carga. SÍ se considera: deshumanización, generalización ofensiva, insulto identitario, incitación. Distinguir de "Carácter tendencioso" (que es más sutil).',
+    quality: 'Evalúa la calidad periodística en cuatro dimensiones: rigor factual (¿citas verificables?), equilibrio (¿múltiples fuentes?), contexto (¿datos de fondo?), claridad (¿comprensible para un lector general?). Asignar 1 si falla gravemente en alguna dimensión, 5 si cumple las cuatro. Diferenciar de "Sesgo de odio": una pieza puede tener odio sin ser de baja calidad técnica.',
+    emotion: 'Mide el tono emocional dominante: positivo (esperanza, logro, celebración), negativo (miedo, tristeza, conflicto), neutro (hechos sin carga), mixto (combina varios). Si hay coexistencia clara, asignar "mixto". Para escalar intensidad usar "Carácter tendencioso".'
+  };
+
+  let wizState = {
+    step: 1,
+    scale: null,
+    values: [],
+    name: '',
+    slug: '',
+    shortDesc: '',
+    longDesc: '',
+    visible: true
+  };
+
+  function openTaxonomyWizard() {
+    // reset
+    wizState = { step: 1, scale: null, values: [], name: '', slug: '', shortDesc: '', longDesc: '', visible: true };
+    document.getElementById('wiz-name').value = '';
+    document.getElementById('wiz-slug').value = '';
+    document.getElementById('wiz-short-desc').value = '';
+    document.getElementById('wiz-long-desc').value = '';
+    document.querySelectorAll('.wiz-scale-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('wiz-values-list').innerHTML = '';
+    document.getElementById('wiz-row-name').classList.remove('has-error');
+    document.getElementById('wiz-values-err').style.display = 'none';
+    updateWizUI();
+    renderPaletteSuggest();
+    document.getElementById('tax-wizard-overlay').style.display = 'block';
+    setTimeout(() => document.getElementById('wiz-name').focus(), 100);
+  }
+
+  function closeTaxonomyWizard() {
+    document.getElementById('tax-wizard-overlay').style.display = 'none';
+  }
+
+  function autoSlug() {
+    const name = document.getElementById('wiz-name').value || '';
+    const slug = name.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    document.getElementById('wiz-slug').value = slug;
+  }
+
+  function selectScale(scale) {
+    wizState.scale = scale;
+    document.querySelectorAll('.wiz-scale-card').forEach(c => {
+      c.classList.toggle('selected', c.dataset.scale === scale);
+    });
+    // Pre-fill values
+    wizState.values = WIZ_SCALE_DEFAULTS[scale].map(v => ({...v}));
+    renderWizValues();
+  }
+
+  function renderWizValues() {
+    const list = document.getElementById('wiz-values-list');
+    const scale = wizState.scale;
+    if (!scale) { list.innerHTML = ''; return; }
+
+    // For text scale, no editing of values
+    if (scale === 'text') {
+      list.innerHTML = `<div class="wiz-hint" style="padding:14px;background:#fafaf2;border:1px solid var(--line-soft);border-radius:7px">En modo texto libre, los anotadores escriben el valor. No es necesario definir valores fijos.</div>`;
+      document.getElementById('wiz-add-value').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('wiz-add-value').style.display = '';
+    const maxValues = (scale === 'likert') ? 7 : 99;
+
+    list.innerHTML = wizState.values.map((v, i) => `
+      <div class="wiz-value-row">
+        <div class="v-num">${i+1}</div>
+        <div class="v-color" style="background:${v.color}"><input type="color" value="${v.color}" onchange="updateWizValue(${i}, 'color', this.value)" /></div>
+        <input class="v-name" value="${escapeAttr(v.name)}" oninput="updateWizValue(${i}, 'name', this.value)" />
+        <button class="v-del" onclick="removeWizValue(${i})" title="Eliminar">✕</button>
+      </div>
+    `).join('');
+
+    const cnt = document.getElementById('wiz-values-count');
+    cnt.textContent = `${wizState.values.length} valor(es). ` +
+      (scale === 'likert' ? 'Fijo en 7.' :
+       scale === 'boolean' || scale === 'binary' ? 'Fijo en 2.' :
+       scale === '3-level' ? 'Recomendado 3 (puedes ajustar).' :
+       scale === '5-level' ? 'Recomendado 5 (puedes ajustar).' :
+       '');
+  }
+
+  function updateWizValue(i, field, value) {
+    wizState.values[i][field] = value;
+  }
+
+  function addWizValue() {
+    const scale = wizState.scale;
+    if (scale === 'likert') return;
+    const next = wizState.values.length + 1;
+    const color = WIZ_PALETTE[(next - 1) % WIZ_PALETTE.length];
+    wizState.values.push({ name: '', color });
+    renderWizValues();
+  }
+
+  function removeWizValue(i) {
+    if (wizState.values.length <= 1) return;
+    wizState.values.splice(i, 1);
+    renderWizValues();
+  }
+
+  function renderPaletteSuggest() {
+    const el = document.getElementById('wiz-palette-suggest');
+    if (!el) return;
+    el.innerHTML = '<span class="lbl">Paleta del sistema:</span>' + WIZ_PALETTE.map(c => `<div class="swatch" style="background:${c}" title="${c}"></div>`).join('');
+  }
+
+  function fillWizTemplate(key) {
+    document.getElementById('wiz-long-desc').value = WIZ_TEMPLATES[key] || '';
+  }
+
+  function wizNext() {
+    // validate current step
+    if (!validateWizStep(wizState.step)) return;
+    if (wizState.step < 4) {
+      wizState.step++;
+      if (wizState.step === 3) renderWizValues();
+      if (wizState.step === 4) renderWizSummary();
+      updateWizUI();
+    }
+  }
+
+  function wizPrev() {
+    if (wizState.step > 1) {
+      wizState.step--;
+      updateWizUI();
+    }
+  }
+
+  function validateWizStep(step) {
+    if (step === 1) {
+      const name = document.getElementById('wiz-name').value.trim();
+      if (!name) {
+        document.getElementById('wiz-row-name').classList.add('has-error');
+        document.getElementById('wiz-name').focus();
+        return false;
+      }
+      document.getElementById('wiz-row-name').classList.remove('has-error');
+      wizState.name = name;
+      wizState.slug = document.getElementById('wiz-slug').value.trim() || autoSlugFromName(name);
+      wizState.shortDesc = document.getElementById('wiz-short-desc').value.trim();
+      return true;
+    }
+    if (step === 2) {
+      if (!wizState.scale) {
+        alert('Selecciona un tipo de escala.');
+        return false;
+      }
+      return true;
+    }
+    if (step === 3) {
+      if (wizState.scale === 'text') return true;
+      const named = wizState.values.filter(v => v.name && v.name.trim());
+      if (named.length === 0) {
+        document.getElementById('wiz-values-err').style.display = 'block';
+        return false;
+      }
+      document.getElementById('wiz-values-err').style.display = 'none';
+      return true;
+    }
+    if (step === 4) return true;
+    return true;
+  }
+
+  function autoSlugFromName(name) {
+    return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  function updateWizUI() {
+    // Step indicator
+    document.querySelectorAll('.wiz-step').forEach(s => {
+      const n = parseInt(s.dataset.step);
+      s.classList.toggle('active', n === wizState.step);
+      s.classList.toggle('done', n < wizState.step);
+    });
+    // Panels
+    document.querySelectorAll('.wiz-step-panel').forEach(p => {
+      p.classList.toggle('active', parseInt(p.dataset.panel) === wizState.step);
+    });
+    // Buttons
+    document.getElementById('wiz-btn-prev').style.display = wizState.step > 1 ? '' : 'none';
+    document.getElementById('wiz-btn-next').style.display = wizState.step < 4 ? '' : 'none';
+    document.getElementById('wiz-btn-create').style.display = wizState.step === 4 ? '' : 'none';
+    // Cancel
+    document.getElementById('wiz-btn-cancel').textContent = wizState.step === 1 ? 'Cancelar' : '×';
+  }
+
+  function renderWizSummary() {
+    const sm = document.getElementById('wiz-summary');
+    if (!sm) return;
+    const chips = wizState.values.filter(v => v.name && v.name.trim())
+      .map(v => `<span class="sm-chip" style="background:${v.color}"><span class="sm-dot"></span>${escapeHtml(v.name)}</span>`).join('');
+    sm.innerHTML = `
+      <div class="sm-row"><span class="sm-label">Nombre</span><span class="sm-value">${escapeHtml(wizState.name)}</span></div>
+      <div class="sm-row"><span class="sm-label">Slug</span><span class="sm-value" style="font-family:monospace;font-size:11.5px">${escapeHtml(wizState.slug)}</span></div>
+      <div class="sm-row"><span class="sm-label">Escala</span><span class="sm-value">${WIZ_SCALE_LABEL[wizState.scale] || wizState.scale}</span></div>
+      <div class="sm-row"><span class="sm-label">Valores (${wizState.values.length})</span><span class="sm-value sm-chips">${chips || '<span style="color:var(--ink-4);font-style:italic">texto libre</span>'}</span></div>
+      ${wizState.shortDesc ? `<div class="sm-row"><span class="sm-label">Descripción breve</span><span class="sm-value">${escapeHtml(wizState.shortDesc)}</span></div>` : ''}
+    `;
+  }
+
+  function wizCreate() {
+    // Sync final values
+    wizState.longDesc = document.getElementById('wiz-long-desc').value.trim();
+    wizState.visible = document.getElementById('wiz-visible').checked;
+
+    // Build new taxonomy object
+    const id = 'tx-' + wizState.slug + '-' + Date.now().toString(36);
+    const newTax = {
+      id, name: wizState.name, slug: wizState.slug,
+      color: wizState.values[0]?.color || '#7d6c4f',
+      scale: wizState.scale, values: wizState.values.length,
+      assignedTo: [], usedInAnnotations: 0, status: 'active',
+      shortDesc: wizState.shortDesc, longDesc: wizState.longDesc,
+      createdAt: new Date().toISOString().slice(0,10),
+      createdBy: 'Marta R. (superadmin)'
+    };
+    TAXONOMIES.unshift(newTax);
+    closeTaxonomyWizard();
+    renderTaxCatalog();
+    showToast(`Taxonomía "${wizState.name}" creada. Asignar a proyectos →`, 4500);
+  }
+
+  function escapeAttr(s) { return (s||'').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function escapeHtml(s) { return (s||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function showToast(msg, ms) {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2332;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,0.3);max-width:520px;text-align:center`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; }, ms - 300);
+    setTimeout(() => t.remove(), ms);
+  }
+
+  function renderTaxCatalog() {
+    // En el mockup, recargamos la vista. En la app real, sería re-render del grid.
+    const card = document.querySelector('#view-taxonomies .card');
+    if (!card) return;
+    // Re-render simple: refresca la página de catálogo
+    go('taxonomies');
   }
 
   function renderProjectTaxonomies() {
