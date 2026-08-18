@@ -375,6 +375,14 @@
   .wiz-value-row .v-del{background:transparent;border:0;width:26px;height:26px;border-radius:5px;cursor:pointer;color:var(--ink-3);font-size:14px}
   .wiz-value-row .v-del:hover{background:#fbe6e6;color:#c0392b}
 
+
+  .cs-vrow{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#fff;border:1px solid var(--line-soft);border-radius:6px;margin-bottom:5px}
+  .cs-vcolor{width:26px;height:26px;border-radius:5px;flex-shrink:0;position:relative;cursor:pointer;border:1px solid rgba(0,0,0,0.1)}
+  .cs-vcolor input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+  .cs-vname{flex:1;font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--ink-1)}
+  .cs-vname:hover{border-color:var(--line-soft);background:#fafaf2}
+  .cs-vname:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .cs-vnum{font-size:10.5px;color:var(--ink-4);font-weight:600;min-width:18px;text-align:right}
   .wiz-color-suggest{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap}
   .wiz-color-suggest .swatch{width:20px;height:20px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,0.1)}
   .wiz-color-suggest .swatch.active{outline:2px solid var(--ink-1);outline-offset:1px}
@@ -2174,6 +2182,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     document.getElementById('cs-type').value = 'categorical';
     document.getElementById('cs-count').value = 4;
     document.getElementById('cs-num-max').value = 10;
+    csCurrentValues = []; // reset
     updateCustomScalePreview();
     document.getElementById('custom-scale-overlay').style.display = 'block';
     setTimeout(() => document.getElementById('cs-name').focus(), 100);
@@ -2181,6 +2190,28 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   function closeCustomScaleDialog() {
     document.getElementById('custom-scale-overlay').style.display = 'none';
+  }
+
+  // Estado temporal de valores editables en la creación de escala
+  let csCurrentValues = [];
+
+  function syncCsValues(newCount) {
+    // Mantiene los nombres/colores editados y rellena con defaults los huecos
+    const defaults = defaultNamesForCount(newCount);
+    const out = [];
+    for (let i = 0; i < newCount; i++) {
+      const existing = csCurrentValues[i];
+      if (existing && existing.name && existing.name.trim()) {
+        out.push({ name: existing.name, color: existing.color || WIZ_PALETTE[i % WIZ_PALETTE.length] });
+      } else {
+        out.push({ name: defaults[i] || `Opción ${i+1}`, color: WIZ_PALETTE[i % WIZ_PALETTE.length] });
+      }
+    }
+    csCurrentValues = out;
+  }
+
+  function updateCsValue(i, field, value) {
+    if (csCurrentValues[i]) csCurrentValues[i][field] = value;
   }
 
   // Cambia la UI según el tipo seleccionado
@@ -2205,12 +2236,18 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     } else {
       numRangeRow.style.display = 'none';
       previewRow.style.display = '';
-      // Genera chips con nombres por defecto
-      const defaultNames = defaultNamesForCount(count);
-      preview.innerHTML = defaultNames.map((n, i) => {
-        const color = WIZ_PALETTE[i % WIZ_PALETTE.length];
-        return `<span class="sm-chip" style="background:${color}"><span class="sm-dot"></span>${escapeHtml(n)}</span>`;
-      }).join('');
+      // Sincronizar array con el nuevo count (conservando ediciones)
+      syncCsValues(count);
+      // Renderizar inputs editables
+      preview.innerHTML = csCurrentValues.map((v, i) => `
+        <div class="cs-vrow">
+          <div class="cs-vcolor" style="background:${v.color}" title="Click para cambiar color">
+            <input type="color" value="${v.color}" onchange="updateCsValue(${i},'color',this.value); this.parentElement.style.background=this.value;" />
+          </div>
+          <input class="cs-vname" value="${escapeAttr(v.name)}" oninput="updateCsValue(${i},'name',this.value)" placeholder="Nombre del valor ${i+1}" />
+          <span class="cs-vnum">#${i+1}</span>
+        </div>
+      `).join('');
     }
   }
 
@@ -2247,8 +2284,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       WIZ_SCALE_DEFAULTS[id] = Array.from({length: numMax + 1}, (_, i) => ({name: String(i), color: `hsl(${20 + i*8}, 55%, ${55 - i*2}%)`}));
       WIZ_SCALE_LABEL[id] = `${name} (0-${numMax})`;
     } else {
-      const names = defaultNamesForCount(count);
-      WIZ_SCALE_DEFAULTS[id] = names.map((n, i) => ({name:n, color: WIZ_PALETTE[i % WIZ_PALETTE.length]}));
+      // Categórico: usar los valores editados en csCurrentValues
+      WIZ_SCALE_DEFAULTS[id] = csCurrentValues.map(v => ({name: v.name || 'Sin nombre', color: v.color}));
       WIZ_SCALE_LABEL[id] = `${name} (${count} valores)`;
     }
 
