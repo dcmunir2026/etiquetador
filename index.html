@@ -246,16 +246,93 @@
   .toc a:hover{background:#f0ede4;color:var(--ink-1)}
   .toc a b{color:var(--ink-1);font-weight:600}
 
+
+  /* Taxonomy catalog (global) */
+  .tax-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .tax-toolbar input[type=search]{flex:1;padding:9px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13.5px;background:#fafaf2}
+  .tax-toolbar input[type=search]:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .tax-toolbar select{padding:8px 11px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;background:#fafaf2;color:var(--ink-2)}
+  .tax-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+  .tax-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;transition:all 0.15s;position:relative}
+  .tax-card:hover{border-color:var(--primary-2);transform:translateY(-1px);box-shadow:0 4px 16px -2px rgba(0,0,0,0.06)}
+  .tax-card.is-archived{opacity:0.65;background:#fafaf2}
+  .tax-card-head{display:flex;align-items:flex-start;gap:12px}
+  .tax-color{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .tax-color.tk-emot{background:#f6e7d6;color:#7a3b1c}
+  .tax-color.tk-stat{background:#e3eef5;color:#1d4a72}
+  .tax-color.tk-gen{background:#efe1ec;color:#5a3060}
+  .tax-color.tk-semi{background:#f4ecd6;color:#5a4400}
+  .tax-color.tk-race{background:#e6e1d6;color:#5a4400}
+  .tax-color.tk-odio{background:#f0d8d3;color:#7a1a1c}
+  .tax-color.tk-rel{background:#e0e8da;color:#2f5d2c}
+  .tax-color.tk-demo{background:#e1e6ec;color:#1d4a72}
+  .tax-color.tk-tend{background:#e9dfe6;color:#5a3060}
+  .tax-color.tk-toxic{background:#fde2d2;color:#8a3b1c}
+  .tax-color.tk-fact{background:#dde6ec;color:#1d4a72}
+  .tax-card-head h4{margin:0 0 2px;font-size:14.5px;font-weight:600;color:var(--ink-1)}
+  .tax-card-head p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+  .tax-card-meta{display:flex;gap:5px;flex-wrap:wrap}
+  .tax-card-foot{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-3)}
+  .tax-card-foot .actions-mini{display:flex;gap:4px}
+  .btn-mini{padding:4px 9px;font-size:11.5px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink-2);cursor:pointer}
+  .btn-mini:hover{border-color:var(--ink-3);background:#fafaf2}
+  .btn-mini.primary-mini{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn-mini.primary-mini:hover{background:var(--primary-2);border-color:var(--primary-2)}
+  .btn-mini.danger-mini{color:var(--bad);border-color:#e8c4c5;background:#fdf2f2}
+  .btn-mini.danger-mini:hover{background:#f6dcd9;border-color:var(--bad)}
+  .tax-used-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;background:#e3eef5;color:#1d4a72;border-radius:10px;font-weight:600}
+  .tax-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:var(--surface);transition:all 0.15s}
+  .tax-row:hover{border-color:var(--ink-3)}
+  .tax-row .meta-col{flex:1;min-width:0}
+  .tax-row .meta-col b{color:var(--ink-1);font-weight:600;font-size:14px;display:block}
+  .tax-row .meta-col small{color:var(--ink-3);font-size:12px}
+  .tax-row .used-col{text-align:right;min-width:120px}
+  .tax-row .used-col b{display:block;font-size:15px;color:var(--ink-1);font-weight:600}
+  .tax-row .used-col small{color:var(--ink-3);font-size:11px}
+  .picker-row.is-assigned{background:#e6f1ec;border-color:var(--ok);cursor:default}
+  .picker-row.is-assigned .av-extra{display:inline-flex;align-items:center;gap:3px;background:var(--ok);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .scale-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;background:#f6f4ed;color:var(--ink-2);border-radius:10px}
+  .empty-state{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;background:#fafaf2;border:1px dashed var(--line);border-radius:9px}
+  .empty-state h4{margin:0 0 6px;color:var(--ink-1);font-size:14px}
+
+
+  /* Segmentation editor */
+  .seg-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+  @media (max-width:1100px){.seg-grid{grid-template-columns:1fr}}
+  .seg-form-row{display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center}
+  .seg-form-row label{font-size:12.5px;font-weight:500;color:var(--ink-2)}
+  .seg-form-row input,.seg-form-row select{font:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);width:100%}
+  .seg-form-row input:focus,.seg-form-row select:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .seg-form-row .seg-hint{font-size:11.5px;color:var(--ink-4);margin-top:4px}
+  .seg-toggle{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .seg-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary-2);cursor:pointer}
+  .seg-toggle label{margin:0;cursor:pointer;font-weight:500}
+
+  .preview-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .preview-stats{display:flex;gap:14px;font-size:12px;color:var(--ink-3)}
+  .preview-stats b{color:var(--ink-1);font-weight:600}
+  .preview-input{width:100%;min-height:120px;max-height:200px;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;line-height:1.55;background:#fafaf2;color:var(--ink-1);resize:vertical;font-family:inherit}
+  .preview-input:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+
+  .frag-chip{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:#fafaf2;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+  .frag-chip .frag-num{min-width:30px;height:30px;background:var(--primary);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+  .frag-chip .frag-text{font-size:12.5px;line-height:1.55;color:var(--ink-2);flex:1}
+  .frag-chip .frag-meta{font-size:10.5px;color:var(--ink-4);margin-top:4px;display:flex;gap:8px}
+  .frag-chip .frag-meta span{background:#f6f4ed;padding:1px 7px;border-radius:10px}
+
+  .seg-help{background:#fdf6e3;border:1px solid #e8d59a;border-left:3px solid var(--warn);padding:11px 13px;border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400;margin-top:14px}
+  .seg-help b{color:#5a4400}
+
   @media (max-width: 1180px){
     .et-grid{grid-template-columns:1fr}
   }
 
   /* Project picker (for views that require an active project) */
-  .picker-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:32px 36px;max-width:640px;margin:60px auto;text-align:center}
+  .picker-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 32px;max-width:min(680px,calc(100vw - 32px));width:100%;margin:24px auto;text-align:center;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden}
   .picker-card .ic-big{width:48px;height:48px;color:var(--primary-2);margin-bottom:14px}
   .picker-card h2{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;margin:0 0 6px}
   .picker-card .lead{color:var(--ink-3);margin:0 0 22px}
-  .picker-list{display:grid;gap:10px;text-align:left;margin-bottom:20px}
+  .picker-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-bottom:0;overflow-y:auto;overflow-x:hidden;flex:1 1 auto;min-height:0;padding-right:6px}
   .picker-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;cursor:pointer;background:#fafaf2;transition:all 0.15s}
   .picker-row:hover{border-color:var(--primary-2);background:#fff;transform:translateX(2px)}
   .picker-row .av{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--primary-2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0}
@@ -304,11 +381,17 @@
       <button data-view="upload"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Cargar Excel</button>
     </nav>
 
+    <div class="section-title">Catálogo</div>
+    <nav class="nav" id="nav-catalog">
+      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Taxonomías</button>
+    </nav>
+
     <div class="section-title">Configuración</div>
     <nav class="nav" id="nav-config">
-      <button data-view="dimensions"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Dimensiones<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="dimensions"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="18" r="1.5" fill="currentColor"/><circle cx="16" cy="6" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="18" r="1.5" fill="currentColor"/></svg>Taxonomías del proyecto<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
       <button data-view="roles"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Roles y equipos<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
       <button data-view="paquetes"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 16v5h-5"/><path d="M8 21H3v-5"/><path d="M3 8V3h5"/><rect x="6" y="6" width="12" height="12"/></svg>Paquetes<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="segmentation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M9 3v18M15 3v18" stroke-dasharray="2 2" opacity="0.4"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="6" cy="18" r="1" fill="currentColor"/><circle cx="18" cy="6" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="18" r="1" fill="currentColor"/></svg>Segmentación<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
     </nav>
 
     <div class="section-title">Etiquetado</div>
@@ -503,83 +586,160 @@
       </div>
       <div id="view-dimensions-content">
       <div class="page">
-        <h1>Dimensiones y categorías</h1>
-        <p class="lead">Las 9 dimensiones son las categorías de sesgo que evaluará el LLM Juez (alineadas con la propuesta técnica). Cada dimensión admite una escala ordinal y categorías de respuesta configurables.</p>
+        <h1>Taxonomías del proyecto</h1>
+        <p class="lead">Las taxonomías asignadas a este proyecto se muestran aquí. Para añadir una nueva, créala primero en el <a href="#" onclick="go('taxonomies');return false" style="color:var(--primary-2);font-weight:500">catálogo global</a>.</p>
 
         <div class="card">
-          <h3>Dimensiones del proyecto <button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Añadir dimensión</button></h3>
-
-          <div class="dim-edit">
-            <div class="num" style="background:#e3eef5;color:#1d4a72">1</div>
-            <div class="name"><input value="Sesgo estadístico"></div>
-            <div class="cats"><span class="ct">factual correcto</span><span class="ct">cifra imprecisa</span><span class="ct">fuente ausente</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option><option>2 niveles</option><option>5 niveles</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <h3>Taxonomías asignadas <button class="btn primary-mini" style="margin-left:auto;padding:6px 12px;font-size:12.5px;background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500" onclick="openTaxonomyPicker()"><svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Asignar del catálogo</button></h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#e3eef5;border:1px solid #c5d8e8;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#1d4a72">
+            <div style="display:flex;align-items:center;gap:7px">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Las taxonomías son globales. <b>Editarlas aquí no es posible</b>: ve al <a href="#" onclick="go('taxonomies');return false" style="color:#1d4a72;font-weight:600;text-decoration:underline">catálogo</a> para crear, editar o archivar.</span>
+            </div>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#f6e7d6;color:#7a3b1c">2</div>
-            <div class="name"><input value="Emotividad"></div>
-            <div class="cats"><span class="ct">neutro</span><span class="ct">valorativo</span><span class="ct">cargado</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+
+          <div class="tax-row">
+            <div class="tax-color tk-stat" style="width:42px;height:42px;font-size:15px">1</div>
+            <div class="meta-col">
+              <b>Sesgo estadístico</b>
+              <small>Evalúa si los datos cuantitativos/cualitativos son correctos, faltan fuentes o hay cifras imprecisas.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>2 / 9</b><small>anotaciones totales</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-estadistico')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#f0d8d3;color:#7a1a1c">3</div>
-            <div class="name"><input value="Odio / discurso de odio"></div>
-            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-emot" style="width:42px;height:42px;font-size:15px">2</div>
+            <div class="meta-col">
+              <b>Emotividad</b>
+              <small>Detecta si el tono es neutro, valorativo o cargado emocionalmente.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>1 / 9</b><small>anotaciones totales</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-emotividad')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#e9dfe6;color:#5a3060">4</div>
-            <div class="name"><input value="Carácter tendencioso"></div>
-            <div class="cats"><span class="ct">imparcial</span><span class="ct">sesgo sutil</span><span class="ct">sesgo claro</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-odio" style="width:42px;height:42px;font-size:15px">3</div>
+            <div class="meta-col">
+              <b>Odio / discurso de odio</b>
+              <small>Detecta insinuaciones o discurso explícito de odio en el contenido.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>2 / 9</b><small>anotaciones totales</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-odio')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#f4ecd6;color:#5a4400">5</div>
-            <div class="name"><input value="Semiótica (ironía, metáfora, sarcasmo)"></div>
-            <div class="cats"><span class="ct">literal</span><span class="ct">figurado</span><span class="ct">sarcástico</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-tend" style="width:42px;height:42px;font-size:15px">4</div>
+            <div class="meta-col">
+              <b>Carácter tendencioso</b>
+              <small>¿Imparcial o con sesgo (sutil o claro)?</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-tendencioso')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#efe1ec;color:#5a3060">6</div>
-            <div class="name"><input value="Género"></div>
-            <div class="cats"><span class="ct">neutro</span><span class="ct">sesgo sutil</span><span class="ct">sesgo explícito</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-semi" style="width:42px;height:42px;font-size:15px">5</div>
+            <div class="meta-col">
+              <b>Semiótica (ironía, metáfora, sarcasmo)</b>
+              <small>Detecta uso de lenguaje figurado, irónico o sarcástico.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-semiotica')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#e6e1d6;color:#5a4400">7</div>
-            <div class="name"><input value="Raza / etnia"></div>
-            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-gen" style="width:42px;height:42px;font-size:15px">6</div>
+            <div class="meta-col">
+              <b>Género</b>
+              <small>¿Tratamiento neutral o con sesgo de género?</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-genero')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#e0e8da;color:#2f5d2c">8</div>
-            <div class="name"><input value="Religión"></div>
-            <div class="cats"><span class="ct">ausente</span><span class="ct">insinuación</span><span class="ct">explícito</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-race" style="width:42px;height:42px;font-size:15px">7</div>
+            <div class="meta-col">
+              <b>Raza / etnia</b>
+              <small>Detecta contenido racista o con sesgo étnico.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-raza')">Desasignar</button>
           </div>
 
-          <div class="dim-edit">
-            <div class="num" style="background:#e1e6ec;color:#1d4a72">9</div>
-            <div class="name"><input value="Sesgo demográfico"></div>
-            <div class="cats"><span class="ct">ausente</span><span class="ct">edad</span><span class="ct">origen</span><span class="ct">clase</span><span class="ct add">+</span></div>
-            <div class="scale"><select><option>3 niveles (no / bajo / alto)</option></select></div>
-            <div><button class="btn ghost" style="color:var(--bad)">×</button></div>
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-rel" style="width:42px;height:42px;font-size:15px">8</div>
+            <div class="meta-col">
+              <b>Religión</b>
+              <small>Detecta contenido con sesgo religioso.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">3 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-religion')">Desasignar</button>
           </div>
+
+          <div class="tax-row" style="margin-top:10px">
+            <div class="tax-color tk-demo" style="width:42px;height:42px;font-size:15px">9</div>
+            <div class="meta-col">
+              <b>Sesgo demográfico</b>
+              <small>Detecta sesgo por edad, origen o clase social.</small>
+              <div style="display:flex;gap:5px;margin-top:5px">
+                <span class="scale-pill">3 niveles</span>
+                <span class="scale-pill">4 valores</span>
+              </div>
+            </div>
+            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
+            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-demografico')">Desasignar</button>
+          </div>
+
+          
+
+          
+
+          
+
+          
+
+          
+
+          
+
+          
+
+          
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
@@ -589,6 +749,148 @@
       </div>
           </div>
     </section>
+
+    <!-- TAXONOMY CATALOG (global) -->
+    <section class="view" id="view-taxonomies">
+      <div class="page">
+        <h1>Catálogo de taxonomías</h1>
+        <p class="lead">Listado global de taxonomías disponibles. Crea una taxonomía una vez y asígnala a los proyectos que la necesiten. Solo el super admin puede crear, editar o archivar.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Taxonomías activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
+          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por taxonomía</div></div>
+        </div>
+
+        <div class="tax-toolbar">
+          <input type="search" placeholder="Buscar taxonomía..." />
+          <select>
+            <option>Todas las escalas</option>
+            <option>2 niveles</option>
+            <option>3 niveles</option>
+            <option>5 niveles</option>
+            <option>Likert</option>
+            <option>Libre</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: todas</option>
+            <option>Estado: archivadas</option>
+          </select>
+          <button class="btn primary" onclick="alert('En la versión real, este botón abre un wizard de creación de taxonomía (4 pasos: nombre, escala, valores, descripción).')">+ Nueva taxonomía</button>
+        </div>
+
+        <div class="tax-grid" id="tax-grid">
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-odio">O</div>
+              <div>
+                <h4>Sesgo de odio</h4>
+                <p>Detecta insinuaciones o discurso explícito de odio en el contenido etiquetable.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">2 proyectos</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores (no escala). Cambio de escala requeriría migración.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-gen">G</div>
+              <div>
+                <h4>Sesgo de género</h4>
+                <p>Detecta tratamiento desigual o estereotipos por razón de género en el contenido.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-toxic">T</div>
+              <div>
+                <h4>Toxicidad</h4>
+                <p>Mide el nivel de toxicidad general (insultos, vulgaridad, agresividad).</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 5</span>
+              <span class="scale-pill">5 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 5 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-fact">F</div>
+              <div>
+                <h4>Incoherencia factual</h4>
+                <p>Marca respuestas que contradicen datos verificables del propio contexto o del corpus.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">2 niveles</span>
+              <span class="scale-pill">2 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 2 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card is-archived">
+            <div class="tax-card-head">
+              <div class="tax-color" style="background:#e6e3dc;color:var(--ink-3)">P</div>
+              <div>
+                <h4 style="text-decoration:line-through;color:var(--ink-3)">Polaridad política</h4>
+                <p>Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 7</span>
+              <span class="scale-pill" style="background:#e6e1d6;color:var(--ink-3)">archivada</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Archivada por <b style="color:var(--ink-2)">Marta R.</b> · hace 1 día</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="alert('Taxonomía restaurada.')">Restaurar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
     <!-- ROLES -->
     <section class="view" id="view-roles">
@@ -802,6 +1104,105 @@
         </div>
       </div>
           </div>
+    </section>
+
+    <!-- SEGMENTATION (H3) -->
+    <section class="view" id="view-segmentation">
+      <div id="view-segmentation-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">La segmentación se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-segmentation-content">
+      <div class="page">
+        <h1>Configuración de segmentación</h1>
+        <p class="lead">Define cómo se parten los textos largos en fragmentos etiquetables. Esta configuración se aplica al corpus completo del proyecto antes de dividir en paquetes.</p>
+
+        <div class="seg-grid">
+          <!-- IZQUIERDA: formulario de configuración -->
+          <div class="card">
+            <h3>Parámetros</h3>
+            <div class="seg-form-row">
+              <label>Nombre de la config</label>
+              <input type="text" value="Default (palabras)" id="seg-name" />
+              <label></label>
+              <div class="seg-hint">Identifica esta configuración si más adelante quieres tener varias (p. ej. "Estricta" para campo abierto, "Laxa" para resúmenes).</div>
+
+              <label>Unidad</label>
+              <select id="seg-unit" onchange="updateSegmentationPreview()">
+                <option value="token">Token (≈ 4 caracteres)</option>
+                <option value="word" selected>Palabra</option>
+                <option value="sentence">Frase</option>
+                <option value="paragraph">Párrafo</option>
+                <option value="character">Carácter</option>
+              </select>
+              <label></label>
+              <div class="seg-hint">Recomendado: <b>palabra</b> o <b>frase</b>. Token es para textos técnicos; párrafo para respuestas estructuradas.</div>
+
+              <label>Tamaño máximo</label>
+              <input type="number" id="seg-max" value="120" min="10" max="2000" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Si el texto excede este tamaño, se parte en varios fragmentos.</div>
+
+              <label>Overlap (caracteres)</label>
+              <input type="number" id="seg-overlap" value="20" min="0" max="200" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Caracteres de solapamiento entre fragmentos consecutivos. Útil para mantener contexto entre cortes.</div>
+
+              <label></label>
+              <div class="seg-toggle">
+                <input type="checkbox" id="seg-respect" checked onchange="updateSegmentationPreview()" />
+                <label for="seg-respect">Respetar límites de frase y párrafo</label>
+              </div>
+              <label></label>
+              <div class="seg-hint">Si está activo, nunca se parte una palabra/frase. Si está desactivado, el corte es por tamaño exacto.</div>
+
+              <label>Tolerancia</label>
+              <input type="number" id="seg-tolerance" value="15" min="0" max="50" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Porcentaje de desvío permitido sobre el tamaño máximo antes de forzar un corte. 0 = exacto.</div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+              <button class="btn">Restablecer</button>
+              <button class="btn primary">Guardar configuración</button>
+            </div>
+
+            <div class="seg-help">
+              <b>Tip:</b> El fragmento más pequeño permitido es 10 unidades (palabras/tokens). Si una respuesta tiene menos, queda como un único fragmento.
+            </div>
+          </div>
+
+          <!-- DERECHA: live preview -->
+          <div class="card">
+            <h3>Live preview <span style="margin-left:auto;font-size:11px;background:#f0ede4;color:var(--ink-2);padding:2px 9px;border-radius:10px;font-weight:500">texto de ejemplo real</span></h3>
+
+            <div class="preview-toolbar">
+              <div class="preview-stats" id="seg-stats">
+                <span><b>—</b> fragmentos</span>
+                <span><b>—</b> avg</span>
+                <span><b>—</b> min</span>
+                <span><b>—</b> max</span>
+              </div>
+              <button class="btn-mini" onclick="document.getElementById('seg-sample').value = ''; updateSegmentationPreview()">Limpiar</button>
+            </div>
+
+            <textarea class="preview-input" id="seg-sample" oninput="updateSegmentationPreview()">El mercado inmobiliario español ha experimentado fluctuaciones significativas en las últimas dos décadas. Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones, seguidas de una caída dramática durante la crisis financiera: en 2009 bajaron a 27.821 transacciones, una contracción del 61%. La recuperación ha sido lenta pero sostenida. En 2024 se registraron 63.859 transacciones, aproximándose a los niveles previos a la crisis. El dato más reciente de 2025 muestra 56.108 operaciones, indicando cierta volatilidad en el mercado actual.</textarea>
+
+            <div style="margin-top:14px" id="seg-preview">
+              <div class="empty-state" style="margin:0">
+                <h4>Cargando vista previa...</h4>
+                Edita los parámetros arriba para ver cómo se parte el texto.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
     </section>
 
     <!-- TAGGING (la pantalla clave) -->
@@ -1247,8 +1648,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
 
     <!-- PROJECT PICKER OVERLAY -->
-    <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px)">
-      <div class="picker-card" style="margin-top:80px">
+    <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:24px">
         <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         <h2>Elige el proyecto a configurar</h2>
         <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
@@ -1256,6 +1657,23 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         <button class="btn" onclick="closePicker()">Cancelar</button>
       </div>
     </div>
+
+    <!-- TAXONOMY PICKER OVERLAY -->
+    <div id="taxonomy-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:24px;text-align:left">
+        <h2 style="text-align:center">Asignar taxonomías del catálogo</h2>
+        <p class="lead" style="text-align:center">Marca las taxonomías que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
+        <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
+          <input type="search" placeholder="Buscar taxonomía..." id="tax-picker-search" />
+        </div>
+        <div class="picker-list" id="tax-picker-list"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);flex-shrink:0">
+          <button class="btn" onclick="closeTaxonomyPicker()">Cancelar</button>
+          <button class="btn primary" onclick="closeTaxonomyPicker()">Listo</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1267,7 +1685,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
-    paquetes:'Paquetes',
+    paquetes:'Paquetes', taxonomies:'Catálogo de taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
@@ -1303,7 +1721,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   let activeProject = null;
 
   function requiresProject(viewName){
-    return ['dimensions','roles','paquetes'].includes(viewName);
+    // 'taxonomies' es global, no requiere proyecto.
+    // 'dimensions' (taxonomías del proyecto) sí lo requiere.
+    return ['dimensions','roles','paquetes','segmentation'].includes(viewName);
   }
 
   function renderPickerRows(container){
@@ -1351,6 +1771,233 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   // Inicializar pickers inline en las 3 vistas que lo requieren
   document.querySelectorAll('[data-inline-picker]').forEach(el => renderPickerRows(el));
+
+  // ─── Taxonomies (catálogo global) ───
+  // Estado: array de objetos taxonomía con su asignación por proyecto.
+  // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
+  // y POST /api/projects/[id]/taxonomies.
+  const TAXONOMIES = [
+    { id:'tx-odio',          name:'Sesgo de odio',                   color:'tk-odio',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3','epdata-2026q2'],  usedInAnnotations: 2, status:'active' },
+    { id:'tx-emotividad',    name:'Emotividad',                       color:'tk-emot',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 1, status:'active' },
+    { id:'tx-tendencioso',   name:'Carácter tendencioso',             color:'tk-tend',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-semiotica',     name:'Semiótica',                        color:'tk-semi',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-genero',        name:'Género',                           color:'tk-gen',   scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-raza',          name:'Raza / etnia',                     color:'tk-race',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-religion',      name:'Religión',                         color:'tk-rel',   scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-demografico',   name:'Sesgo demográfico',                color:'tk-demo',  scale:'3 niveles',  values:4,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-estadistico',   name:'Sesgo estadístico',                color:'tk-stat',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3','epdata-2026q2'],  usedInAnnotations: 2, status:'active' },
+    { id:'tx-toxicidad',     name:'Toxicidad',                        color:'tk-toxic', scale:'Likert 5',   values:5,  assignedTo:['ods-2026'],                         usedInAnnotations: 0, status:'active' },
+    { id:'tx-fact',          name:'Incoherencia factual',            color:'tk-fact',  scale:'2 niveles',  values:2,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
+    { id:'tx-polaridad',     name:'Polaridad política',               color:'',         scale:'Likert 7',   values:7,  assignedTo:[],                                   usedInAnnotations: 0, status:'archived' },
+  ];
+
+  function isAssignedToActiveProject(tax) {
+    if (!activeProject) return false;
+    return tax.assignedTo.includes(activeProject.id);
+  }
+
+  function openTaxonomyPicker() {
+    if (!activeProject) {
+      alert('Selecciona primero un proyecto activo en el switcher del top bar.');
+      return;
+    }
+    document.getElementById('taxonomy-picker-overlay').style.display = 'block';
+    renderTaxonomyPicker();
+    setTimeout(() => {
+      const search = document.getElementById('tax-picker-search');
+      if (search) search.focus();
+    }, 100);
+  }
+
+  function closeTaxonomyPicker() {
+    document.getElementById('taxonomy-picker-overlay').style.display = 'none';
+  }
+
+  function renderTaxonomyPicker() {
+    const list = document.getElementById('tax-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const available = TAXONOMIES.filter(t => t.status === 'active');
+    available.forEach(tax => {
+      const isAssigned = isAssignedToActiveProject(tax);
+      const row = document.createElement('div');
+      row.className = 'picker-row' + (isAssigned ? ' is-assigned' : '');
+      row.innerHTML = `
+        <div class="av tax-color ${tax.color}" style="width:34px;height:34px;font-size:12px">${tax.name.charAt(0)}</div>
+        <div class="meta" style="flex:1">
+          <b>${tax.name}</b>
+          <small>${tax.scale} · ${tax.values} valores${tax.assignedTo.length > 0 ? ' · ' + tax.assignedTo.length + (tax.assignedTo.length === 1 ? ' proyecto' : ' proyectos') : ''}</small>
+        </div>
+        ${isAssigned
+          ? '<span class="av-extra">✓ Asignada</span>'
+          : '<button class="btn-mini primary-mini" onclick="assignTaxonomy(\''+tax.id+'\')">Asignar</button>'}
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function assignTaxonomy(taxId) {
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax || !activeProject) return;
+    if (!tax.assignedTo.includes(activeProject.id)) {
+      tax.assignedTo.push(activeProject.id);
+      // In a real app: POST /api/projects/[id]/taxonomies
+    }
+    renderTaxonomyPicker();
+    renderProjectTaxonomies();
+  }
+
+  function unassignTaxonomy(taxId) {
+    if (!activeProject) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    tax.assignedTo = tax.assignedTo.filter(id => id !== activeProject.id);
+    // In a real app: DELETE /api/projects/[id]/taxonomies/[taxId]
+    renderProjectTaxonomies();
+  }
+
+  function renderProjectTaxonomies() {
+    // Re-render the tax rows in the project view based on active project
+    // (mockup keeps static HTML for now; this would rebuild rows in production)
+  }
+
+  // ─── Segmentation: live preview (H3) ───
+  // Aplica la configuración al texto y muestra los fragmentos resultantes.
+  // Esta función es cliente-side; en el server, el use case segment-text
+  // (en application/segmentation/) hace lo mismo contra la BD.
+
+  function segTokenize(text, unit) {
+    if (unit === 'token') {
+      // Aproximación: split por whitespace + signos
+      return text.split(/(\s+|[.,;:!?¿¡])/g).filter(t => t && t.trim().length > 0);
+    }
+    if (unit === 'word') {
+      return text.split(/\s+/g).filter(w => w.length > 0);
+    }
+    if (unit === 'sentence') {
+      // Divide por . ! ? seguidos de espacio o fin
+      return text.split(/(?<=[.!?])\s+/g).filter(s => s.trim().length > 0);
+    }
+    if (unit === 'paragraph') {
+      return text.split(/\n\s*\n+/g).filter(p => p.trim().length > 0);
+    }
+    if (unit === 'character') {
+      return text.split('');
+    }
+    return [text];
+  }
+
+  function segSlice(units, maxSize, overlap, unit, respectBoundaries, tolerance) {
+    // units: array de unidades (palabras, frases, etc.)
+    // maxSize: tamaño máximo en unidades
+    // overlap: unidades de solapamiento
+    // Devuelve: array de strings (cada uno = un fragmento)
+    if (units.length <= maxSize) return [units.join(' ')];
+
+    const toleranceAbs = Math.floor(maxSize * (tolerance || 0) / 100);
+    const minSize = Math.max(10, maxSize - toleranceAbs);
+    const step = Math.max(1, maxSize - overlap);
+
+    const fragments = [];
+    let i = 0;
+    while (i < units.length) {
+      let end = Math.min(i + maxSize, units.length);
+
+      if (respectBoundaries && end < units.length) {
+        // Si la unidad es palabra, retroceder al último espacio
+        if (unit === 'word' || unit === 'token' || unit === 'character') {
+          while (end > i + minSize && !/\s$/.test(units.slice(Math.max(0, end-1), end).join(' '))) {
+            end--;
+          }
+        }
+        // Si la unidad es frase, mantener el límite de frase
+        if (unit === 'sentence') {
+          // ya viene por frase, así que end cae naturalmente al final de una frase
+        }
+      }
+
+      const frag = units.slice(i, end).join(unit === 'character' ? '' : ' ');
+      fragments.push(frag);
+
+      if (end >= units.length) break;
+      i = end - overlap;
+      if (i <= fragments[fragments.length - 2]?.length || i < 0) i = end;
+    }
+    return fragments;
+  }
+
+  function segCount(text, unit) {
+    if (unit === 'token') return text.split(/\s+/).length;
+    if (unit === 'word') return text.split(/\s+/).filter(w => w.length).length;
+    if (unit === 'sentence') return text.split(/(?<=[.!?])\s+/).filter(s => s.trim()).length;
+    if (unit === 'paragraph') return text.split(/\n\s*\n+/).filter(p => p.trim()).length;
+    if (unit === 'character') return text.length;
+    return 1;
+  }
+
+  function updateSegmentationPreview() {
+    const text = document.getElementById('seg-sample')?.value || '';
+    const unit = document.getElementById('seg-unit')?.value || 'word';
+    const maxSize = parseInt(document.getElementById('seg-max')?.value || '120');
+    const overlap = parseInt(document.getElementById('seg-overlap')?.value || '20');
+    const respect = document.getElementById('seg-respect')?.checked ?? true;
+    const tolerance = parseInt(document.getElementById('seg-tolerance')?.value || '15');
+
+    const units = segTokenize(text, unit);
+    const fragments = segSlice(units, maxSize, overlap, unit, respect, tolerance);
+
+    // Stats
+    const sizes = fragments.map(f => segCount(f, unit));
+    const avg = sizes.length ? Math.round(sizes.reduce((a,b)=>a+b,0) / sizes.length) : 0;
+    const min = sizes.length ? Math.min(...sizes) : 0;
+    const max = sizes.length ? Math.max(...sizes) : 0;
+    const stats = document.getElementById('seg-stats');
+    if (stats) {
+      stats.innerHTML = `
+        <span><b>${fragments.length}</b> fragmentos</span>
+        <span><b>${avg}</b> avg</span>
+        <span><b>${min}</b> min</span>
+        <span><b>${max}</b> max</span>
+      `;
+    }
+
+    // Render
+    const preview = document.getElementById('seg-preview');
+    if (!preview) return;
+
+    if (fragments.length === 0 || (fragments.length === 1 && fragments[0].trim() === '')) {
+      preview.innerHTML = `<div class="empty-state" style="margin:0">
+        <h4>Sin texto</h4>
+        Escribe o pega un texto en el campo de arriba para ver cómo se segmenta.
+      </div>`;
+      return;
+    }
+
+    const unitLabel = { token:'tokens', word:'palabras', sentence:'frases', paragraph:'párrafos', character:'caracteres' }[unit];
+
+    preview.innerHTML = fragments.map((frag, i) => {
+      const truncated = frag.length > 220 ? frag.slice(0, 220) + '…' : frag;
+      return `<div class="frag-chip">
+        <div class="frag-num">${i+1}</div>
+        <div style="flex:1">
+          <div class="frag-text">${escapeHtml(truncated)}</div>
+          <div class="frag-meta">
+            <span>${segCount(frag, unit)} ${unitLabel}</span>
+            <span>${frag.length} caracteres</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Init: render preview on load
+  setTimeout(updateSegmentationPreview, 200);
+
+
 
   const grid = document.getElementById('fraggrid');
   if (grid){
