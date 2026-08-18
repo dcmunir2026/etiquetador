@@ -1817,6 +1817,14 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
                   <div class="sc-desc">El anotador escribe el valor manualmente.</div>
                   <div class="sc-ex">Ej. "Etiqueta abierta"</div>
                 </div>
+                <div class="wiz-scale-card wiz-scale-new" onclick="openCustomScaleDialog()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;border-color:var(--primary-2);background:transparent;text-align:center;min-height:118px">
+                  <div style="font-size:24px;color:var(--primary-2);font-weight:300;line-height:1">+</div>
+                  <div class="sc-title" style="color:var(--primary-2);margin-top:6px">Crear escala personalizada</div>
+                  <div class="sc-desc" style="text-align:center">Define un tipo propio con sus valores.</div>
+                </div>
+              </div>
+              <div style="margin-top:12px;font-size:11.5px;color:var(--ink-4)">
+                ¿No encaja con ninguna? <a href="#" onclick="openCustomScaleDialog();return false" style="color:var(--primary-2);font-weight:500;text-decoration:underline">Crea una escala a medida</a> con sus propios valores.
               </div>
             </div>
           </div>
@@ -1877,6 +1885,62 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
             <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
             <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear taxonomía</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOM SCALE DIALOG -->
+    <div id="custom-scale-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:60px;text-align:left;max-width:520px">
+        <h2 style="text-align:center;font-size:17px;margin-bottom:4px">Crear escala personalizada</h2>
+        <p class="lead" style="text-align:center;margin-bottom:18px">Define un tipo de escala propio para esta taxonomía. Quedará guardada para futuras taxonomías.</p>
+
+        <div class="wiz-row">
+          <label>Nombre de la escala <span style="color:#c0392b">*</span></label>
+          <input type="text" id="cs-name" placeholder="Ej. Polaridad 0-10, Impacto periodístico" />
+          <div class="wiz-hint">Como aparecerá al crear taxonomías.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Tipo de valores</label>
+          <select id="cs-type">
+            <option value="categorical">Categórico (lista cerrada)</option>
+            <option value="numerical">Numérico (rango 0-N)</option>
+            <option value="free">Texto libre (anotador escribe)</option>
+          </select>
+          <div class="wiz-hint">Categórico: el anotador elige de N opciones. Numérico: introduce un número 0-N. Libre: campo abierto.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-count-row">
+          <label>Número de valores</label>
+          <input type="number" id="cs-count" value="4" min="1" max="10" />
+          <div class="wiz-hint">Entre 1 y 10. Para numérico, será el valor máximo del rango.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-num-range-row" style="display:none">
+          <label>Rango numérico</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" value="0" style="width:80px" disabled />
+            <span style="color:var(--ink-3)">a</span>
+            <input type="number" id="cs-num-max" value="10" min="2" max="100" />
+          </div>
+          <div class="wiz-hint">El anotador introduce un valor entre 0 y N.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-values-preview-row" style="display:none">
+          <label>Vista previa de valores</label>
+          <div id="cs-values-preview" style="background:#fafaf2;border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div class="wiz-hint">Si los nombres no te convencen, puedes editarlos en el siguiente paso del wizard.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Descripción (opcional)</label>
+          <textarea id="cs-desc" placeholder="¿Cuándo se usa esta escala?" style="min-height:50px"></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
+          <button class="btn" onclick="closeCustomScaleDialog()">Cancelar</button>
+          <button class="btn primary" onclick="saveCustomScale()">Crear y usar</button>
         </div>
       </div>
     </div>
@@ -2097,6 +2161,139 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     quality: 'Evalúa la calidad periodística en cuatro dimensiones: rigor factual (¿citas verificables?), equilibrio (¿múltiples fuentes?), contexto (¿datos de fondo?), claridad (¿comprensible para un lector general?). Asignar 1 si falla gravemente en alguna dimensión, 5 si cumple las cuatro. Diferenciar de "Sesgo de odio": una pieza puede tener odio sin ser de baja calidad técnica.',
     emotion: 'Mide el tono emocional dominante: positivo (esperanza, logro, celebración), negativo (miedo, tristeza, conflicto), neutro (hechos sin carga), mixto (combina varios). Si hay coexistencia clara, asignar "mixto". Para escalar intensidad usar "Carácter tendencioso".'
   };
+
+  // ─── Custom scale dialog ───
+  const CUSTOM_SCALES = [
+    // Persistidas para futuras taxonomías (en real, esto va a BD)
+    { id:'cs-polarity', name:'Polaridad 0-10', type:'numerical', count:11, numMax:10, desc:'Para análisis de sentimiento con granularidad alta.' },
+  ];
+
+  function openCustomScaleDialog() {
+    document.getElementById('cs-name').value = '';
+    document.getElementById('cs-desc').value = '';
+    document.getElementById('cs-type').value = 'categorical';
+    document.getElementById('cs-count').value = 4;
+    document.getElementById('cs-num-max').value = 10;
+    updateCustomScalePreview();
+    document.getElementById('custom-scale-overlay').style.display = 'block';
+    setTimeout(() => document.getElementById('cs-name').focus(), 100);
+  }
+
+  function closeCustomScaleDialog() {
+    document.getElementById('custom-scale-overlay').style.display = 'none';
+  }
+
+  // Cambia la UI según el tipo seleccionado
+  function updateCustomScalePreview() {
+    const type = document.getElementById('cs-type').value;
+    const count = parseInt(document.getElementById('cs-count').value) || 1;
+    const previewRow = document.getElementById('cs-values-preview-row');
+    const numRangeRow = document.getElementById('cs-num-range-row');
+    const countRow = document.getElementById('cs-count-row');
+    const preview = document.getElementById('cs-values-preview');
+
+    if (type === 'free') {
+      previewRow.style.display = 'none';
+      numRangeRow.style.display = 'none';
+      countRow.style.display = 'none';
+      return;
+    }
+    countRow.style.display = '';
+    if (type === 'numerical') {
+      numRangeRow.style.display = '';
+      previewRow.style.display = 'none';
+    } else {
+      numRangeRow.style.display = 'none';
+      previewRow.style.display = '';
+      // Genera chips con nombres por defecto
+      const defaultNames = defaultNamesForCount(count);
+      preview.innerHTML = defaultNames.map((n, i) => {
+        const color = WIZ_PALETTE[i % WIZ_PALETTE.length];
+        return `<span class="sm-chip" style="background:${color}"><span class="sm-dot"></span>${escapeHtml(n)}</span>`;
+      }).join('');
+    }
+  }
+
+  function defaultNamesForCount(count) {
+    if (count === 1) return ['Sí'];
+    if (count === 2) return ['Opción A', 'Opción B'];
+    if (count === 3) return ['Bajo', 'Medio', 'Alto'];
+    if (count === 4) return ['Muy bajo', 'Bajo', 'Alto', 'Muy alto'];
+    if (count === 5) return ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto'];
+    if (count <= 10) {
+      return Array.from({length: count}, (_, i) => `Opción ${i+1}`);
+    }
+    return [];
+  }
+
+  function saveCustomScale() {
+    const name = document.getElementById('cs-name').value.trim();
+    if (!name) {
+      document.getElementById('cs-name').focus();
+      document.getElementById('cs-name').style.borderColor = '#c0392b';
+      return;
+    }
+    const type = document.getElementById('cs-type').value;
+    const count = parseInt(document.getElementById('cs-count').value) || 1;
+    const numMax = parseInt(document.getElementById('cs-num-max').value) || 10;
+    const desc = document.getElementById('cs-desc').value.trim();
+
+    const id = 'cs-' + name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+
+    if (type === 'free') {
+      WIZ_SCALE_DEFAULTS[id] = [{name:'(texto libre)', color:'#7d6c4f'}];
+      WIZ_SCALE_LABEL[id] = `${name} (texto libre)`;
+    } else if (type === 'numerical') {
+      WIZ_SCALE_DEFAULTS[id] = Array.from({length: numMax + 1}, (_, i) => ({name: String(i), color: `hsl(${20 + i*8}, 55%, ${55 - i*2}%)`}));
+      WIZ_SCALE_LABEL[id] = `${name} (0-${numMax})`;
+    } else {
+      const names = defaultNamesForCount(count);
+      WIZ_SCALE_DEFAULTS[id] = names.map((n, i) => ({name:n, color: WIZ_PALETTE[i % WIZ_PALETTE.length]}));
+      WIZ_SCALE_LABEL[id] = `${name} (${count} valores)`;
+    }
+
+    // Persistir
+    CUSTOM_SCALES.push({ id, name, type, count, numMax, desc });
+
+    // Cerrar el modal
+    closeCustomScaleDialog();
+
+    // Seleccionar automáticamente y pasar al paso 3
+    wizState.step = 1; // reset para que selectScale salte correctamente
+    selectScale(id);
+
+    // Insertar un card en el grid (solo si no existe) — usando el último + Personalizada
+    const grid = document.getElementById('wiz-scale-grid');
+    const newCard = document.createElement('div');
+    newCard.className = 'wiz-scale-card';
+    newCard.dataset.scale = id;
+    newCard.onclick = () => selectScale(id);
+    newCard.innerHTML = `<div class="sc-title">${escapeHtml(name)} <span class="sc-pill">${type==='numerical'?'0-'+numMax:type==='free'?'libre':count+' valores'}</span></div><div class="sc-desc">${escapeHtml(desc || 'Escala personalizada')}</div><div class="sc-ex">Creada ahora</div>`;
+    // Insertar antes del card "+ Personalizada"
+    const newCardEl = grid.querySelector('.wiz-scale-new');
+    grid.insertBefore(newCard, newCardEl);
+
+    // Avanzar al paso 3
+    wizState.step = 2;
+    wizState.step = 3;
+    renderWizValues();
+    updateWizUI();
+  }
+
+  // Listeners para el dialog
+  document.addEventListener('DOMContentLoaded', () => {
+    const type = document.getElementById('cs-type');
+    const count = document.getElementById('cs-count');
+    if (type) type.addEventListener('change', updateCustomScalePreview);
+    if (count) count.addEventListener('input', updateCustomScalePreview);
+  });
+  // Si el DOM ya está listo al momento de inyectar el JS, también engancho
+  setTimeout(() => {
+    const type = document.getElementById('cs-type');
+    const count = document.getElementById('cs-count');
+    if (type) type.addEventListener('change', updateCustomScalePreview);
+    if (count) count.addEventListener('input', updateCustomScalePreview);
+  }, 50);
 
   let wizState = {
     step: 1,
