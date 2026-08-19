@@ -439,6 +439,35 @@
   .tab-panel{display:none}
   .tab-panel.active{display:block}
 
+
+  /* Taxonomy groups (new entity) */
+  .tx-grp-card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0;display:flex;flex-direction:column;overflow:hidden;margin-bottom:14px;transition:border-color 0.15s}
+  .tx-grp-card:hover{border-color:#c5d8e8}
+  .tx-grp-head{padding:14px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px}
+  .tx-grp-head .grp-avatar{width:48px;height:48px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:600;flex-shrink:0;background:linear-gradient(135deg,#0e4a52,#1d6e75)}
+  .tx-grp-head .grp-avatar.amber{background:linear-gradient(135deg,#5a4400,#8a6300)}
+  .tx-grp-head .grp-avatar.rose{background:linear-gradient(135deg,#7a1a1c,#b04143)}
+  .tx-grp-head .grp-avatar.violet{background:linear-gradient(135deg,#3d2a4d,#5a4080)}
+  .tx-grp-head .grp-avatar.cyan{background:linear-gradient(135deg,#0d4a5a,#1a7088)}
+  .tx-grp-head .grp-info{flex:1;min-width:0}
+  .tx-grp-head .grp-name{font-size:15px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+  .tx-grp-head .grp-desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:2px}
+  .tx-grp-head .grp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .tx-grp-head .grp-actions .count{font-size:11px;color:var(--ink-3);text-align:right}
+  .tx-grp-head .grp-actions .count b{display:block;color:var(--ink-1);font-size:18px;font-weight:600;line-height:1.1}
+  .tx-grp-head .grp-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .tx-grp-head .grp-actions button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .tx-grp-head .grp-actions button.danger{background:#fff;color:#a13d3d;border-color:#e8c5c5}
+  .tx-grp-body{padding:12px 18px;background:#fafaf2}
+  .tx-grp-body .dim-list-mini{display:flex;flex-wrap:wrap;gap:7px}
+  .tx-grp-body .dim-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border:1px solid var(--line);border-radius:14px;font-size:11.5px;color:var(--ink-1);font-weight:500}
+  .tx-grp-body .dim-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tx-grp-body .empty-dims{font-size:11.5px;color:var(--ink-4);font-style:italic}
+
+  .grp-add-dim{margin-top:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .grp-add-dim select{font:inherit;font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-1);max-width:240px}
+  .grp-add-dim button{padding:5px 11px;font-size:11.5px;border-radius:6px;border:1px solid var(--primary-2);background:#eaf2f8;color:var(--primary-2);cursor:pointer;font-weight:500}
+
   @media (max-width: 1180px){
     .et-grid{grid-template-columns:1fr}
   }
@@ -500,6 +529,7 @@
     <div class="section-title">Catálogo</div>
     <nav class="nav" id="nav-catalog">
       <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Dimensiones</button>
+      <button data-view="taxonomy-groups"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Taxonomías</button>
     </nav>
 
     <div class="section-title">Configuración</div>
@@ -740,7 +770,37 @@
       </div>
     </section>
 
-        <!-- TAXONOMY CATALOG (global) -->
+        <!-- TAXONOMY GROUPS (new entity) -->
+    <section class="view" id="view-taxonomy-groups">
+      <div class="page">
+        <h1>Taxonomías</h1>
+        <p class="lead">Agrupa dimensiones en paquetes conceptuales y asígnalas como conjunto a los proyectos. Una dimensión puede vivir en varias taxonomías.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Taxonomías activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
+          <div class="kpi"><div class="label">Asignaciones a proyectos</div><div class="value" id="tax-grp-count-assignments">5</div><div class="delta">3 proyectos · 1.25 por taxonomía</div></div>
+        </div>
+
+        <div class="tax-toolbar" style="margin-bottom:14px">
+          <input type="search" placeholder="Buscar taxonomía..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
+          <select>
+            <option>Todas las escalas</option>
+            <option>Más de 3 dimensiones</option>
+            <option>Menos de 3 dimensiones</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: archivadas</option>
+            <option>Todas</option>
+          </select>
+          <button class="btn primary" style="margin-left:auto" onclick="openNewTaxonomyGroupDialog()">+ Nueva taxonomía</button>
+        </div>
+
+        <div id="tax-grp-list"></div>
+      </div>
+    </section>
+
+    <!-- TAXONOMY CATALOG (global) -->
     <section class="view" id="view-taxonomies">
       <div class="page">
         <h1>Dimensiones</h1>
@@ -1887,7 +1947,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
-    paquetes:'Paquetes', taxonomies:'Dimensiones', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
+    paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
@@ -1913,6 +1973,12 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     // Re-render dinámico de las vistas que lo necesitan
     if (name === 'dimensions' && activeProject) {
       renderProjectDimensions();
+    }
+    if (name === 'taxonomy-groups') {
+      renderTaxonomyGroups();
+    }
+    if (name === 'taxonomies') {
+      renderDimensionsCatalog();
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -1999,6 +2065,62 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     { id:'tx-polaridad',     name:'Polaridad política',    color:'',         scale:'Likert 7',  values:7, assignedTo:[],                                  usedInAnnotations:0, status:'archived', shortDesc:'Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.' },
   ];
 
+  // ─── TAXONOMIES: grupos de dimensiones (N:M) ───
+  // Cada taxonomía referencia dimensiones por su id. Una dimensión puede
+  // vivir en varias taxonomías (e.g. Emotividad → "Aspectos formales" + "Tono emocional").
+  const TAXONOMIES = [
+    {
+      id:'tx-sociodemo',
+      name:'Sesgos sociodemográficos',
+      shortDesc:'Sesgos contra grupos protegidos: odio, género, raza, religión, demografía.',
+      color:'rose',
+      dimensions:['tx-odio','tx-genero','tx-raza','tx-religion','tx-demografico'],
+      assignedTo:['epdata-2026q3','epdata-2026q2'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-10'
+    },
+    {
+      id:'tx-calidad',
+      name:'Calidad periodística',
+      shortDesc:'Rigor factual, datos, fuentes, verificación. Métricas formales de calidad.',
+      color:'amber',
+      dimensions:['tx-estadistico','tx-fact'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-12'
+    },
+    {
+      id:'tx-formal',
+      name:'Aspectos formales del discurso',
+      shortDesc:'Estilo, retórica, carga emocional, figuras literarias. Cómo se dice, no qué se dice.',
+      color:'cyan',
+      dimensions:['tx-tendencioso','tx-semiotica','tx-emotividad'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-15'
+    },
+    {
+      id:'tx-toxic',
+      name:'Toxicidad y discurso dañino',
+      shortDesc:'Insultos, vulgaridad, agresividad. No incluye odio estructural (eso va en sociodemo).',
+      color:'violet',
+      dimensions:['tx-toxicidad'],
+      assignedTo:['ods-2026'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-08-01'
+    },
+  ];
+
+  // Index auxiliar para resolver ids de dimensión → objeto
+  function dimById(id) { return DIMENSIONS.find(d => d.id === id); }
+  function dimName(id) { const d = dimById(id); return d ? d.name : '?'; }
+  function dimColor(id) { const d = dimById(id); return d ? (d.color || 'tk-stat') : 'tk-stat'; }
+
+
   function isAssignedToActiveProject(tax) {
     if (!activeProject) return false;
     return tax.assignedTo.includes(activeProject.id);
@@ -2025,7 +2147,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     const list = document.getElementById('dim-picker-list');
     if (!list) return;
     list.innerHTML = '';
-    const available = TAXONOMIES.filter(t => t.status === 'active');
+    const available = DIMENSIONS.filter(t => t.status === 'active');
     available.forEach(tax => {
       const isAssigned = isAssignedToActiveProject(tax);
       const row = document.createElement('div');
@@ -2245,6 +2367,136 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     if (type) type.addEventListener('change', updateCustomScalePreview);
     if (count) count.addEventListener('input', updateCustomScalePreview);
   }, 50);
+
+  // ─── Taxonomy groups: render + gestión ───
+  function renderTaxonomyGroups() {
+    const container = document.getElementById('tax-grp-list');
+    if (!container) return;
+    const search = (document.getElementById('tax-grp-search')?.value || '').toLowerCase().trim();
+    const list = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES : [];
+    const filtered = search ? list.filter(t => t.name.toLowerCase().includes(search) || t.shortDesc.toLowerCase().includes(search)) : list;
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera con el botón superior derecho.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(tax => {
+      const dims = (tax.dimensions || []).map(did => {
+        const d = dimById(did);
+        if (!d) return '';
+        return `<span class="dim-pill"><span class="dot" style="background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+      }).join('');
+      const dimCount = (tax.dimensions || []).length;
+      const projCount = (tax.assignedTo || []).length;
+      return `
+        <div class="tx-grp-card" data-tx-grp-id="${tax.id}">
+          <div class="tx-grp-head">
+            <div class="grp-avatar ${tax.color || 'cyan'}">${(tax.name||'?').charAt(0).toUpperCase()}</div>
+            <div class="grp-info">
+              <div class="grp-name">${escapeHtml(tax.name)}</div>
+              <div class="grp-desc">${escapeHtml(tax.shortDesc || '')}</div>
+            </div>
+            <div class="grp-actions">
+              <div class="count"><b>${dimCount}</b>dimensiones</div>
+              <div class="count"><b>${projCount}</b>${projCount === 1 ? 'proyecto' : 'proyectos'}</div>
+              <button onclick="archiveTaxonomyGroup('${tax.id}')">Archivar</button>
+              <button class="primary" onclick="openAssignDialog('${tax.id}')">Asignar a proyecto</button>
+            </div>
+          </div>
+          <div class="tx-grp-body">
+            ${dims || '<div class="empty-dims">Sin dimensiones todavía. Añade alguna abajo.</div>'}
+            <div class="grp-add-dim">
+              <select id="add-dim-${tax.id}">
+                <option value="">+ Añadir dimensión existente…</option>
+                ${DIMENSIONS.filter(d => !(tax.dimensions || []).includes(d.id)).map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('')}
+              </select>
+              <button onclick="addDimToGroup('${tax.id}')">Añadir</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // KPIs
+    const activeCount = list.filter(t => t.status === 'active').length;
+    const totalAssignments = list.reduce((s, t) => s + (t.assignedTo || []).length, 0);
+    const projects = new Set();
+    list.forEach(t => (t.assignedTo || []).forEach(p => projects.add(p)));
+    const a1 = document.getElementById('tax-grp-count-active');
+    const a2 = document.getElementById('tax-grp-count-assignments');
+    if (a1) a1.textContent = activeCount;
+    if (a2) a2.textContent = totalAssignments;
+  }
+
+  function colorForTax(tk) {
+    // Mapear tk-* a un color hex para los dots
+    const map = {
+      'tk-odio':'#d97757','tk-emot':'#a85a35','tk-tend':'#7d6c4f','tk-semi':'#3d8268',
+      'tk-gen':'#5b8fb8','tk-race':'#8b6db5','tk-rel':'#c79d3c','tk-demo':'#9c5b8b',
+      'tk-stat':'#5a7d8f','tk-toxic':'#7a1a1c','tk-fact':'#1c6e3a'
+    };
+    return map[tk] || '#7d6c4f';
+  }
+
+  function addDimToGroup(taxId) {
+    const sel = document.getElementById('add-dim-' + taxId);
+    const dimId = sel?.value;
+    if (!dimId) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.dimensions) tax.dimensions = [];
+    if (tax.dimensions.includes(dimId)) return;
+    tax.dimensions.push(dimId);
+    renderTaxonomyGroups();
+    showToast(`"${dimName(dimId)}" añadida a "${tax.name}".`, 2500);
+  }
+
+  function archiveTaxonomyGroup(taxId) {
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!confirm(`¿Archivar la taxonomía "${tax.name}"? Se ocultará del catálogo y no podrá asignarse a nuevos proyectos, pero las anotaciones existentes se conservan.`)) return;
+    tax.status = 'archived';
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" archivada.`, 2500);
+  }
+
+  function openAssignDialog(taxId) {
+    // Simplificado: prompt para elegir proyecto
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    const choice = prompt(`Asignar "${tax.name}" a qué proyecto?
+Proyectos disponibles:
+- epdata-2026q3 (EpData 2026-Q3)
+- epdata-2026q2 (EpData 2026-Q2)
+- epdata-sint (EpData Sintético v1)
+- ods-2026 (ODS 2026)
+
+Escribe el id del proyecto (o deja vacío para cancelar):`);
+    if (!choice) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (tax.assignedTo.includes(choice)) {
+      showToast(`Ya estaba asignada.`, 2000);
+      return;
+    }
+    tax.assignedTo.push(choice);
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" asignada a ${choice}.`, 2500);
+  }
+
+  function openNewTaxonomyGroupDialog() {
+    const name = prompt('Nombre de la nueva taxonomía (grupo):');
+    if (!name) return;
+    const desc = prompt('Descripción breve:') || '';
+    const color = prompt('Color (rose / amber / cyan / violet):', 'cyan') || 'cyan';
+    const id = 'tx-' + name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+    TAXONOMIES.push({
+      id, name, shortDesc: desc, color, dimensions: [], assignedTo: [],
+      status: 'active', createdBy: 'Marta R. (superadmin)', createdAt: new Date().toISOString().slice(0,10)
+    });
+    renderTaxonomyGroups();
+    showToast(`Taxonomía "${name}" creada. Añade dimensiones desde su tarjeta.`, 3500);
+  }
 
   let wizState = {
     step: 1,
@@ -2583,7 +2835,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     if (el2) el2.textContent = apName;
 
     // Todas las activas (no archivadas)
-    const all = (typeof DIMENSIONS !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
+    const all = (typeof DIMENSIONS !== 'undefined') ? DIMENSIONS.filter(t => t.status !== 'archived') : [];
     const assigned = all.filter(t => t.assignedTo && t.assignedTo.includes(ap));
 
     // Update counts
