@@ -465,7 +465,7 @@
 
     <div class="section-title">Catálogo</div>
     <nav class="nav" id="nav-catalog">
-      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Taxonomías</button>
+      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Dimensiones</button>
     </nav>
 
     <div class="section-title">Configuración</div>
@@ -669,14 +669,14 @@
       <div id="view-dimensions-content">
       <div class="page">
         <h1>Taxonomías del proyecto</h1>
-        <p class="lead">Las taxonomías asignadas a este proyecto se muestran aquí. Para añadir una nueva, créala primero en el <a href="#" onclick="go('taxonomies');return false" style="color:var(--primary-2);font-weight:500">catálogo global</a>.</p>
+        <p class="lead">Las taxonomías asignadas a este proyecto se muestran aquí. Para añadir una nueva, créala primero en el <a href="#" onclick="go('taxonomies');return false" style="color:var(--primary-2);font-weight:500">catálogo de dimensiones</a>.</p>
 
         <div class="card">
           <h3>Taxonomías asignadas <button class="btn primary-mini" style="margin-left:auto;padding:6px 12px;font-size:12.5px;background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500" onclick="openTaxonomyPicker()"><svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Asignar del catálogo</button></h3>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#e3eef5;border:1px solid #c5d8e8;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#1d4a72">
             <div style="display:flex;align-items:center;gap:7px">
               <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <span>Las taxonomías son globales. <b>Editarlas aquí no es posible</b>: ve al <a href="#" onclick="go('taxonomies');return false" style="color:#1d4a72;font-weight:600;text-decoration:underline">catálogo</a> para crear, editar o archivar.</span>
+              <span>Las dimensiones son globales. <b>Editarlas aquí no es posible</b>: ve al <a href="#" onclick="go('taxonomies');return false" style="color:#1d4a72;font-weight:600;text-decoration:underline">catálogo de dimensiones</a> para crear, editar o archivar.</span>
             </div>
           </div>
 
@@ -835,8 +835,8 @@
     <!-- TAXONOMY CATALOG (global) -->
     <section class="view" id="view-taxonomies">
       <div class="page">
-        <h1>Catálogo de taxonomías</h1>
-        <p class="lead">Listado global de taxonomías disponibles. Crea una taxonomía una vez y asígnala a los proyectos que la necesiten. Solo el super admin puede crear, editar o archivar.</p>
+        <h1>Dimensiones</h1>
+        <p class="lead">Listado global de dimensiones disponibles. Crea una dimensión una vez y asígnala a los proyectos que la necesiten. Solo el super admin puede crear, editar o archivar.</p>
 
         <div class="grid g-2" style="margin-bottom:18px">
           <div class="kpi"><div class="label">Taxonomías activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
@@ -1955,8 +1955,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
     <div id="taxonomy-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="picker-card" style="margin-top:24px;text-align:left">
-        <h2 style="text-align:center">Asignar taxonomías del catálogo</h2>
-        <p class="lead" style="text-align:center">Marca las taxonomías que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
+        <h2 style="text-align:center">Asignar dimensiones</h2>
+        <p class="lead" style="text-align:center">Marca las dimensiones que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
         <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
           <input type="search" placeholder="Buscar taxonomía..." id="tax-picker-search" />
         </div>
@@ -1979,7 +1979,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
-    paquetes:'Paquetes', taxonomies:'Catálogo de taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
+    paquetes:'Paquetes', taxonomies:'Dimensiones', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
