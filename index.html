@@ -732,12 +732,12 @@
       </div>
       <div id="view-dimensions-content">
       <div class="page">
-        <h1>Dimensiones</h1>
-        <p class="lead">Todas las dimensiones creadas. Marca cuáles quieres usar en <b id="dim-active-project">este proyecto</b>. Las dimensiones se crean en el <a href="#" onclick="go('taxonomies');return false" style="color:var(--primary-2);font-weight:500">catálogo de dimensiones</a>.</p>
+        <h1>Taxonomías del proyecto</h1>
+        <p class="lead">Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en <b id="dim-active-project">este proyecto</b>. Cada taxonomía carga sus dimensiones automáticamente. Las taxonomías se gestionan en el <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">catálogo de taxonomías</a>.</p>
 
         <div class="tabs-bar">
           <div class="tab active" data-tab="all" onclick="switchDimTab('all')">
-            Todas las creadas
+            Todas las taxonomías
             <span class="tab-count" id="dim-count-all">0</span>
           </div>
           <div class="tab" data-tab="assigned" onclick="switchDimTab('assigned')">
@@ -2826,6 +2826,7 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
     `;
   }
 
+  // Render principal: usa TAXONOMIES (grupos), no DIMENSIONS (átomos)
   function renderProjectDimensions() {
     const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
     const apName = ap ? (ap.startsWith('epdata-2026q3') ? 'EpData 2026-Q3' : ap) : 'este proyecto';
@@ -2834,33 +2835,110 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
     if (el1) el1.textContent = apName;
     if (el2) el2.textContent = apName;
 
-    // Todas las activas (no archivadas)
-    const all = (typeof DIMENSIONS !== 'undefined') ? DIMENSIONS.filter(t => t.status !== 'archived') : [];
-    const assigned = all.filter(t => t.assignedTo && t.assignedTo.includes(ap));
+    // Las taxonomías (grupos) son lo que se asigna al proyecto
+    const allTaxonomies = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
+    const assignedTaxonomies = allTaxonomies.filter(t => t.assignedTo && t.assignedTo.includes(ap));
 
     // Update counts
     const cAll = document.getElementById('dim-count-all');
     const cAss = document.getElementById('dim-count-assigned');
-    if (cAll) cAll.textContent = all.length;
-    if (cAss) cAss.textContent = assigned.length;
+    if (cAll) cAll.textContent = allTaxonomies.length;
+    if (cAss) cAss.textContent = assignedTaxonomies.length;
 
     // Render listas
     const listAll = document.getElementById('dim-list-all');
     const listAss = document.getElementById('dim-list-assigned');
     if (listAll) {
-      if (all.length === 0) {
-        listAll.innerHTML = '<div class="empty-state"><h4>No hay dimensiones</h4>Crea la primera en el <a href="#" onclick="go(\'taxonomies\');return false">catálogo de dimensiones</a>.</div>';
+      if (allTaxonomies.length === 0) {
+        listAll.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera en el <a href="#" onclick="go(\'taxonomy-groups\');return false">catálogo de taxonomías</a>.</div>';
       } else {
-        listAll.innerHTML = all.map(tx => renderDimRow(tx, 'all')).join('');
+        listAll.innerHTML = allTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'all')).join('');
       }
     }
     if (listAss) {
-      if (assigned.length === 0) {
-        listAss.innerHTML = '<div class="empty-state"><h4>Ninguna dimensión asignada aún</h4>Ve a la pestaña <b>Todas las creadas</b> y marca las que quieras usar en este proyecto.</div>';
+      if (assignedTaxonomies.length === 0) {
+        listAss.innerHTML = '<div class="empty-state"><h4>Ninguna taxonomía asignada aún</h4>Ve a la pestaña <b>Todas las taxonomías</b> y marca las que quieras usar en este proyecto.</div>';
       } else {
-        listAss.innerHTML = assigned.map(tx => renderDimRow(tx, 'assigned')).join('');
+        listAss.innerHTML = assignedTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'assigned')).join('');
       }
     }
+  }
+
+  // Render de una fila de taxonomía-grupo en view-dimensions
+  function renderTaxonomyGroupRow(tx, mode) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    const assigned = ap && tx.assignedTo && tx.assignedTo.includes(ap);
+    const dimCount = (tx.dimensions || []).length;
+    // Resolver nombres de las dimensiones
+    const dimChips = (tx.dimensions || []).map(did => {
+      const d = (typeof DIMENSIONS !== 'undefined') ? DIMENSIONS.find(x => x.id === did) : null;
+      if (!d) return '';
+      return `<span class="dim-pill" style="padding:3px 9px;font-size:11px;background:#fff;border:1px solid var(--line);border-radius:13px"><span class="dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+    }).join('');
+
+    const projCount = (tx.assignedTo || []).length;
+
+    let actions = '';
+    if (mode === 'all') {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        ${assigned
+          ? `<button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>`
+          : `<button class="assign-btn" onclick="assignTaxonomyGroup('${tx.id}')">Asignar</button>`
+        }
+      `;
+    } else {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        <button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>
+      `;
+    }
+
+    let assignmentPill = '';
+    if (assigned) {
+      assignmentPill = `<span class="assigned-pill"><svg style="width:9px;height:9px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Asignada</span>`;
+    } else if (mode === 'all') {
+      assignmentPill = `<span class="unassigned-pill">No asignada</span>`;
+    }
+
+    return `
+      <div class="dim-row" data-tx-grp-id="${tx.id}">
+        <div class="dim-color ${tx.color || 'cyan'}">${(tx.name||'?').charAt(0).toUpperCase()}</div>
+        <div class="dim-info">
+          <div class="dim-name">${escapeHtml(tx.name || 'Sin nombre')}</div>
+          <div class="dim-desc">${escapeHtml(tx.shortDesc || '')}</div>
+          <div class="dim-meta">
+            ${dimChips}
+            ${assignmentPill}
+            <span class="scale-pill">${projCount} ${projCount === 1 ? 'proyecto' : 'proyectos'}</span>
+          </div>
+        </div>
+        <div class="dim-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  function assignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) { alert('Selecciona un proyecto primero.'); return; }
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (!tax.assignedTo.includes(ap)) tax.assignedTo.push(ap);
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" asignada al proyecto. Carga ${(tax.dimensions||[]).length} dimensiones.`, 3000);
+  }
+
+  function unassignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (tax.assignedTo) {
+      tax.assignedTo = tax.assignedTo.filter(p => p !== ap);
+    }
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" desasignada.`, 2500);
   }
 
   function assignTaxonomy(txId) {
