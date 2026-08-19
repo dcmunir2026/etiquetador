@@ -744,7 +744,7 @@
     <section class="view" id="view-taxonomies">
       <div class="page">
         <h1>Dimensiones</h1>
-        <p class="lead">Listado global de dimensiones disponibles. Crea una dimensión una vez y asígnala a los proyectos que la necesiten. Solo el super admin puede crear, editar o archivar.</p>
+        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable. Agrúpala en una taxonomía y asígnala a los proyectos. Solo el super admin puede crear, editar o archivar.</p>
 
         <div class="grid g-2" style="margin-bottom:18px">
           <div class="kpi"><div class="label">Taxonomías activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
@@ -766,7 +766,7 @@
             <option>Estado: todas</option>
             <option>Estado: archivadas</option>
           </select>
-          <button class="btn primary" onclick="openTaxonomyWizard()">+ Nueva taxonomía</button>
+          <button class="btn primary" onclick="openDimensionWizard()">+ Nueva taxonomía</button>
         </div>
 
         <div class="tax-grid" id="tax-grid">
@@ -1653,8 +1653,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     <div id="tax-wizard-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:60;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="wiz-card">
         <div class="wiz-header">
-          <h2>Crear nueva taxonomía</h2>
-          <p>Las taxonomías son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
+          <h2>Crear nueva dimensión</h2>
+          <p>Las las dimensiones son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
         </div>
 
         <div class="wiz-steps">
@@ -1679,20 +1679,20 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         <div class="wiz-body">
           <!-- STEP 1: Nombre -->
           <div class="wiz-step-panel active" data-panel="1">
-            <div class="wiz-row" id="wiz-row-name">
+            <div class="wiz-row" id="wiz-row-dim-name">
               <label>Nombre de la taxonomía <span class="req">*</span></label>
-              <input type="text" id="wiz-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
+              <input type="text" id="wiz-dim-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
               <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
               <div class="wiz-err">El nombre es obligatorio.</div>
             </div>
             <div class="wiz-row">
               <label>Slug (identificador interno)</label>
-              <input type="text" id="wiz-slug" placeholder="sesgo-de-odio" />
+              <input type="text" id="wiz-dim-slug" placeholder="sesgo-de-odio" />
               <div class="wiz-hint">Solo letras, números y guiones. Se usa en URLs y en la API.</div>
             </div>
             <div class="wiz-row">
               <label>Descripción breve</label>
-              <textarea id="wiz-short-desc" placeholder="Una línea que aparecerá en el catálogo."></textarea>
+              <textarea id="wiz-dim-short" placeholder="Una línea que aparecerá en el catálogo."></textarea>
               <div class="wiz-hint">Opcional. Hasta 200 caracteres.</div>
             </div>
           </div>
@@ -1770,7 +1770,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
             </div>
             <div class="wiz-row">
               <label>Descripción completa</label>
-              <textarea id="wiz-long-desc" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
+              <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
               <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
             </div>
             <div class="wiz-row">
@@ -1861,17 +1861,17 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </div>
 
-    <div id="taxonomy-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+    <div id="dimension-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="picker-card" style="margin-top:24px;text-align:left">
         <h2 style="text-align:center">Asignar dimensiones</h2>
         <p class="lead" style="text-align:center">Marca las dimensiones que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
         <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
-          <input type="search" placeholder="Buscar taxonomía..." id="tax-picker-search" />
+          <input type="search" placeholder="Buscar taxonomía..." id="dim-picker-search" />
         </div>
-        <div class="picker-list" id="tax-picker-list"></div>
+        <div class="picker-list" id="dim-picker-list"></div>
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);flex-shrink:0">
-          <button class="btn" onclick="closeTaxonomyPicker()">Cancelar</button>
-          <button class="btn primary" onclick="closeTaxonomyPicker()">Listo</button>
+          <button class="btn" onclick="closeDimensionPicker()">Cancelar</button>
+          <button class="btn primary" onclick="closeDimensionPicker()">Listo</button>
         </div>
       </div>
     </div>
@@ -1912,7 +1912,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     }
     // Re-render dinámico de las vistas que lo necesitan
     if (name === 'dimensions' && activeProject) {
-      renderProjectTaxonomies();
+      renderProjectDimensions();
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -1973,7 +1973,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       if (gate) gate.style.display = 'none';
       if (content) content.style.display = 'block';
       // Re-render dinámico si es dimensions
-      if (viewName === 'dimensions') renderProjectTaxonomies();
+      if (viewName === 'dimensions') renderProjectDimensions();
     }
   }
 
@@ -1984,7 +1984,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   // Estado: array de objetos taxonomía con su asignación por proyecto.
   // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
   // y POST /api/projects/[id]/taxonomies.
-  const TAXONOMIES = [
+  const DIMENSIONS = [
     { id:'tx-odio',          name:'Sesgo de odio',         color:'tk-odio',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Detecta insinuaciones o discurso explícito de odio en el contenido.' },
     { id:'tx-emotividad',    name:'Emotividad',            color:'tk-emot',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.' },
     { id:'tx-tendencioso',   name:'Carácter tendencioso',  color:'tk-tend',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?' },
@@ -2004,25 +2004,25 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     return tax.assignedTo.includes(activeProject.id);
   }
 
-  function openTaxonomyPicker() {
+  function openDimensionPicker() {
     if (!activeProject) {
       alert('Selecciona primero un proyecto activo en el switcher del top bar.');
       return;
     }
-    document.getElementById('taxonomy-picker-overlay').style.display = 'block';
-    renderTaxonomyPicker();
+    document.getElementById('dimension-picker-overlay').style.display = 'block';
+    renderDimensionPicker();
     setTimeout(() => {
-      const search = document.getElementById('tax-picker-search');
+      const search = document.getElementById('dim-picker-search');
       if (search) search.focus();
     }, 100);
   }
 
-  function closeTaxonomyPicker() {
-    document.getElementById('taxonomy-picker-overlay').style.display = 'none';
+  function closeDimensionPicker() {
+    document.getElementById('dimension-picker-overlay').style.display = 'none';
   }
 
-  function renderTaxonomyPicker() {
-    const list = document.getElementById('tax-picker-list');
+  function renderDimensionPicker() {
+    const list = document.getElementById('dim-picker-list');
     if (!list) return;
     list.innerHTML = '';
     const available = TAXONOMIES.filter(t => t.status === 'active');
@@ -2045,23 +2045,23 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function assignTaxonomy(taxId) {
-    const tax = TAXONOMIES.find(t => t.id === taxId);
+    const tax = DIMENSIONS.find(t => t.id === taxId);
     if (!tax || !activeProject) return;
     if (!tax.assignedTo.includes(activeProject.id)) {
       tax.assignedTo.push(activeProject.id);
       // In a real app: POST /api/projects/[id]/taxonomies
     }
-    renderTaxonomyPicker();
-    renderProjectTaxonomies();
+    renderDimensionPicker();
+    renderProjectDimensions();
   }
 
   function unassignTaxonomy(taxId) {
     if (!activeProject) return;
-    const tax = TAXONOMIES.find(t => t.id === taxId);
+    const tax = DIMENSIONS.find(t => t.id === taxId);
     if (!tax) return;
     tax.assignedTo = tax.assignedTo.filter(id => id !== activeProject.id);
     // In a real app: DELETE /api/projects/[id]/taxonomies/[taxId]
-    renderProjectTaxonomies();
+    renderProjectDimensions();
   }
 
   // ─── Taxonomy creation wizard (4 pasos) ───
@@ -2257,21 +2257,21 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     visible: true
   };
 
-  function openTaxonomyWizard() {
+  function openDimensionWizard() {
     // reset
     wizState = { step: 1, scale: null, values: [], name: '', slug: '', shortDesc: '', longDesc: '', visible: true };
-    document.getElementById('wiz-name').value = '';
-    document.getElementById('wiz-slug').value = '';
-    document.getElementById('wiz-short-desc').value = '';
-    document.getElementById('wiz-long-desc').value = '';
+    document.getElementById('wiz-dim-name').value = '';
+    document.getElementById('wiz-dim-slug').value = '';
+    document.getElementById('wiz-dim-short').value = '';
+    document.getElementById('wiz-dim-long').value = '';
     document.querySelectorAll('.wiz-scale-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('wiz-values-list').innerHTML = '';
-    document.getElementById('wiz-row-name').classList.remove('has-error');
+    document.getElementById('wiz-row-dim-name').classList.remove('has-error');
     document.getElementById('wiz-values-err').style.display = 'none';
     updateWizUI();
     renderPaletteSuggest();
     document.getElementById('tax-wizard-overlay').style.display = 'block';
-    setTimeout(() => document.getElementById('wiz-name').focus(), 100);
+    setTimeout(() => document.getElementById('wiz-dim-name').focus(), 100);
   }
 
   function closeTaxonomyWizard() {
@@ -2279,12 +2279,12 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function autoSlug() {
-    const name = document.getElementById('wiz-name').value || '';
+    const name = document.getElementById('wiz-dim-name').value || '';
     const slug = name.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    document.getElementById('wiz-slug').value = slug;
+    document.getElementById('wiz-dim-slug').value = slug;
   }
 
   function selectScale(scale) {
@@ -2356,7 +2356,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function fillWizTemplate(key) {
-    document.getElementById('wiz-long-desc').value = WIZ_TEMPLATES[key] || '';
+    document.getElementById('wiz-dim-long').value = WIZ_TEMPLATES[key] || '';
   }
 
   function wizNext() {
@@ -2379,16 +2379,16 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   function validateWizStep(step) {
     if (step === 1) {
-      const name = document.getElementById('wiz-name').value.trim();
+      const name = document.getElementById('wiz-dim-name').value.trim();
       if (!name) {
-        document.getElementById('wiz-row-name').classList.add('has-error');
-        document.getElementById('wiz-name').focus();
+        document.getElementById('wiz-row-dim-name').classList.add('has-error');
+        document.getElementById('wiz-dim-name').focus();
         return false;
       }
-      document.getElementById('wiz-row-name').classList.remove('has-error');
+      document.getElementById('wiz-row-dim-name').classList.remove('has-error');
       wizState.name = name;
-      wizState.slug = document.getElementById('wiz-slug').value.trim() || autoSlugFromName(name);
-      wizState.shortDesc = document.getElementById('wiz-short-desc').value.trim();
+      wizState.slug = document.getElementById('wiz-dim-slug').value.trim() || autoSlugFromName(name);
+      wizState.shortDesc = document.getElementById('wiz-dim-short').value.trim();
       return true;
     }
     if (step === 2) {
@@ -2451,7 +2451,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   function wizCreate() {
     // Sync final values
-    wizState.longDesc = document.getElementById('wiz-long-desc').value.trim();
+    wizState.longDesc = document.getElementById('wiz-dim-long').value.trim();
     wizState.visible = document.getElementById('wiz-visible').checked;
 
     // Build new taxonomy object
@@ -2465,9 +2465,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       createdAt: new Date().toISOString().slice(0,10),
       createdBy: 'Marta R. (superadmin)'
     };
-    TAXONOMIES.unshift(newTax);
+    DIMENSIONS.unshift(newTax);
     closeTaxonomyWizard();
-    renderTaxCatalog();
+    renderDimensionsCatalog();
     showToast(`Taxonomía "${wizState.name}" creada. Asignar a proyectos →`, 4500);
   }
 
@@ -2483,7 +2483,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     setTimeout(() => t.remove(), ms);
   }
 
-  function renderTaxCatalog() {
+  function renderDimensionsCatalog() {
     // En el mockup, recargamos la vista. En la app real, sería re-render del grid.
     const card = document.querySelector('#view-taxonomies .card');
     if (!card) return;
@@ -2574,7 +2574,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     `;
   }
 
-  function renderProjectTaxonomies() {
+  function renderProjectDimensions() {
     const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
     const apName = ap ? (ap.startsWith('epdata-2026q3') ? 'EpData 2026-Q3' : ap) : 'este proyecto';
     const el1 = document.getElementById('dim-active-project');
@@ -2583,7 +2583,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     if (el2) el2.textContent = apName;
 
     // Todas las activas (no archivadas)
-    const all = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
+    const all = (typeof DIMENSIONS !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
     const assigned = all.filter(t => t.assignedTo && t.assignedTo.includes(ap));
 
     // Update counts
@@ -2614,23 +2614,23 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   function assignTaxonomy(txId) {
     const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
     if (!ap) { alert('Selecciona un proyecto primero.'); return; }
-    const tx = TAXONOMIES.find(t => t.id === txId);
+    const tx = DIMENSIONS.find(t => t.id === txId);
     if (!tx) return;
     if (!tx.assignedTo) tx.assignedTo = [];
     if (!tx.assignedTo.includes(ap)) tx.assignedTo.push(ap);
-    renderProjectTaxonomies();
+    renderProjectDimensions();
     showToast(`"${tx.name}" asignada al proyecto.`, 2500);
   }
 
   function unassignTaxonomy(txId) {
     const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
     if (!ap) return;
-    const tx = TAXONOMIES.find(t => t.id === txId);
+    const tx = DIMENSIONS.find(t => t.id === txId);
     if (!tx) return;
     if (tx.assignedTo) {
       tx.assignedTo = tx.assignedTo.filter(p => p !== ap);
     }
-    renderProjectTaxonomies();
+    renderProjectDimensions();
     showToast(`"${tx.name}" desasignada del proyecto.`, 2500);
   }
 
