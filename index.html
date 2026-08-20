@@ -405,6 +405,69 @@
   .wiz-footer{padding:14px 28px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;background:#fafaf2;flex-shrink:0}
   .wiz-footer .wiz-actions{display:flex;gap:10px}
 
+
+  /* Tabs */
+  .tabs-bar{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .tabs-bar .tab{padding:11px 18px;font-size:13px;font-weight:500;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;transition:color 0.15s}
+  .tabs-bar .tab:hover{color:var(--ink-1)}
+  .tabs-bar .tab.active{color:var(--primary-2);border-bottom-color:var(--primary-2);font-weight:600}
+  .tabs-bar .tab .tab-count{background:#f0ede4;color:var(--ink-2);padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600}
+  .tabs-bar .tab.active .tab-count{background:var(--primary-2);color:#fff}
+
+  /* Tax list (new) */
+  .dim-list{display:flex;flex-direction:column;gap:10px}
+  .dim-row{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--surface);border:1px solid var(--line);border-radius:9px;transition:border-color 0.15s}
+  .dim-row:hover{border-color:#c5d8e8}
+  .dim-row .dim-color{width:46px;height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;flex-shrink:0}
+  .dim-row .dim-info{flex:1;min-width:0}
+  .dim-row .dim-info .dim-name{font-size:14px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+  .dim-row .dim-info .dim-desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:3px}
+  .dim-row .dim-info .dim-meta{display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap}
+  .dim-row .dim-info .dim-meta .scale-pill{font-size:10.5px;background:#f0ede4;color:var(--ink-2);padding:1.5px 8px;border-radius:9px;font-weight:500}
+  .dim-row .dim-info .dim-meta .assigned-pill{font-size:10.5px;background:#e6f4ec;color:#1c6e3a;padding:1.5px 8px;border-radius:9px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+  .dim-row .dim-info .dim-meta .unassigned-pill{font-size:10.5px;background:#fafaf2;color:var(--ink-4);padding:1.5px 8px;border-radius:9px;font-weight:500;border:1px dashed var(--line)}
+  .dim-row .dim-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .dim-row .dim-actions .used{border-right:1px solid var(--line-soft);padding-right:10px;margin-right:2px;text-align:right;font-size:11px;color:var(--ink-3);min-width:60px}
+  .dim-row .dim-actions .used b{display:block;color:var(--ink-1);font-size:14px;font-weight:600;margin-bottom:1px}
+  .dim-row .dim-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .dim-row .dim-actions button:hover{background:#fafaf2}
+  .dim-row .dim-actions button.assign-btn{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .dim-row .dim-actions button.assign-btn:hover{background:#0d3656}
+  .dim-row .dim-actions button.danger-btn{background:#fff;color:#a13d3d;border-color:#e8c5c5}
+  .dim-row .dim-actions button.danger-btn:hover{background:#fbe6e6}
+
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+
+  /* Taxonomy groups (new entity) */
+  .tx-grp-card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0;display:flex;flex-direction:column;overflow:hidden;margin-bottom:14px;transition:border-color 0.15s}
+  .tx-grp-card:hover{border-color:#c5d8e8}
+  .tx-grp-head{padding:14px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px}
+  .tx-grp-head .grp-avatar{width:48px;height:48px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:600;flex-shrink:0;background:linear-gradient(135deg,#0e4a52,#1d6e75)}
+  .tx-grp-head .grp-avatar.amber{background:linear-gradient(135deg,#5a4400,#8a6300)}
+  .tx-grp-head .grp-avatar.rose{background:linear-gradient(135deg,#7a1a1c,#b04143)}
+  .tx-grp-head .grp-avatar.violet{background:linear-gradient(135deg,#3d2a4d,#5a4080)}
+  .tx-grp-head .grp-avatar.cyan{background:linear-gradient(135deg,#0d4a5a,#1a7088)}
+  .tx-grp-head .grp-info{flex:1;min-width:0}
+  .tx-grp-head .grp-name{font-size:15px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+  .tx-grp-head .grp-desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:2px}
+  .tx-grp-head .grp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .tx-grp-head .grp-actions .count{font-size:11px;color:var(--ink-3);text-align:right}
+  .tx-grp-head .grp-actions .count b{display:block;color:var(--ink-1);font-size:18px;font-weight:600;line-height:1.1}
+  .tx-grp-head .grp-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .tx-grp-head .grp-actions button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .tx-grp-head .grp-actions button.danger{background:#fff;color:#a13d3d;border-color:#e8c5c5}
+  .tx-grp-body{padding:12px 18px;background:#fafaf2}
+  .tx-grp-body .dim-list-mini{display:flex;flex-wrap:wrap;gap:7px}
+  .tx-grp-body .dim-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border:1px solid var(--line);border-radius:14px;font-size:11.5px;color:var(--ink-1);font-weight:500}
+  .tx-grp-body .dim-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tx-grp-body .empty-dims{font-size:11.5px;color:var(--ink-4);font-style:italic}
+
+  .grp-add-dim{margin-top:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .grp-add-dim select{font:inherit;font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-1);max-width:240px}
+  .grp-add-dim button{padding:5px 11px;font-size:11.5px;border-radius:6px;border:1px solid var(--primary-2);background:#eaf2f8;color:var(--primary-2);cursor:pointer;font-weight:500}
+
   @media (max-width: 1180px){
     .et-grid{grid-template-columns:1fr}
   }
@@ -465,7 +528,8 @@
 
     <div class="section-title">Catálogo</div>
     <nav class="nav" id="nav-catalog">
-      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Taxonomías</button>
+      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Dimensiones</button>
+      <button data-view="taxonomy-groups"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Taxonomías</button>
     </nav>
 
     <div class="section-title">Configuración</div>
@@ -669,182 +733,86 @@
       <div id="view-dimensions-content">
       <div class="page">
         <h1>Taxonomías del proyecto</h1>
-        <p class="lead">Las taxonomías asignadas a este proyecto se muestran aquí. Para añadir una nueva, créala primero en el <a href="#" onclick="go('taxonomies');return false" style="color:var(--primary-2);font-weight:500">catálogo global</a>.</p>
+        <p class="lead">Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en <b id="dim-active-project">este proyecto</b>. Cada taxonomía carga sus dimensiones automáticamente. Las taxonomías se gestionan en el <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">catálogo de taxonomías</a>.</p>
 
-        <div class="card">
-          <h3>Taxonomías asignadas <button class="btn primary-mini" style="margin-left:auto;padding:6px 12px;font-size:12.5px;background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500" onclick="openTaxonomyPicker()"><svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Asignar del catálogo</button></h3>
+        <div class="tabs-bar">
+          <div class="tab active" data-tab="all" onclick="switchDimTab('all')">
+            Todas las taxonomías
+            <span class="tab-count" id="dim-count-all">0</span>
+          </div>
+          <div class="tab" data-tab="assigned" onclick="switchDimTab('assigned')">
+            Asignadas a este proyecto
+            <span class="tab-count" id="dim-count-assigned">0</span>
+          </div>
+        </div>
+
+        <!-- TAB: TODAS LAS CREADAS -->
+        <div class="tab-panel active" id="dim-panel-all">
+          <div class="dim-list" id="dim-list-all"></div>
+        </div>
+
+        <!-- TAB: ASIGNADAS A ESTE PROYECTO -->
+        <div class="tab-panel" id="dim-panel-assigned">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#e3eef5;border:1px solid #c5d8e8;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#1d4a72">
             <div style="display:flex;align-items:center;gap:7px">
               <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <span>Las taxonomías son globales. <b>Editarlas aquí no es posible</b>: ve al <a href="#" onclick="go('taxonomies');return false" style="color:#1d4a72;font-weight:600;text-decoration:underline">catálogo</a> para crear, editar o archivar.</span>
+              <span>Estas son las dimensiones que se cargarán al anotar en <b id="dim-active-project-2">este proyecto</b>. Para añadir más, ve a la pestaña <b>Todas las creadas</b>.</span>
             </div>
           </div>
-
-
-          <div class="tax-row">
-            <div class="tax-color tk-stat" style="width:42px;height:42px;font-size:15px">1</div>
-            <div class="meta-col">
-              <b>Sesgo estadístico</b>
-              <small>Evalúa si los datos cuantitativos/cualitativos son correctos, faltan fuentes o hay cifras imprecisas.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>2 / 9</b><small>anotaciones totales</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-estadistico')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-emot" style="width:42px;height:42px;font-size:15px">2</div>
-            <div class="meta-col">
-              <b>Emotividad</b>
-              <small>Detecta si el tono es neutro, valorativo o cargado emocionalmente.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>1 / 9</b><small>anotaciones totales</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-emotividad')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-odio" style="width:42px;height:42px;font-size:15px">3</div>
-            <div class="meta-col">
-              <b>Odio / discurso de odio</b>
-              <small>Detecta insinuaciones o discurso explícito de odio en el contenido.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>2 / 9</b><small>anotaciones totales</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-odio')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-tend" style="width:42px;height:42px;font-size:15px">4</div>
-            <div class="meta-col">
-              <b>Carácter tendencioso</b>
-              <small>¿Imparcial o con sesgo (sutil o claro)?</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-tendencioso')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-semi" style="width:42px;height:42px;font-size:15px">5</div>
-            <div class="meta-col">
-              <b>Semiótica (ironía, metáfora, sarcasmo)</b>
-              <small>Detecta uso de lenguaje figurado, irónico o sarcástico.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-semiotica')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-gen" style="width:42px;height:42px;font-size:15px">6</div>
-            <div class="meta-col">
-              <b>Género</b>
-              <small>¿Tratamiento neutral o con sesgo de género?</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-genero')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-race" style="width:42px;height:42px;font-size:15px">7</div>
-            <div class="meta-col">
-              <b>Raza / etnia</b>
-              <small>Detecta contenido racista o con sesgo étnico.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-raza')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-rel" style="width:42px;height:42px;font-size:15px">8</div>
-            <div class="meta-col">
-              <b>Religión</b>
-              <small>Detecta contenido con sesgo religioso.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">3 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-religion')">Desasignar</button>
-          </div>
-
-          <div class="tax-row" style="margin-top:10px">
-            <div class="tax-color tk-demo" style="width:42px;height:42px;font-size:15px">9</div>
-            <div class="meta-col">
-              <b>Sesgo demográfico</b>
-              <small>Detecta sesgo por edad, origen o clase social.</small>
-              <div style="display:flex;gap:5px;margin-top:5px">
-                <span class="scale-pill">3 niveles</span>
-                <span class="scale-pill">4 valores</span>
-              </div>
-            </div>
-            <div class="used-col"><b>0 / 9</b><small style="color:var(--ink-4)">sin anotar</small></div>
-            <button class="btn-mini danger-mini" onclick="unassignTaxonomy('tx-demografico')">Desasignar</button>
-          </div>
-
-          
-
-          
-
-          
-
-          
-
-          
-
-          
-
-          
-
-          
+          <div class="dim-list" id="dim-list-assigned"></div>
         </div>
 
-        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
           <button class="btn">Restablecer a valores por defecto</button>
           <button class="btn primary" onclick="go('roles')">Guardar y continuar →</button>
         </div>
       </div>
-          </div>
+      </div>
+    </section>
+
+        <!-- TAXONOMY GROUPS (new entity) -->
+    <section class="view" id="view-taxonomy-groups">
+      <div class="page">
+        <h1>Taxonomías</h1>
+        <p class="lead">Agrupa dimensiones en paquetes conceptuales y asígnalas como conjunto a los proyectos. Una dimensión puede vivir en varias taxonomías.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
+          <div class="kpi"><div class="label">Asignaciones a proyectos</div><div class="value" id="tax-grp-count-assignments">5</div><div class="delta">3 proyectos · 1.25 por taxonomía</div></div>
+        </div>
+
+        <div class="tax-toolbar" style="margin-bottom:14px">
+          <input type="search" placeholder="Buscar dimensión..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
+          <select>
+            <option>Todas las escalas</option>
+            <option>Más de 3 dimensiones</option>
+            <option>Menos de 3 dimensiones</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: archivadas</option>
+            <option>Todas</option>
+          </select>
+          <button class="btn primary" style="margin-left:auto" onclick="openNewTaxonomyGroupDialog()">+ Nueva taxonomía</button>
+        </div>
+
+        <div id="tax-grp-list"></div>
+      </div>
     </section>
 
     <!-- TAXONOMY CATALOG (global) -->
     <section class="view" id="view-taxonomies">
       <div class="page">
-        <h1>Catálogo de taxonomías</h1>
-        <p class="lead">Listado global de taxonomías disponibles. Crea una taxonomía una vez y asígnala a los proyectos que la necesiten. Solo el super admin puede crear, editar o archivar.</p>
+        <h1>Dimensiones</h1>
+        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable que se carga en los proyectos al anotar. Agrupa varias dimensiones en una <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">taxonomía</a> para asignarlas como conjunto. Solo el super admin puede crear, editar o archivar.</p>
 
         <div class="grid g-2" style="margin-bottom:18px">
-          <div class="kpi"><div class="label">Taxonomías activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
-          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por taxonomía</div></div>
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
+          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por dimensión</div></div>
         </div>
 
         <div class="tax-toolbar">
-          <input type="search" placeholder="Buscar taxonomía..." />
+          <input type="search" placeholder="Buscar dimensión..." />
           <select>
             <option>Todas las escalas</option>
             <option>2 niveles</option>
@@ -858,7 +826,7 @@
             <option>Estado: todas</option>
             <option>Estado: archivadas</option>
           </select>
-          <button class="btn primary" onclick="openTaxonomyWizard()">+ Nueva taxonomía</button>
+          <button class="btn primary" onclick="openDimensionWizard()">+ Nueva dimensión</button>
         </div>
 
         <div class="tax-grid" id="tax-grid">
@@ -965,7 +933,7 @@
             <div class="tax-card-foot">
               <small>Archivada por <b style="color:var(--ink-2)">Marta R.</b> · hace 1 día</small>
               <div class="actions-mini">
-                <button class="btn-mini" onclick="alert('Taxonomía restaurada.')">Restaurar</button>
+                <button class="btn-mini" onclick="alert('Dimensión restaurada.')">Restaurar</button>
               </div>
             </div>
           </div>
@@ -1745,8 +1713,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     <div id="tax-wizard-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:60;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="wiz-card">
         <div class="wiz-header">
-          <h2>Crear nueva taxonomía</h2>
-          <p>Las taxonomías son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
+          <h2>Crear nueva dimensión</h2>
+          <p>Las las dimensiones son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
         </div>
 
         <div class="wiz-steps">
@@ -1771,20 +1739,20 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         <div class="wiz-body">
           <!-- STEP 1: Nombre -->
           <div class="wiz-step-panel active" data-panel="1">
-            <div class="wiz-row" id="wiz-row-name">
-              <label>Nombre de la taxonomía <span class="req">*</span></label>
-              <input type="text" id="wiz-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
+            <div class="wiz-row" id="wiz-row-dim-name">
+              <label>Nombre de la dimensión <span class="req">*</span></label>
+              <input type="text" id="wiz-dim-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
               <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
               <div class="wiz-err">El nombre es obligatorio.</div>
             </div>
             <div class="wiz-row">
               <label>Slug (identificador interno)</label>
-              <input type="text" id="wiz-slug" placeholder="sesgo-de-odio" />
+              <input type="text" id="wiz-dim-slug" placeholder="sesgo-de-odio" />
               <div class="wiz-hint">Solo letras, números y guiones. Se usa en URLs y en la API.</div>
             </div>
             <div class="wiz-row">
               <label>Descripción breve</label>
-              <textarea id="wiz-short-desc" placeholder="Una línea que aparecerá en el catálogo."></textarea>
+              <textarea id="wiz-dim-short" placeholder="Una línea que aparecerá en el catálogo."></textarea>
               <div class="wiz-hint">Opcional. Hasta 200 caracteres.</div>
             </div>
           </div>
@@ -1793,7 +1761,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <div class="wiz-step-panel" data-panel="2">
             <div class="wiz-row">
               <label>Tipo de escala <span class="req">*</span></label>
-              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la taxonomía y cómo se puntúan.</div>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la dimensión y cómo se puntúan.</div>
               <div class="wiz-scale-grid" id="wiz-scale-grid">
                 <div class="wiz-scale-card" data-scale="boolean" onclick="selectScale('boolean')">
                   <div class="sc-title">Booleano <span class="sc-pill">2 valores</span></div>
@@ -1840,7 +1808,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <!-- STEP 3: Valores -->
           <div class="wiz-step-panel" data-panel="3">
             <div class="wiz-row">
-              <label>Valores de la taxonomía</label>
+              <label>Valores de la dimensión</label>
               <div class="wiz-hint" style="margin-top:0;margin-bottom:10px" id="wiz-values-hint">Define cada valor con su nombre y color. Aparecerán como opciones al anotar.</div>
               <div id="wiz-values-list"></div>
               <button class="btn-mini" id="wiz-add-value" onclick="addWizValue()">+ Añadir valor</button>
@@ -1862,7 +1830,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
             </div>
             <div class="wiz-row">
               <label>Descripción completa</label>
-              <textarea id="wiz-long-desc" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
+              <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
               <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
             </div>
             <div class="wiz-row">
@@ -1891,7 +1859,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <div class="wiz-actions">
             <button class="btn" id="wiz-btn-prev" onclick="wizPrev()" style="display:none">← Atrás</button>
             <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
-            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear taxonomía</button>
+            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear dimensión</button>
           </div>
         </div>
       </div>
@@ -1953,17 +1921,17 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </div>
 
-    <div id="taxonomy-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+    <div id="dimension-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
       <div class="picker-card" style="margin-top:24px;text-align:left">
-        <h2 style="text-align:center">Asignar taxonomías del catálogo</h2>
-        <p class="lead" style="text-align:center">Marca las taxonomías que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
+        <h2 style="text-align:center">Asignar dimensiones</h2>
+        <p class="lead" style="text-align:center">Marca las dimensiones que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
         <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
-          <input type="search" placeholder="Buscar taxonomía..." id="tax-picker-search" />
+          <input type="search" placeholder="Buscar taxonomía..." id="dim-picker-search" />
         </div>
-        <div class="picker-list" id="tax-picker-list"></div>
+        <div class="picker-list" id="dim-picker-list"></div>
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);flex-shrink:0">
-          <button class="btn" onclick="closeTaxonomyPicker()">Cancelar</button>
-          <button class="btn primary" onclick="closeTaxonomyPicker()">Listo</button>
+          <button class="btn" onclick="closeDimensionPicker()">Cancelar</button>
+          <button class="btn primary" onclick="closeDimensionPicker()">Listo</button>
         </div>
       </div>
     </div>
@@ -1979,7 +1947,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
-    paquetes:'Paquetes', taxonomies:'Catálogo de taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
+    paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
@@ -2001,6 +1969,16 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       const content = document.getElementById('view-' + name + '-content');
       if (gate) gate.style.display = 'none';
       if (content) content.style.display = 'block';
+    }
+    // Re-render dinámico de las vistas que lo necesitan
+    if (name === 'dimensions' && activeProject) {
+      renderProjectDimensions();
+    }
+    if (name === 'taxonomy-groups') {
+      renderTaxonomyGroups();
+    }
+    if (name === 'taxonomies') {
+      renderDimensionsCatalog();
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -2060,6 +2038,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       const content = document.getElementById('view-' + viewName + '-content');
       if (gate) gate.style.display = 'none';
       if (content) content.style.display = 'block';
+      // Re-render dinámico si es dimensions
+      if (viewName === 'dimensions') renderProjectDimensions();
     }
   }
 
@@ -2070,48 +2050,104 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   // Estado: array de objetos taxonomía con su asignación por proyecto.
   // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
   // y POST /api/projects/[id]/taxonomies.
-  const TAXONOMIES = [
-    { id:'tx-odio',          name:'Sesgo de odio',                   color:'tk-odio',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3','epdata-2026q2'],  usedInAnnotations: 2, status:'active' },
-    { id:'tx-emotividad',    name:'Emotividad',                       color:'tk-emot',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 1, status:'active' },
-    { id:'tx-tendencioso',   name:'Carácter tendencioso',             color:'tk-tend',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-semiotica',     name:'Semiótica',                        color:'tk-semi',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-genero',        name:'Género',                           color:'tk-gen',   scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-raza',          name:'Raza / etnia',                     color:'tk-race',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-religion',      name:'Religión',                         color:'tk-rel',   scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-demografico',   name:'Sesgo demográfico',                color:'tk-demo',  scale:'3 niveles',  values:4,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-estadistico',   name:'Sesgo estadístico',                color:'tk-stat',  scale:'3 niveles',  values:3,  assignedTo:['epdata-2026q3','epdata-2026q2'],  usedInAnnotations: 2, status:'active' },
-    { id:'tx-toxicidad',     name:'Toxicidad',                        color:'tk-toxic', scale:'Likert 5',   values:5,  assignedTo:['ods-2026'],                         usedInAnnotations: 0, status:'active' },
-    { id:'tx-fact',          name:'Incoherencia factual',            color:'tk-fact',  scale:'2 niveles',  values:2,  assignedTo:['epdata-2026q3'],                  usedInAnnotations: 0, status:'active' },
-    { id:'tx-polaridad',     name:'Polaridad política',               color:'',         scale:'Likert 7',   values:7,  assignedTo:[],                                   usedInAnnotations: 0, status:'archived' },
+  const DIMENSIONS = [
+    { id:'tx-odio',          name:'Sesgo de odio',         color:'tk-odio',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Detecta insinuaciones o discurso explícito de odio en el contenido.' },
+    { id:'tx-emotividad',    name:'Emotividad',            color:'tk-emot',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.' },
+    { id:'tx-tendencioso',   name:'Carácter tendencioso',  color:'tk-tend',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?' },
+    { id:'tx-semiotica',     name:'Semiótica',             color:'tk-semi',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.' },
+    { id:'tx-genero',        name:'Género',                color:'tk-gen',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?' },
+    { id:'tx-raza',          name:'Raza / etnia',          color:'tk-race',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido racista o con sesgo étnico.' },
+    { id:'tx-religion',      name:'Religión',              color:'tk-rel',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido con sesgo religioso.' },
+    { id:'tx-demografico',   name:'Sesgo demográfico',     color:'tk-demo',  scale:'3 niveles', values:4, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta sesgo por edad, origen o clase social.' },
+    { id:'tx-estadistico',   name:'Sesgo estadístico',     color:'tk-stat',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Evalúa si los datos cuantitativos/cualitativos son correctos, faltan fuentes o hay cifras imprecisas.' },
+    { id:'tx-toxicidad',     name:'Toxicidad',             color:'tk-toxic', scale:'Likert 5',  values:5, assignedTo:['ods-2026'],                       usedInAnnotations:0, status:'active', shortDesc:'Mide el nivel de toxicidad general (insultos, vulgaridad, agresividad).' },
+    { id:'tx-fact',          name:'Incoherencia factual',  color:'tk-fact',  scale:'2 niveles', values:2, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Marca respuestas que contradicen datos verificables del propio contexto o del corpus.' },
+    { id:'tx-polaridad',     name:'Polaridad política',    color:'',         scale:'Likert 7',  values:7, assignedTo:[],                                  usedInAnnotations:0, status:'archived', shortDesc:'Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.' },
   ];
+
+  // ─── TAXONOMIES: grupos de dimensiones (N:M) ───
+  // Cada taxonomía referencia dimensiones por su id. Una dimensión puede
+  // vivir en varias taxonomías (e.g. Emotividad → "Aspectos formales" + "Tono emocional").
+  const TAXONOMIES = [
+    {
+      id:'tx-sociodemo',
+      name:'Sesgos sociodemográficos',
+      shortDesc:'Sesgos contra grupos protegidos: odio, género, raza, religión, demografía.',
+      color:'rose',
+      dimensions:['tx-odio','tx-genero','tx-raza','tx-religion','tx-demografico'],
+      assignedTo:['epdata-2026q3','epdata-2026q2'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-10'
+    },
+    {
+      id:'tx-calidad',
+      name:'Calidad periodística',
+      shortDesc:'Rigor factual, datos, fuentes, verificación. Métricas formales de calidad.',
+      color:'amber',
+      dimensions:['tx-estadistico','tx-fact'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-12'
+    },
+    {
+      id:'tx-formal',
+      name:'Aspectos formales del discurso',
+      shortDesc:'Estilo, retórica, carga emocional, figuras literarias. Cómo se dice, no qué se dice.',
+      color:'cyan',
+      dimensions:['tx-tendencioso','tx-semiotica','tx-emotividad'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-15'
+    },
+    {
+      id:'tx-toxic',
+      name:'Toxicidad y discurso dañino',
+      shortDesc:'Insultos, vulgaridad, agresividad. No incluye odio estructural (eso va en sociodemo).',
+      color:'violet',
+      dimensions:['tx-toxicidad'],
+      assignedTo:['ods-2026'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-08-01'
+    },
+  ];
+
+  // Index auxiliar para resolver ids de dimensión → objeto
+  function dimById(id) { return DIMENSIONS.find(d => d.id === id); }
+  function dimName(id) { const d = dimById(id); return d ? d.name : '?'; }
+  function dimColor(id) { const d = dimById(id); return d ? (d.color || 'tk-stat') : 'tk-stat'; }
+
 
   function isAssignedToActiveProject(tax) {
     if (!activeProject) return false;
     return tax.assignedTo.includes(activeProject.id);
   }
 
-  function openTaxonomyPicker() {
+  function openDimensionPicker() {
     if (!activeProject) {
       alert('Selecciona primero un proyecto activo en el switcher del top bar.');
       return;
     }
-    document.getElementById('taxonomy-picker-overlay').style.display = 'block';
-    renderTaxonomyPicker();
+    document.getElementById('dimension-picker-overlay').style.display = 'block';
+    renderDimensionPicker();
     setTimeout(() => {
-      const search = document.getElementById('tax-picker-search');
+      const search = document.getElementById('dim-picker-search');
       if (search) search.focus();
     }, 100);
   }
 
-  function closeTaxonomyPicker() {
-    document.getElementById('taxonomy-picker-overlay').style.display = 'none';
+  function closeDimensionPicker() {
+    document.getElementById('dimension-picker-overlay').style.display = 'none';
   }
 
-  function renderTaxonomyPicker() {
-    const list = document.getElementById('tax-picker-list');
+  function renderDimensionPicker() {
+    const list = document.getElementById('dim-picker-list');
     if (!list) return;
     list.innerHTML = '';
-    const available = TAXONOMIES.filter(t => t.status === 'active');
+    const available = DIMENSIONS.filter(t => t.status === 'active');
     available.forEach(tax => {
       const isAssigned = isAssignedToActiveProject(tax);
       const row = document.createElement('div');
@@ -2131,23 +2167,23 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function assignTaxonomy(taxId) {
-    const tax = TAXONOMIES.find(t => t.id === taxId);
+    const tax = DIMENSIONS.find(t => t.id === taxId);
     if (!tax || !activeProject) return;
     if (!tax.assignedTo.includes(activeProject.id)) {
       tax.assignedTo.push(activeProject.id);
       // In a real app: POST /api/projects/[id]/taxonomies
     }
-    renderTaxonomyPicker();
-    renderProjectTaxonomies();
+    renderDimensionPicker();
+    renderProjectDimensions();
   }
 
   function unassignTaxonomy(taxId) {
     if (!activeProject) return;
-    const tax = TAXONOMIES.find(t => t.id === taxId);
+    const tax = DIMENSIONS.find(t => t.id === taxId);
     if (!tax) return;
     tax.assignedTo = tax.assignedTo.filter(id => id !== activeProject.id);
     // In a real app: DELETE /api/projects/[id]/taxonomies/[taxId]
-    renderProjectTaxonomies();
+    renderProjectDimensions();
   }
 
   // ─── Taxonomy creation wizard (4 pasos) ───
@@ -2332,6 +2368,136 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     if (count) count.addEventListener('input', updateCustomScalePreview);
   }, 50);
 
+  // ─── Taxonomy groups: render + gestión ───
+  function renderTaxonomyGroups() {
+    const container = document.getElementById('tax-grp-list');
+    if (!container) return;
+    const search = (document.getElementById('tax-grp-search')?.value || '').toLowerCase().trim();
+    const list = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES : [];
+    const filtered = search ? list.filter(t => t.name.toLowerCase().includes(search) || t.shortDesc.toLowerCase().includes(search)) : list;
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera con el botón superior derecho.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(tax => {
+      const dims = (tax.dimensions || []).map(did => {
+        const d = dimById(did);
+        if (!d) return '';
+        return `<span class="dim-pill"><span class="dot" style="background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+      }).join('');
+      const dimCount = (tax.dimensions || []).length;
+      const projCount = (tax.assignedTo || []).length;
+      return `
+        <div class="tx-grp-card" data-tx-grp-id="${tax.id}">
+          <div class="tx-grp-head">
+            <div class="grp-avatar ${tax.color || 'cyan'}">${(tax.name||'?').charAt(0).toUpperCase()}</div>
+            <div class="grp-info">
+              <div class="grp-name">${escapeHtml(tax.name)}</div>
+              <div class="grp-desc">${escapeHtml(tax.shortDesc || '')}</div>
+            </div>
+            <div class="grp-actions">
+              <div class="count"><b>${dimCount}</b>dimensiones</div>
+              <div class="count"><b>${projCount}</b>${projCount === 1 ? 'proyecto' : 'proyectos'}</div>
+              <button onclick="archiveTaxonomyGroup('${tax.id}')">Archivar</button>
+              <button class="primary" onclick="openAssignDialog('${tax.id}')">Asignar a proyecto</button>
+            </div>
+          </div>
+          <div class="tx-grp-body">
+            ${dims || '<div class="empty-dims">Sin dimensiones todavía. Añade alguna abajo.</div>'}
+            <div class="grp-add-dim">
+              <select id="add-dim-${tax.id}">
+                <option value="">+ Añadir dimensión existente…</option>
+                ${DIMENSIONS.filter(d => !(tax.dimensions || []).includes(d.id)).map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('')}
+              </select>
+              <button onclick="addDimToGroup('${tax.id}')">Añadir</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // KPIs
+    const activeCount = list.filter(t => t.status === 'active').length;
+    const totalAssignments = list.reduce((s, t) => s + (t.assignedTo || []).length, 0);
+    const projects = new Set();
+    list.forEach(t => (t.assignedTo || []).forEach(p => projects.add(p)));
+    const a1 = document.getElementById('tax-grp-count-active');
+    const a2 = document.getElementById('tax-grp-count-assignments');
+    if (a1) a1.textContent = activeCount;
+    if (a2) a2.textContent = totalAssignments;
+  }
+
+  function colorForTax(tk) {
+    // Mapear tk-* a un color hex para los dots
+    const map = {
+      'tk-odio':'#d97757','tk-emot':'#a85a35','tk-tend':'#7d6c4f','tk-semi':'#3d8268',
+      'tk-gen':'#5b8fb8','tk-race':'#8b6db5','tk-rel':'#c79d3c','tk-demo':'#9c5b8b',
+      'tk-stat':'#5a7d8f','tk-toxic':'#7a1a1c','tk-fact':'#1c6e3a'
+    };
+    return map[tk] || '#7d6c4f';
+  }
+
+  function addDimToGroup(taxId) {
+    const sel = document.getElementById('add-dim-' + taxId);
+    const dimId = sel?.value;
+    if (!dimId) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.dimensions) tax.dimensions = [];
+    if (tax.dimensions.includes(dimId)) return;
+    tax.dimensions.push(dimId);
+    renderTaxonomyGroups();
+    showToast(`"${dimName(dimId)}" añadida a "${tax.name}".`, 2500);
+  }
+
+  function archiveTaxonomyGroup(taxId) {
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!confirm(`¿Archivar la taxonomía "${tax.name}"? Se ocultará del catálogo y no podrá asignarse a nuevos proyectos, pero las anotaciones existentes se conservan.`)) return;
+    tax.status = 'archived';
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" archivada.`, 2500);
+  }
+
+  function openAssignDialog(taxId) {
+    // Simplificado: prompt para elegir proyecto
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    const choice = prompt(`Asignar "${tax.name}" a qué proyecto?
+Proyectos disponibles:
+- epdata-2026q3 (EpData 2026-Q3)
+- epdata-2026q2 (EpData 2026-Q2)
+- epdata-sint (EpData Sintético v1)
+- ods-2026 (ODS 2026)
+
+Escribe el id del proyecto (o deja vacío para cancelar):`);
+    if (!choice) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (tax.assignedTo.includes(choice)) {
+      showToast(`Ya estaba asignada.`, 2000);
+      return;
+    }
+    tax.assignedTo.push(choice);
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" asignada a ${choice}.`, 2500);
+  }
+
+  function openNewTaxonomyGroupDialog() {
+    const name = prompt('Nombre de la nueva taxonomía (grupo):');
+    if (!name) return;
+    const desc = prompt('Descripción breve:') || '';
+    const color = prompt('Color (rose / amber / cyan / violet):', 'cyan') || 'cyan';
+    const id = 'tx-' + name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+    TAXONOMIES.push({
+      id, name, shortDesc: desc, color, dimensions: [], assignedTo: [],
+      status: 'active', createdBy: 'Marta R. (superadmin)', createdAt: new Date().toISOString().slice(0,10)
+    });
+    renderTaxonomyGroups();
+    showToast(`Taxonomía "${name}" creada. Añade dimensiones desde su tarjeta.`, 3500);
+  }
+
   let wizState = {
     step: 1,
     scale: null,
@@ -2343,21 +2509,21 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     visible: true
   };
 
-  function openTaxonomyWizard() {
+  function openDimensionWizard() {
     // reset
     wizState = { step: 1, scale: null, values: [], name: '', slug: '', shortDesc: '', longDesc: '', visible: true };
-    document.getElementById('wiz-name').value = '';
-    document.getElementById('wiz-slug').value = '';
-    document.getElementById('wiz-short-desc').value = '';
-    document.getElementById('wiz-long-desc').value = '';
+    document.getElementById('wiz-dim-name').value = '';
+    document.getElementById('wiz-dim-slug').value = '';
+    document.getElementById('wiz-dim-short').value = '';
+    document.getElementById('wiz-dim-long').value = '';
     document.querySelectorAll('.wiz-scale-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('wiz-values-list').innerHTML = '';
-    document.getElementById('wiz-row-name').classList.remove('has-error');
+    document.getElementById('wiz-row-dim-name').classList.remove('has-error');
     document.getElementById('wiz-values-err').style.display = 'none';
     updateWizUI();
     renderPaletteSuggest();
     document.getElementById('tax-wizard-overlay').style.display = 'block';
-    setTimeout(() => document.getElementById('wiz-name').focus(), 100);
+    setTimeout(() => document.getElementById('wiz-dim-name').focus(), 100);
   }
 
   function closeTaxonomyWizard() {
@@ -2365,12 +2531,12 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function autoSlug() {
-    const name = document.getElementById('wiz-name').value || '';
+    const name = document.getElementById('wiz-dim-name').value || '';
     const slug = name.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    document.getElementById('wiz-slug').value = slug;
+    document.getElementById('wiz-dim-slug').value = slug;
   }
 
   function selectScale(scale) {
@@ -2442,7 +2608,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   function fillWizTemplate(key) {
-    document.getElementById('wiz-long-desc').value = WIZ_TEMPLATES[key] || '';
+    document.getElementById('wiz-dim-long').value = WIZ_TEMPLATES[key] || '';
   }
 
   function wizNext() {
@@ -2465,16 +2631,16 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   function validateWizStep(step) {
     if (step === 1) {
-      const name = document.getElementById('wiz-name').value.trim();
+      const name = document.getElementById('wiz-dim-name').value.trim();
       if (!name) {
-        document.getElementById('wiz-row-name').classList.add('has-error');
-        document.getElementById('wiz-name').focus();
+        document.getElementById('wiz-row-dim-name').classList.add('has-error');
+        document.getElementById('wiz-dim-name').focus();
         return false;
       }
-      document.getElementById('wiz-row-name').classList.remove('has-error');
+      document.getElementById('wiz-row-dim-name').classList.remove('has-error');
       wizState.name = name;
-      wizState.slug = document.getElementById('wiz-slug').value.trim() || autoSlugFromName(name);
-      wizState.shortDesc = document.getElementById('wiz-short-desc').value.trim();
+      wizState.slug = document.getElementById('wiz-dim-slug').value.trim() || autoSlugFromName(name);
+      wizState.shortDesc = document.getElementById('wiz-dim-short').value.trim();
       return true;
     }
     if (step === 2) {
@@ -2537,7 +2703,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 
   function wizCreate() {
     // Sync final values
-    wizState.longDesc = document.getElementById('wiz-long-desc').value.trim();
+    wizState.longDesc = document.getElementById('wiz-dim-long').value.trim();
     wizState.visible = document.getElementById('wiz-visible').checked;
 
     // Build new taxonomy object
@@ -2551,9 +2717,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       createdAt: new Date().toISOString().slice(0,10),
       createdBy: 'Marta R. (superadmin)'
     };
-    TAXONOMIES.unshift(newTax);
+    DIMENSIONS.unshift(newTax);
     closeTaxonomyWizard();
-    renderTaxCatalog();
+    renderDimensionsCatalog();
     showToast(`Taxonomía "${wizState.name}" creada. Asignar a proyectos →`, 4500);
   }
 
@@ -2569,7 +2735,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     setTimeout(() => t.remove(), ms);
   }
 
-  function renderTaxCatalog() {
+  function renderDimensionsCatalog() {
     // En el mockup, recargamos la vista. En la app real, sería re-render del grid.
     const card = document.querySelector('#view-taxonomies .card');
     if (!card) return;
@@ -2577,9 +2743,225 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     go('taxonomies');
   }
 
-  function renderProjectTaxonomies() {
-    // Re-render the tax rows in the project view based on active project
-    // (mockup keeps static HTML for now; this would rebuild rows in production)
+  // ─── Dimensiones view: tabs + render dinámico desde TAXONOMIES ───
+  let currentDimTab = 'all';
+
+  function switchDimTab(tab) {
+    currentDimTab = tab;
+    document.querySelectorAll('.tabs-bar .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.remove('active');
+    });
+    const panel = document.getElementById('dim-panel-' + tab);
+    if (panel) panel.classList.add('active');
+  }
+
+  function isAssignedToActive(tx) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    return ap && tx.assignedTo && tx.assignedTo.includes(ap);
+  }
+
+  function renderDimRow(tx, mode) {
+    // mode: 'all' (con botón asignar/desasignar) | 'assigned' (solo desasignar)
+    const assigned = isAssignedToActive(tx);
+    const colorClass = tx.color || 'tk-stat';
+    const used = tx.usedInAnnotations || 0;
+    const projectsCount = (tx.assignedTo || []).length;
+    const status = tx.status || 'active';
+
+    // Meta pills
+    let meta = '';
+    if (tx.scale) meta += `<span class="scale-pill">${escapeHtml(tx.scale)}</span>`;
+    if (tx.values != null) meta += `<span class="scale-pill">${tx.values} valores</span>`;
+
+    // Actions según modo
+    let actions = '';
+    if (mode === 'all') {
+      actions = `
+        <div class="used"><b>${used}</b><small>anotaciones</small></div>
+        ${assigned
+          ? `<button class="danger-btn" onclick="unassignTaxonomy('${tx.id}')">Desasignar</button>`
+          : `<button class="assign-btn" onclick="assignTaxonomy('${tx.id}')">Asignar</button>`
+        }
+      `;
+    } else {
+      actions = `
+        <div class="used"><b>${used}</b><small>anotaciones</small></div>
+        <button class="danger-btn" onclick="unassignTaxonomy('${tx.id}')">Desasignar</button>
+      `;
+    }
+
+    // Status indicator (top-right of meta-col)
+    let statusBadge = '';
+    if (status === 'archived') statusBadge = `<span class="scale-pill" style="background:#e8e4d8;color:#7d6c4f">archivada</span>`;
+    if (status === 'draft') statusBadge = `<span class="scale-pill" style="background:#fdf6e3;color:#7d6c4f">borrador</span>`;
+
+    // Assignment indicator pill
+    let assignmentPill = '';
+    if (assigned) {
+      assignmentPill = `<span class="assigned-pill"><svg style="width:9px;height:9px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Asignada</span>`;
+    } else if (mode === 'all') {
+      assignmentPill = `<span class="unassigned-pill">No asignada</span>`;
+    }
+
+    return `
+      <div class="dim-row" data-tx-id="${tx.id}">
+        <div class="dim-color ${colorClass}">${escapeHtml((tx.name||'?').charAt(0).toUpperCase())}</div>
+        <div class="dim-info">
+          <div class="dim-name">
+            ${escapeHtml(tx.name || 'Sin nombre')}
+            ${statusBadge}
+          </div>
+          <div class="dim-desc">${tx.shortDesc || tx.longDesc ? escapeHtml(tx.shortDesc || tx.longDesc) : '<span style="color:var(--ink-4);font-style:italic">Sin descripción</span>'}</div>
+          <div class="dim-meta">
+            ${meta}
+            ${assignmentPill}
+            <span class="scale-pill">${projectsCount} ${projectsCount === 1 ? 'proyecto' : 'proyectos'}</span>
+          </div>
+        </div>
+        <div class="dim-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  // Render principal: usa TAXONOMIES (grupos), no DIMENSIONS (átomos)
+  function renderProjectDimensions() {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    const apName = ap ? (ap.startsWith('epdata-2026q3') ? 'EpData 2026-Q3' : ap) : 'este proyecto';
+    const el1 = document.getElementById('dim-active-project');
+    const el2 = document.getElementById('dim-active-project-2');
+    if (el1) el1.textContent = apName;
+    if (el2) el2.textContent = apName;
+
+    // Las taxonomías (grupos) son lo que se asigna al proyecto
+    const allTaxonomies = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
+    const assignedTaxonomies = allTaxonomies.filter(t => t.assignedTo && t.assignedTo.includes(ap));
+
+    // Update counts
+    const cAll = document.getElementById('dim-count-all');
+    const cAss = document.getElementById('dim-count-assigned');
+    if (cAll) cAll.textContent = allTaxonomies.length;
+    if (cAss) cAss.textContent = assignedTaxonomies.length;
+
+    // Render listas
+    const listAll = document.getElementById('dim-list-all');
+    const listAss = document.getElementById('dim-list-assigned');
+    if (listAll) {
+      if (allTaxonomies.length === 0) {
+        listAll.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera en el <a href="#" onclick="go(\'taxonomy-groups\');return false">catálogo de taxonomías</a>.</div>';
+      } else {
+        listAll.innerHTML = allTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'all')).join('');
+      }
+    }
+    if (listAss) {
+      if (assignedTaxonomies.length === 0) {
+        listAss.innerHTML = '<div class="empty-state"><h4>Ninguna taxonomía asignada aún</h4>Ve a la pestaña <b>Todas las taxonomías</b> y marca las que quieras usar en este proyecto.</div>';
+      } else {
+        listAss.innerHTML = assignedTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'assigned')).join('');
+      }
+    }
+  }
+
+  // Render de una fila de taxonomía-grupo en view-dimensions
+  function renderTaxonomyGroupRow(tx, mode) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    const assigned = ap && tx.assignedTo && tx.assignedTo.includes(ap);
+    const dimCount = (tx.dimensions || []).length;
+    // Resolver nombres de las dimensiones
+    const dimChips = (tx.dimensions || []).map(did => {
+      const d = (typeof DIMENSIONS !== 'undefined') ? DIMENSIONS.find(x => x.id === did) : null;
+      if (!d) return '';
+      return `<span class="dim-pill" style="padding:3px 9px;font-size:11px;background:#fff;border:1px solid var(--line);border-radius:13px"><span class="dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+    }).join('');
+
+    const projCount = (tx.assignedTo || []).length;
+
+    let actions = '';
+    if (mode === 'all') {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        ${assigned
+          ? `<button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>`
+          : `<button class="assign-btn" onclick="assignTaxonomyGroup('${tx.id}')">Asignar</button>`
+        }
+      `;
+    } else {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        <button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>
+      `;
+    }
+
+    let assignmentPill = '';
+    if (assigned) {
+      assignmentPill = `<span class="assigned-pill"><svg style="width:9px;height:9px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Asignada</span>`;
+    } else if (mode === 'all') {
+      assignmentPill = `<span class="unassigned-pill">No asignada</span>`;
+    }
+
+    return `
+      <div class="dim-row" data-tx-grp-id="${tx.id}">
+        <div class="dim-color ${tx.color || 'cyan'}">${(tx.name||'?').charAt(0).toUpperCase()}</div>
+        <div class="dim-info">
+          <div class="dim-name">${escapeHtml(tx.name || 'Sin nombre')}</div>
+          <div class="dim-desc">${escapeHtml(tx.shortDesc || '')}</div>
+          <div class="dim-meta">
+            ${dimChips}
+            ${assignmentPill}
+            <span class="scale-pill">${projCount} ${projCount === 1 ? 'proyecto' : 'proyectos'}</span>
+          </div>
+        </div>
+        <div class="dim-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  function assignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) { alert('Selecciona un proyecto primero.'); return; }
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (!tax.assignedTo.includes(ap)) tax.assignedTo.push(ap);
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" asignada al proyecto. Carga ${(tax.dimensions||[]).length} dimensiones.`, 3000);
+  }
+
+  function unassignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (tax.assignedTo) {
+      tax.assignedTo = tax.assignedTo.filter(p => p !== ap);
+    }
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" desasignada.`, 2500);
+  }
+
+  function assignTaxonomy(txId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) { alert('Selecciona un proyecto primero.'); return; }
+    const tx = DIMENSIONS.find(t => t.id === txId);
+    if (!tx) return;
+    if (!tx.assignedTo) tx.assignedTo = [];
+    if (!tx.assignedTo.includes(ap)) tx.assignedTo.push(ap);
+    renderProjectDimensions();
+    showToast(`"${tx.name}" asignada al proyecto.`, 2500);
+  }
+
+  function unassignTaxonomy(txId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) return;
+    const tx = DIMENSIONS.find(t => t.id === txId);
+    if (!tx) return;
+    if (tx.assignedTo) {
+      tx.assignedTo = tx.assignedTo.filter(p => p !== ap);
+    }
+    renderProjectDimensions();
+    showToast(`"${tx.name}" desasignada del proyecto.`, 2500);
   }
 
   // ─── Segmentation: live preview (H3) ───
