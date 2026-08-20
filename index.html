@@ -777,12 +777,12 @@
         <p class="lead">Agrupa dimensiones en paquetes conceptuales y asígnalas como conjunto a los proyectos. Una dimensión puede vivir en varias taxonomías.</p>
 
         <div class="grid g-2" style="margin-bottom:18px">
-          <div class="kpi"><div class="label">Taxonomías activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
           <div class="kpi"><div class="label">Asignaciones a proyectos</div><div class="value" id="tax-grp-count-assignments">5</div><div class="delta">3 proyectos · 1.25 por taxonomía</div></div>
         </div>
 
         <div class="tax-toolbar" style="margin-bottom:14px">
-          <input type="search" placeholder="Buscar taxonomía..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
+          <input type="search" placeholder="Buscar dimensión..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
           <select>
             <option>Todas las escalas</option>
             <option>Más de 3 dimensiones</option>
@@ -804,15 +804,15 @@
     <section class="view" id="view-taxonomies">
       <div class="page">
         <h1>Dimensiones</h1>
-        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable. Agrúpala en una taxonomía y asígnala a los proyectos. Solo el super admin puede crear, editar o archivar.</p>
+        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable que se carga en los proyectos al anotar. Agrupa varias dimensiones en una <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">taxonomía</a> para asignarlas como conjunto. Solo el super admin puede crear, editar o archivar.</p>
 
         <div class="grid g-2" style="margin-bottom:18px">
-          <div class="kpi"><div class="label">Taxonomías activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
-          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por taxonomía</div></div>
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
+          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por dimensión</div></div>
         </div>
 
         <div class="tax-toolbar">
-          <input type="search" placeholder="Buscar taxonomía..." />
+          <input type="search" placeholder="Buscar dimensión..." />
           <select>
             <option>Todas las escalas</option>
             <option>2 niveles</option>
@@ -933,7 +933,7 @@
             <div class="tax-card-foot">
               <small>Archivada por <b style="color:var(--ink-2)">Marta R.</b> · hace 1 día</small>
               <div class="actions-mini">
-                <button class="btn-mini" onclick="alert('Taxonomía restaurada.')">Restaurar</button>
+                <button class="btn-mini" onclick="alert('Dimensión restaurada.')">Restaurar</button>
               </div>
             </div>
           </div>
