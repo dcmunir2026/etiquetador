@@ -1740,7 +1740,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <!-- STEP 1: Nombre -->
           <div class="wiz-step-panel active" data-panel="1">
             <div class="wiz-row" id="wiz-row-dim-name">
-              <label>Nombre de la taxonomía <span class="req">*</span></label>
+              <label>Nombre de la dimensión <span class="req">*</span></label>
               <input type="text" id="wiz-dim-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
               <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
               <div class="wiz-err">El nombre es obligatorio.</div>
@@ -1761,7 +1761,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <div class="wiz-step-panel" data-panel="2">
             <div class="wiz-row">
               <label>Tipo de escala <span class="req">*</span></label>
-              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la taxonomía y cómo se puntúan.</div>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la dimensión y cómo se puntúan.</div>
               <div class="wiz-scale-grid" id="wiz-scale-grid">
                 <div class="wiz-scale-card" data-scale="boolean" onclick="selectScale('boolean')">
                   <div class="sc-title">Booleano <span class="sc-pill">2 valores</span></div>
@@ -1808,7 +1808,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <!-- STEP 3: Valores -->
           <div class="wiz-step-panel" data-panel="3">
             <div class="wiz-row">
-              <label>Valores de la taxonomía</label>
+              <label>Valores de la dimensión</label>
               <div class="wiz-hint" style="margin-top:0;margin-bottom:10px" id="wiz-values-hint">Define cada valor con su nombre y color. Aparecerán como opciones al anotar.</div>
               <div id="wiz-values-list"></div>
               <button class="btn-mini" id="wiz-add-value" onclick="addWizValue()">+ Añadir valor</button>
@@ -1859,7 +1859,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           <div class="wiz-actions">
             <button class="btn" id="wiz-btn-prev" onclick="wizPrev()" style="display:none">← Atrás</button>
             <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
-            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear taxonomía</button>
+            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear dimensión</button>
           </div>
         </div>
       </div>
