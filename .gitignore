@@ -56,3 +56,8 @@ test-results/
 # Coverage
 .nyc_output/
 coverage/
+
+# Local dev DB
+packages/db/etiquetador.db
+packages/db/etiquetador.db-shm
+packages/db/etiquetador.db-wal

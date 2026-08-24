@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787576694632,
+      "tag": "0000_burly_silver_fox",
+      "breakpoints": true
+    }
+  ]
+}
