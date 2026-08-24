@@ -20,9 +20,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@etiquetador/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@etiquetador/shared':
         specifier: workspace:*
         version: link:../../packages/shared
