@@ -1,7 +1,7 @@
 import { getDb } from '@/lib/db';
 import { projects, projectMembers, users } from '@/lib/db';
 import { eq, desc, count, sql } from 'drizzle-orm';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 

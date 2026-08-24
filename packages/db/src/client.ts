@@ -45,13 +45,14 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   sqlite.pragma('foreign_keys = ON');
 
   _db = drizzle(sqlite, { schema });
-  return _db;
+  return _db!;
 }
 
 export function closeDb(): void {
   if (_db) {
-    const nodeRequire = createRequire(import.meta.url);
-    const db = (_db as { _: { driver: { connection: { close?: () => void } } } })._?.driver?.connection;
+    // Cast through `unknown` to reach the better-sqlite3 native close().
+    // Drizzle's BetterSQLite3Database does not expose a public close().
+    const db = (_db as unknown as { _: { driver: { connection: { close?: () => void } } } })._?.driver?.connection;
     if (db && typeof db.close === 'function') db.close();
     _db = null;
   }

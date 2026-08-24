@@ -1,18 +1,22 @@
 import { getDb } from './src/client';
 import { users, projects, intensityScales, intensityLevels, dimensions, dimensionValues, taxonomies, taxonomyDimensions, projectTaxonomies, projectMembers } from './src/index';
+import bcrypt from 'bcryptjs';
 
 const db = getDb();
 
 console.log('Seeding...');
 
-// 1. Superadmin user
+// 1. Superadmin user — Marta comes with a known default password so the
+// prototype is usable end-to-end right after a fresh seed.
+const passwordHash = await bcrypt.hash('marta1234', 10);
 const [marta] = db.insert(users).values({
   email: 'marta@etiquetador.local',
   name: 'Marta R.',
   avatarColor: 'linear-gradient(135deg,#0e4a52,#1d6e75)',
   isSuperAdmin: true,
+  passwordHash,
 }).returning().all();
-console.log('  user:', marta.email);
+console.log('  user:', marta.email, '(password: marta1234)');
 
 // 2. Intensity scales (global)
 const scales = [

@@ -69,6 +69,7 @@ export const users = sqliteTable(
     name: text('name'),
     avatarColor: text('avatar_color'),
     isSuperAdmin: integer('is_super_admin', { mode: 'boolean' }).notNull().default(false),
+    passwordHash: text('password_hash'),
     emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
