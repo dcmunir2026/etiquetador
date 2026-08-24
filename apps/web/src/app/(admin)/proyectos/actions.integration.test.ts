@@ -13,9 +13,9 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
-// We mock @/lib/auth.getCurrentUser to control who the "current user" is.
+// We mock @/lib/session.getCurrentUser to control who the "current user" is.
 const getCurrentUser = vi.fn();
-vi.mock('@/lib/auth', () => ({ getCurrentUser }));
+vi.mock('@/lib/session', () => ({ getCurrentUser }));
 
 // We also mock @/db/client.getDb with a fresh in-memory better-sqlite3
 // and a Drizzle wrapper. Skipped for now.

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { and, eq, ne } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { projects, auditLog, projectMembers } from '@/db/schema';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { generateProjectSlug, isSlugTaken } from '@/lib/projects';
 
 /**
