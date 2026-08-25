@@ -72,6 +72,7 @@ export default async function DimensionsCatalogPage() {
     name: r.d.name,
     slug: r.d.slug,
     kind: r.d.kind as DimensionKind,
+    scaleId: r.d.scaleId,
     status: r.d.status === 'archived' ? 'archived' : 'active',
     shortDescription: r.d.shortDescription,
     creatorName: r.creator?.name ?? null,
@@ -108,7 +109,7 @@ export default async function DimensionsCatalogPage() {
         </div>
       </div>
 
-      <DimensionsCatalog cards={cards} scales={scales} />
+      <DimensionsCatalog cards={cards} initialScales={scales} />
     </main>
   );
 }

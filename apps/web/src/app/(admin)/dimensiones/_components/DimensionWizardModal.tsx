@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import DimensionForm, { type DimensionInitial } from './DimensionForm';
 import type { Scale } from './types';
@@ -12,13 +12,17 @@ export type ModalTarget =
 
 export default function DimensionWizardModal({
   target,
-  scales,
+  scales: initialScales,
   onClose,
 }: {
   target: ModalTarget;
   scales: Scale[];
   onClose: () => void;
 }) {
+  // Local scales state so a newly-created custom scale appears in the
+  // wizard's scale selector without a full page refresh.
+  const [scales, setScales] = useState<Scale[]>(initialScales);
+
   // Lock body scroll while the modal is open.
   useEffect(() => {
     if (!target) return;
@@ -80,6 +84,7 @@ export default function DimensionWizardModal({
             isSuperAdmin
             initial={target.mode === 'edit' ? target.initial : undefined}
             onDone={onClose}
+            onNewScale={(s) => setScales((prev) => [...prev, s])}
             compact
           />
         </div>

@@ -804,4 +804,33 @@ a:hover { text-decoration: underline; }
   }
 }
 
+/* ─── Create-scale modal (stacked on dimension wizard) ───────────── */
+.modal-card.scale-card {
+  max-width: 520px;
+}
+.scale-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scale-level-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scale-level-idx {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
 

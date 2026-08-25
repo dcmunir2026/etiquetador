@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createDimension, updateDimension, archiveDimension } from '../actions/actions';
 import { DIMENSION_KINDS, DIMENSION_KIND_LABELS, type DimensionKind } from '@/lib/dimension-kinds';
 import type { Scale } from './types';
+import CreateScaleModal from './CreateScaleModal';
 
 const TK_COLORS: Array<{ id: string; label: string; hex: string }> = [
   { id: 'tk-odio', label: 'Odio', hex: '#d97757' },
@@ -43,12 +44,14 @@ export default function DimensionForm({
   scales,
   isSuperAdmin,
   onDone,
+  onNewScale,
   compact = false,
 }: {
   initial?: DimensionInitial;
   scales: Scale[];
   isSuperAdmin: boolean;
   onDone?: () => void;
+  onNewScale?: (scale: Scale) => void;
   compact?: boolean;
 }) {
   const router = useRouter();
@@ -60,6 +63,7 @@ export default function DimensionForm({
   const [shortDesc, setShortDesc] = useState(initial?.shortDescription ?? '');
   const [kind, setKind] = useState<DimensionKind>(initial?.kind ?? 'category');
   const [scaleId, setScaleId] = useState(initial?.scaleId ?? scales[0]?.id ?? '');
+  const [showCreateScale, setShowCreateScale] = useState(false);
   const [color, setColor] = useState(TK_COLORS[0]!.id);
   const [longDesc, setLongDesc] = useState(initial?.longDescription ?? '');
 
@@ -254,18 +258,30 @@ export default function DimensionForm({
               required
               help="Define los valores que tendrán los anotadores para elegir. Los valores se copiarán al crear la dimensión."
             >
-              <select
-                value={scaleId}
-                onChange={(e) => setScaleId(e.target.value)}
-                style={inputStyle}
-                required
-              >
-                {scales.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.levels.length} {s.levels.length === 1 ? 'nivel' : 'niveles'})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                <select
+                  value={scaleId}
+                  onChange={(e) => setScaleId(e.target.value)}
+                  style={{ ...inputStyle, flex: 1 }}
+                  required
+                >
+                  {scales.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.levels.length} {s.levels.length === 1 ? 'nivel' : 'niveles'})
+                    </option>
+                  ))}
+                </select>
+                {isSuperAdmin ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setShowCreateScale(true)}
+                    style={{ flexShrink: 0 }}
+                  >
+                    + Nueva escala
+                  </button>
+                ) : null}
+              </div>
             </Field>
             {selectedScale && selectedScale.levels.length > 0 ? (
               <div className="wizard-preview" aria-live="polite">
@@ -417,6 +433,16 @@ export default function DimensionForm({
           </button>
         ) : null}
       </div>
+
+      <CreateScaleModal
+        open={showCreateScale}
+        onClose={() => setShowCreateScale(false)}
+        onCreated={(s) => {
+          onNewScale?.(s);
+          setScaleId(s.id);
+          setShowCreateScale(false);
+        }}
+      />
     </div>
   );
 }

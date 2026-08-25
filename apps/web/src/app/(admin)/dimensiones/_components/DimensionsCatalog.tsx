@@ -28,14 +28,15 @@ function pickColor(slug: string): string {
 
 export default function DimensionsCatalog({
   cards,
-  scales,
+  initialScales,
 }: {
   cards: DimensionCard[];
-  scales: Scale[];
+  initialScales: Scale[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [target, setTarget] = useState<ModalTarget>(null);
+  const [scales, setScales] = useState<Scale[]>(initialScales);
 
   // Open modal from URL params (?new=1, ?edit=<id>).
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function DimensionsCatalog({
             id: card.id,
             name: card.name,
             kind: card.kind,
-            scaleId: scales[0]?.id ?? '',
+            scaleId: card.scaleId ?? scales[0]?.id ?? '',
             shortDescription: card.shortDescription,
             longDescription: null,
           },
@@ -62,6 +63,10 @@ export default function DimensionsCatalog({
     // Run only on mount or when searchParams change (not on card list change).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  function handleNewScale(s: Scale) {
+    setScales((prev) => [...prev, s]);
+  }
 
   function close() {
     setTarget(null);
@@ -148,7 +153,7 @@ export default function DimensionsCatalog({
                             id: c.id,
                             name: c.name,
                             kind: c.kind,
-                            scaleId: scales[0]?.id ?? '',
+                            scaleId: c.scaleId ?? scales[0]?.id ?? '',
                             shortDescription: c.shortDescription,
                             longDescription: null,
                           },

@@ -12,6 +12,7 @@ export type DimensionCard = {
   name: string;
   slug: string;
   kind: DimensionKind;
+  scaleId: string | null;
   status: 'active' | 'archived';
   shortDescription: string | null;
   creatorName: string | null;
