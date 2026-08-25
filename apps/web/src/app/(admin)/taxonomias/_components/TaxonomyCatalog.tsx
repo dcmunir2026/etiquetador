@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import TaxonomyForm, { type TaxonomyInitial } from './TaxonomyForm';
+import AssignToProjectModal, { type ProjectOption } from './AssignToProjectModal';
 import { archiveTaxonomy } from '../actions/actions';
 import { TAXONOMY_COLOR_OPTIONS, type TaxonomyColor } from '../actions/schemas';
 
@@ -34,9 +35,16 @@ function colorPreview(c: TaxonomyColor): string {
   return TAXONOMY_COLOR_OPTIONS.find((o) => o.id === c)?.preview ?? TAXONOMY_COLOR_OPTIONS[2]!.preview;
 }
 
-export default function TaxonomyCatalog({ cards }: { cards: TaxonomyCard[] }) {
+export default function TaxonomyCatalog({
+  cards,
+  projectsByTaxonomy = {},
+}: {
+  cards: TaxonomyCard[];
+  projectsByTaxonomy?: Record<string, ProjectOption[]>;
+}) {
   const router = useRouter();
   const [showForm, setShowForm] = useState<{ mode: 'new' } | { mode: 'edit'; initial: TaxonomyInitial } | null>(null);
+  const [assignFor, setAssignFor] = useState<TaxonomyCard | null>(null);
   const [pending, startTransition] = useTransition();
   const [actionErr, setActionErr] = useState<string | null>(null);
 
@@ -187,6 +195,17 @@ export default function TaxonomyCatalog({ cards }: { cards: TaxonomyCard[] }) {
                   <button
                     type="button"
                     className="btn sm"
+                    onClick={() => setAssignFor(c)}
+                    disabled={pending}
+                    title="Asignar a uno o más proyectos"
+                  >
+                    Asignar a proyecto
+                  </button>
+                ) : null}
+                {c.status !== 'archived' ? (
+                  <button
+                    type="button"
+                    className="btn sm"
                     onClick={() => onArchive(c)}
                     disabled={pending}
                     style={{ color: 'var(--danger)' }}
@@ -267,6 +286,15 @@ export default function TaxonomyCatalog({ cards }: { cards: TaxonomyCard[] }) {
         <TaxonomyForm
           initial={showForm.mode === 'edit' ? showForm.initial : undefined}
           onClose={() => setShowForm(null)}
+        />
+      ) : null}
+
+      {assignFor ? (
+        <AssignToProjectModal
+          taxonomyId={assignFor.id}
+          taxonomyName={assignFor.name}
+          projects={projectsByTaxonomy[assignFor.id] ?? []}
+          onClose={() => setAssignFor(null)}
         />
       ) : null}
     </>

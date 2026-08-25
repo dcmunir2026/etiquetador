@@ -1,7 +1,8 @@
 import { getDb } from '@/lib/db';
-import { taxonomies, dimensions, taxonomyDimensions, users, projectTaxonomies } from '@/lib/db';
-import { eq, count, asc } from 'drizzle-orm';
+import { taxonomies, dimensions, taxonomyDimensions, users, projectTaxonomies, projects } from '@/lib/db';
+import { eq, and, count, asc } from 'drizzle-orm';
 import TaxonomyCatalog, { type TaxonomyCard } from './_components/TaxonomyCatalog';
+import type { ProjectOption } from './_components/AssignToProjectModal';
 import { TAXONOMY_COLOR_OPTIONS, type TaxonomyColor } from './actions/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export default async function TaxonomiesGroupsPage() {
     bucket.push({ id: r.d.id, name: r.d.name, kind: r.d.kind });
   }
 
-  // Per-taxonomy count of projects it's assigned to.
+  // Per-taxonomy count of projects it's assigned to + per-project project list.
   const projAssignments = await db
     .select({ txId: projectTaxonomies.taxonomyId, projectId: projectTaxonomies.projectId })
     .from(projectTaxonomies);
@@ -42,6 +43,26 @@ export default async function TaxonomiesGroupsPage() {
   for (const r of projAssignments) {
     const set = projCountByTx.get(r.txId) ?? projCountByTx.set(r.txId, new Set()).get(r.txId)!;
     set.add(r.projectId);
+  }
+
+  // All active projects (for the "Asignar a proyecto" modal).
+  const activeProjects = await db
+    .select({ id: projects.id, name: projects.name, slug: projects.slug })
+    .from(projects)
+    .where(eq(projects.status, 'active'))
+    .orderBy(asc(projects.name));
+  const projectsByTaxonomy: Record<string, ProjectOption[]> = {};
+  for (const p of activeProjects) {
+    for (const r of rows) {
+      const set = projCountByTx.get(r.t.id) ?? new Set<string>();
+      const list = projectsByTaxonomy[r.t.id] ?? (projectsByTaxonomy[r.t.id] = []);
+      list.push({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        isAlreadyAssigned: set.has(p.id),
+      });
+    }
   }
 
   // KPIs.
@@ -86,7 +107,7 @@ export default async function TaxonomiesGroupsPage() {
         </div>
       </div>
 
-      <TaxonomyCatalog cards={cards} />
+      <TaxonomyCatalog cards={cards} projectsByTaxonomy={projectsByTaxonomy} />
     </main>
   );
 }
