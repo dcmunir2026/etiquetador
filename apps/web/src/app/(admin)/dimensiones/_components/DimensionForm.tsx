@@ -57,7 +57,6 @@ export default function DimensionForm({
   const [step, setStep] = useState<StepKey>('nombre');
 
   const [name, setName] = useState(initial?.name ?? '');
-  const [slug, setSlug] = useState('');
   const [shortDesc, setShortDesc] = useState(initial?.shortDescription ?? '');
   const [kind, setKind] = useState<DimensionKind>(initial?.kind ?? 'category');
   const [scaleId, setScaleId] = useState(initial?.scaleId ?? scales[0]?.id ?? '');
@@ -86,9 +85,6 @@ export default function DimensionForm({
     if (step === 'nombre') {
       if (name.trim().length < 2) return 'El nombre debe tener al menos 2 caracteres.';
       if (name.trim().length > 80) return 'El nombre no puede superar 80 caracteres.';
-      if (slug.trim() && !/^[a-z0-9-]+$/.test(slug.trim())) {
-        return 'El slug solo puede tener minúsculas, números y guiones.';
-      }
     }
     if (step === 'escala' || step === 'valores') {
       if (!scaleId) return 'Selecciona una escala.';
@@ -205,7 +201,7 @@ export default function DimensionForm({
             <Field
               label="Nombre de la dimensión"
               required
-              help="Será visible para todos los anotadores en la pantalla de etiquetado."
+              help="Será visible para todos los anotadores en la pantalla de etiquetado. El identificador interno (slug) se genera automáticamente desde el nombre."
             >
               <input
                 type="text"
@@ -217,18 +213,6 @@ export default function DimensionForm({
                 style={inputStyle}
                 placeholder="p.ej. Sesgo de odio"
                 autoFocus
-              />
-            </Field>
-            <Field
-              label="Slug (identificador interno)"
-              help="Solo letras, números y guiones. Se usa en URLs y en la API."
-            >
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                style={inputStyle}
-                placeholder="(se genera desde el nombre si lo dejas vacío)"
               />
             </Field>
             <Field
