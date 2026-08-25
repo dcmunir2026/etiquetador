@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db';
 import { dimensions, dimensionValues, intensityScales, intensityLevels, taxonomies, taxonomyDimensions, users } from '@/lib/db';
 import { sql, eq, count, desc, asc } from 'drizzle-orm';
+import ArchiveButton from './ArchiveButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,6 +112,7 @@ export default async function DimensionsCatalogPage() {
                 <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
                   <a href={`/dimensiones/${r.d.id}`} className="btn sm">Ver usos</a>
                   <a href={`/dimensiones/${r.d.id}/editar`} className="btn sm" style={{ marginLeft: 'auto' }}>Editar</a>
+                  <ArchiveButton dimensionId={r.d.id} dimensionName={r.d.name} />
                 </div>
               </div>
             );

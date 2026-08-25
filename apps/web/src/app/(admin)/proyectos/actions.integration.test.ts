@@ -25,7 +25,7 @@ vi.mock('@/db/client', () => ({
   },
 }));
 
-import { _internal, createProject, archiveProject } from './actions';
+import { createProject, archiveProject } from './actions';
 
 describe.skip('createProject — RBAC', () => {
   it('rejects when not authenticated', async () => {
