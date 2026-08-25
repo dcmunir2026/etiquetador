@@ -1,54 +1,33 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { and, eq, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { projects, auditLog, projectMembers } from '@/db/schema';
 import { getCurrentUser } from '@/lib/session';
 import { generateProjectSlug, isSlugTaken } from '@/lib/projects';
+import {
+  CreateProjectInput,
+  UpdateProjectInput,
+  IdInput,
+} from './schemas';
 
 /**
- * Errors thrown by these actions are returned to the form via `useFormState`
- * (or a try/catch in the client component). We keep them simple strings.
+ * Server Actions for project CRUD.
+ *
+ * Errors are returned to the form as a discriminated union (no thrown
+ * errors to the client). All mutating actions revalidate `/proyectos`
+ * and write a row in `audit_log`.
+ *
+ * Validation schemas live in `./schemas` so they can be unit-tested
+ * without pulling in next-auth / better-sqlite3.
  */
 export type ActionResult = { ok: true; id: string } | { ok: false; error: string };
-
-const CreateInput = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, 'El nombre debe tener al menos 2 caracteres')
-    .max(80, 'El nombre no puede superar 80 caracteres'),
-  description: z
-    .preprocess(
-      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
-      z.string().trim().max(500, 'La descripción no puede superar 500 caracteres').optional(),
-    ),
-});
-
-const UpdateInput = z.object({
-  id: z.string().min(1),
-  name: z
-    .string()
-    .trim()
-    .min(2)
-    .max(80),
-  description: z
-    .preprocess(
-      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
-      z.string().trim().max(500).optional(),
-    ),
-});
-
-const IdInput = z.object({ id: z.string().min(1) });
 
 /** Only super-admins may create / update / archive projects. */
 async function requireSuperAdmin() {
   const user = await getCurrentUser();
-  if (!user) {
-    throw new Error('No autenticado');
-  }
+  if (!user) throw new Error('No autenticado');
   if (!user.isSuperAdmin) {
     throw new Error('Solo el superadmin puede gestionar proyectos');
   }
@@ -75,7 +54,7 @@ async function writeAudit(
 export async function createProject(input: unknown): Promise<ActionResult> {
   try {
     const user = await requireSuperAdmin();
-    const parsed = CreateInput.safeParse(input);
+    const parsed = CreateProjectInput.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
     }
@@ -92,9 +71,7 @@ export async function createProject(input: unknown): Promise<ActionResult> {
         createdBy: user.id,
       })
       .returning();
-    if (!row) {
-      return { ok: false, error: 'No se pudo crear el proyecto' };
-    }
+    if (!row) return { ok: false, error: 'No se pudo crear el proyecto' };
     // Auto-add the creator as a project admin so they can use it.
     await db.insert(projectMembers).values({
       projectId: row.id,
@@ -112,7 +89,7 @@ export async function createProject(input: unknown): Promise<ActionResult> {
 export async function updateProject(input: unknown): Promise<ActionResult> {
   try {
     const user = await requireSuperAdmin();
-    const parsed = UpdateInput.safeParse(input);
+    const parsed = UpdateProjectInput.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
     }
@@ -126,12 +103,12 @@ export async function updateProject(input: unknown): Promise<ActionResult> {
     const proj = existing[0];
     if (!proj) return { ok: false, error: 'Proyecto no encontrado' };
 
-    // Slug: only regenerate if name changed. If conflict, append suffix.
+    // Slug: only regenerate if name changed. If conflict, keep current slug
+    // (URLs to existing content stay valid).
     let nextSlug = proj.slug;
     if (name !== proj.name) {
       const base = await generateProjectSlug(name);
       if (await isSlugTaken(base, id)) {
-        // fallback: keep current slug (better than breaking the URL)
         nextSlug = proj.slug;
       } else {
         nextSlug = base;
@@ -147,7 +124,11 @@ export async function updateProject(input: unknown): Promise<ActionResult> {
         updatedAt: new Date(),
       })
       .where(eq(projects.id, id));
-    await writeAudit(user.id, id, 'project.update', { name, description, slug: nextSlug });
+    await writeAudit(user.id, id, 'project.update', {
+      name,
+      description,
+      slug: nextSlug,
+    });
     revalidatePath('/proyectos');
     return { ok: true, id };
   } catch (e) {
@@ -159,9 +140,7 @@ export async function archiveProject(input: unknown): Promise<ActionResult> {
   try {
     const user = await requireSuperAdmin();
     const parsed = IdInput.safeParse(input);
-    if (!parsed.success) {
-      return { ok: false, error: 'ID inválido' };
-    }
+    if (!parsed.success) return { ok: false, error: 'ID inválido' };
     const { id } = parsed.data;
     const db = getDb();
     const existing = await db
@@ -184,6 +163,3 @@ export async function archiveProject(input: unknown): Promise<ActionResult> {
     return { ok: false, error: e instanceof Error ? e.message : 'Error desconocido' };
   }
 }
-
-/** Helper for tests and other server code. */
-export const _internal = { CreateInput, UpdateInput, IdInput, requireSuperAdmin };
