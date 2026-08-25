@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Taxonomy Groups — mockup (issue — (no issue))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-taxonomy-groups</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #— (no issue)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-taxonomy-groups">
+<div class="page">
+        <h1>Taxonomías</h1>
+        <p class="lead">Agrupa dimensiones en paquetes conceptuales y asígnalas como conjunto a los proyectos. Una dimensión puede vivir en varias taxonomías.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
+          <div class="kpi"><div class="label">Asignaciones a proyectos</div><div class="value" id="tax-grp-count-assignments">5</div><div class="delta">3 proyectos · 1.25 por taxonomía</div></div>
+        </div>
+
+        <div class="tax-toolbar" style="margin-bottom:14px">
+          <input type="search" placeholder="Buscar dimensión..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
+          <select>
+            <option>Todas las escalas</option>
+            <option>Más de 3 dimensiones</option>
+            <option>Menos de 3 dimensiones</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: archivadas</option>
+            <option>Todas</option>
+          </select>
+          <button class="btn primary" style="margin-left:auto" onclick="openNewTaxonomyGroupDialog()">+ Nueva taxonomía</button>
+        </div>
+
+        <div id="tax-grp-list"></div>
+      </div>
+  </section>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Taxonomies — mockup (issue 15 (UI dimension editor) + 18 (dimension CRUD))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-taxonomies</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #15 (UI dimension editor) + 18 (dimension CRUD)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-taxonomies">
+<div class="page">
+        <h1>Dimensiones</h1>
+        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable que se carga en los proyectos al anotar. Agrupa varias dimensiones en una <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">taxonomía</a> para asignarlas como conjunto. Solo el super admin puede crear, editar o archivar.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
+          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por dimensión</div></div>
+        </div>
+
+        <div class="tax-toolbar">
+          <input type="search" placeholder="Buscar dimensión..." />
+          <select>
+            <option>Todas las escalas</option>
+            <option>2 niveles</option>
+            <option>3 niveles</option>
+            <option>5 niveles</option>
+            <option>Likert</option>
+            <option>Libre</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: todas</option>
+            <option>Estado: archivadas</option>
+          </select>
+          <button class="btn primary" onclick="openDimensionWizard()">+ Nueva dimensión</button>
+        </div>
+
+        <div class="tax-grid" id="tax-grid">
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-odio">O</div>
+              <div>
+                <h4>Sesgo de odio</h4>
+                <p>Detecta insinuaciones o discurso explícito de odio en el contenido etiquetable.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">2 proyectos</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores (no escala). Cambio de escala requeriría migración.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-gen">G</div>
+              <div>
+                <h4>Sesgo de género</h4>
+                <p>Detecta tratamiento desigual o estereotipos por razón de género en el contenido.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-toxic">T</div>
+              <div>
+                <h4>Toxicidad</h4>
+                <p>Mide el nivel de toxicidad general (insultos, vulgaridad, agresividad).</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 5</span>
+              <span class="scale-pill">5 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 5 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-fact">F</div>
+              <div>
+                <h4>Incoherencia factual</h4>
+                <p>Marca respuestas que contradicen datos verificables del propio contexto o del corpus.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">2 niveles</span>
+              <span class="scale-pill">2 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 2 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card is-archived">
+            <div class="tax-card-head">
+              <div class="tax-color" style="background:#e6e3dc;color:var(--ink-3)">P</div>
+              <div>
+                <h4 style="text-decoration:line-through;color:var(--ink-3)">Polaridad política</h4>
+                <p>Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 7</span>
+              <span class="scale-pill" style="background:#e6e1d6;color:var(--ink-3)">archivada</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Archivada por <b style="color:var(--ink-2)">Marta R.</b> · hace 1 día</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="alert('Dimensión restaurada.')">Restaurar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+</body>
+</html>

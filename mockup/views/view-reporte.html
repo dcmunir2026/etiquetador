@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reporte — mockup (issue — (reporte — backlog))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-reporte</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #— (reporte — backlog)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-reporte">
+<div class="page">
+        <div class="grid g-34">
+          <div class="toc">
+            <h4>Reporte de inconsistencias</h4>
+            <a href="#"><b>Resumen ejecutivo</b></a>
+            <a href="#">Discrepancias por dimensión</a>
+            <a href="#">Paquetes reenviados</a>
+            <a href="#">Acciones tomadas</a>
+            <a href="#">Trazabilidad de versiones</a>
+            <a href="#">Anexo: muestra de correcciones</a>
+          </div>
+
+          <div>
+            <h1>Reporte de inconsistencias</h1>
+            <p class="lead">Documento exportable en Word generado tras el cierre de la ronda 2 del proyecto <b>EpData 2026-Q3</b>. Resumen ejecutivo + detalle por dimensión + acciones recomendadas.</p>
+
+            <div class="grid g-3" style="margin-bottom:18px">
+              <div class="kpi"><div class="label">Paquetes revisados</div><div class="value">23</div></div>
+              <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">1.840</div></div>
+              <div class="kpi"><div class="label">Tasa de inconsistencia</div><div class="value">14,2%</div></div>
+            </div>
+
+            <div class="card" id="resumen">
+              <h3>1. Resumen ejecutivo</h3>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0 0 10px">
+                De los <b>23 paquetes espejo</b> procesados en la ronda 2, <b>14 (60,8%)</b> superaron el umbral global de discrepancia (12%) y fueron reenviados al etiquetador. La dimensión con mayor desacuerdo fue <span class="tag sesgo-tendencioso">4. Carácter tendencioso</span>, con un 31% de fragmentos discrepantes, principalmente por la dificultad de distinguir respuestas "informativas" de respuestas "evasivas" (caso típico: <i>"lo siento, no ha sido posible generar la visualización"</i>).
+              </p>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0">
+                Se recomienda reforzar el manual de rúbricas en la dimensión 4 y elevar el peso de la validación cualitativa para esta dimensión en la siguiente ronda.
+              </p>
+            </div>
+
+            <div class="card" id="por-dimension" style="margin-top:14px">
+              <h3>2. Discrepancias por dimensión</h3>
+              <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+              <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+              <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+              <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+              <div class="bench-row"><span class="lbl">Resto</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+            </div>
+
+            <div class="card" id="reenviados" style="margin-top:14px">
+              <h3>3. Paquetes reenviados <span class="count">14 de 23</span></h3>
+              <table>
+                <thead><tr><th>Paquete</th><th>Reenvíos</th><th>Versión final</th><th>Estado</th><th>Notas</th></tr></thead>
+                <tbody>
+                  <tr><td><b>PK-A-001</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4</td></tr>
+                  <tr><td><b>PK-A-004</b></td><td>1</td><td>v2</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 2</td></tr>
+                  <tr><td><b>PK-A-007</b></td><td>3</td><td>v4</td><td><span class="tag status-blocked">Bloqueado</span></td><td>3 rondas sin converger · escalada a experto</td></tr>
+                  <tr><td><b>PK-A-011</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4 + 6</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card" id="acciones" style="margin-top:14px">
+              <h3>4. Acciones tomadas</h3>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div><b>Reenvío automático</b> a etiquetadores de los 14 paquetes con discrepancia superior al umbral.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg><div><b>Escalada a experta cualitativa</b> de 1 paquete bloqueado tras 3 reenvíos.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><div><b>Actualización del manual de rúbricas</b> con 4 ejemplos canónicos para la dimensión 4.</div></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+              <button class="btn">Vista previa</button>
+              <button class="btn">Enviar por email (SMTP/API)</button>
+              <button class="btn primary">Exportar a Word →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Kappa — mockup (issue — (kappa — backlog))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-kappa</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #— (kappa — backlog)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-kappa">
+<div class="page">
+        <h1>Fiabilidad inter-jueces</h1>
+        <p class="lead">Cálculo final del Kappa de Fleiss. El sistema calcula la métrica cuando existen dos jueces comparables y se ejecuta localmente para mantener la trazabilidad. El reporte se envía por email compatible con Gmail y Outlook.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kappa" style="--p:82">
+            <div class="ring"><div class="v">0,82</div></div>
+            <div class="text">
+              <h4>Kappa de Fleiss global</h4>
+              <p>Concordancia inter-jueces considerando las 9 dimensiones. Interpretación: <b>sustancial</b>.</p>
+              <div class="threshold">Umbral de consenso del proyecto: <b>≥ 0,85</b>. Faltan <b>0,03</b> para consolidar la ronda.</div>
+            </div>
+          </div>
+          <div class="kappa" style="--p:79">
+            <div class="ring"><div class="v">0,79</div></div>
+            <div class="text">
+              <h4>Kappa ronda anterior (referencia)</h4>
+              <p>Calculado sobre la misma muestra sin correcciones de validación cualitativa.</p>
+              <div class="threshold">Variación: <b style="color:var(--ok)">+0,03</b> tras incorporar la validación cualitativa.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Kappa por dimensión</h3>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:91%"></div></div><span class="val">0,91</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:89%"></div></div><span class="val">0,89</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">0,87</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:81%"></div></div><span class="val">0,81</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:78%"></div></div><span class="val">0,78</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:74%"></div></div><span class="val">0,74</span></div>
+          <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:64%"></div></div><span class="val">0,64</span></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>Configuración de envío del reporte</h3>
+          <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+            <label>Proveedor</label>
+            <select class="btn" style="text-align:left;background:#fafaf2"><option>Gmail (OAuth2)</option><option>Outlook / Microsoft 365</option><option>SMTP genérico</option></select>
+            <label>Destinatarios</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="redaccion@epdata.es, ccss@unir.es, marta.rodriguez@epdata.es">
+            <label>Asunto</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="[EpData 2026-Q3] Reporte de Kappa — ronda 2">
+            <label>Adjuntar</label>
+            <span><span class="tag status-done">Reporte Word</span> <span class="tag status-done">CSV de consolidado</span></span>
+            <label>Operación</label>
+            <span style="display:flex;gap:10px"><button class="btn">Programar</button><button class="btn primary">Enviar ahora</button></span>
+          </div>
+        </div>
+      </div>
+  </section>
+</body>
+</html>
