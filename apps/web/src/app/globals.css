@@ -808,6 +808,178 @@ a:hover { text-decoration: underline; }
 .modal-card.scale-card {
   max-width: 520px;
 }
+
+/* ─── Scale card grid (wizard step 2) ─────────────────────────────── */
+.scale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.scale-card {
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px 13px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.12s;
+  position: relative;
+  min-height: 96px;
+}
+.scale-card:hover {
+  border-color: var(--primary-2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.06);
+}
+.scale-card.is-selected {
+  border-color: var(--primary);
+  background: #f0f8fa;
+  box-shadow: 0 0 0 2px var(--primary-2) inset;
+}
+.scale-card--new {
+  border-style: dashed;
+  border-color: var(--primary-2);
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 96px;
+}
+.scale-card--new:hover {
+  background: var(--primary-soft);
+  border-style: solid;
+}
+.scale-card__plus {
+  font-size: 22px;
+  color: var(--primary-2);
+  font-weight: 300;
+  line-height: 1;
+}
+.scale-card__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+}
+.scale-card__pill {
+  font-size: 10.5px;
+  padding: 1px 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.scale-card.is-selected .scale-card__pill {
+  background: var(--primary-2);
+  color: #fff;
+  border-color: var(--primary-2);
+}
+.scale-card__desc {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+.scale-card__ex {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-style: italic;
+  margin-top: auto;
+}
+
+/* ─── Editable values (wizard step 3) ─────────────────────────────── */
+.value-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.value-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.value-row__idx {
+  width: 22px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.palette-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+}
+.palette-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+.palette-swatch:hover {
+  transform: scale(1.1);
+  border-color: var(--ink-2);
+}
+
+/* ─── Summary block (wizard step 4) ──────────────────────────────── */
+.wiz-summary {
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wiz-summary__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+.wiz-summary__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--ink-2);
+  align-items: center;
+}
+.wiz-summary__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.wiz-summary__short {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-style: italic;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line-soft);
+}
 .scale-levels {
   display: flex;
   flex-direction: column;

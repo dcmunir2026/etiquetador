@@ -4,7 +4,7 @@ export type Scale = {
   id: string;
   name: string;
   kind: string;
-  levels: { label: string; value: string; order: number }[];
+  levels: { label: string; value: string; order: number; color?: string | null }[];
 };
 
 export type DimensionCard = {

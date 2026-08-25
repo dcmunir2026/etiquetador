@@ -80,18 +80,32 @@ export async function createDimension(input: unknown): Promise<ActionResult> {
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
     }
-    const { name, kind, scaleId, shortDescription, longDescription, color } = parsed.data;
-    const base = parsed.data.slug ? parsed.data.slug : autoSlug(name);
-    const slug = await uniqueSlug(base);
+    const {
+      name,
+      kind,
+      scaleId,
+      shortDescription,
+      longDescription,
+      color,
+      customValues,
+    } = parsed.data;
+    const slug = await uniqueSlug(autoSlug(name));
 
-    // Make sure the scale exists.
     const db = getDb();
-    const scaleRows = await db
-      .select({ id: intensityLevels.scaleId })
-      .from(intensityLevels)
-      .where(eq(intensityLevels.scaleId, scaleId))
-      .limit(1);
-    if (!scaleRows[0]) return { ok: false, error: 'Escala no encontrada' };
+
+    // If a scaleId was provided, make sure it exists. Nullable so the
+    // custom 'Texto libre' path (no scaleId) works.
+    let resolvedScaleId: string | null = scaleId ?? null;
+    if (resolvedScaleId) {
+      const scaleRows = await db
+        .select({ id: intensityLevels.scaleId })
+        .from(intensityLevels)
+        .where(eq(intensityLevels.scaleId, resolvedScaleId))
+        .limit(1);
+      if (!scaleRows[0]) {
+        return { ok: false, error: 'Escala no encontrada' };
+      }
+    }
 
     const [row] = await db
       .insert(dimensions)
@@ -99,7 +113,7 @@ export async function createDimension(input: unknown): Promise<ActionResult> {
         name,
         slug,
         kind,
-        scaleId,
+        scaleId: resolvedScaleId,
         shortDescription: shortDescription ?? null,
         longDescription: longDescription ?? null,
         status: 'active',
@@ -108,19 +122,34 @@ export async function createDimension(input: unknown): Promise<ActionResult> {
       .returning();
     if (!row) return { ok: false, error: 'No se pudo crear la dimensión' };
 
-    // Populate the dimension_values from the scale's intensity_levels.
-    const levels = await db
-      .select()
-      .from(intensityLevels)
-      .where(eq(intensityLevels.scaleId, scaleId));
-    if (levels.length > 0) {
-      await db.insert(dimensionValues).values(
-        levels.map((lv) => ({
-          dimensionId: row.id,
+    // Always use the form's edited values — the wizard's step 3 lets
+    // the user tweak them. If the form did not send customValues
+    // (shouldn't happen post-#47 but defended) we copy from the scale.
+    let valuesToInsert = customValues;
+    if (!valuesToInsert || valuesToInsert.length === 0) {
+      if (resolvedScaleId) {
+        const levels = await db
+          .select()
+          .from(intensityLevels)
+          .where(eq(intensityLevels.scaleId, resolvedScaleId));
+        valuesToInsert = levels.map((lv, i) => ({
           label: lv.label,
           value: lv.value,
+          color: lv.color ?? '#5a7d8f',
           order: lv.order,
-          color: lv.color,
+        }));
+      } else {
+        valuesToInsert = [];
+      }
+    }
+    if (valuesToInsert.length > 0) {
+      await db.insert(dimensionValues).values(
+        valuesToInsert.map((v) => ({
+          dimensionId: row.id,
+          label: v.label,
+          value: v.value,
+          color: v.color,
+          order: v.order,
         })),
       );
     }
@@ -129,7 +158,8 @@ export async function createDimension(input: unknown): Promise<ActionResult> {
       name,
       slug,
       kind,
-      scaleId,
+      scaleId: resolvedScaleId,
+      valueCount: valuesToInsert.length,
     });
     revalidatePath('/dimensiones');
     return { ok: true, id: row.id };
@@ -145,7 +175,16 @@ export async function updateDimension(input: unknown): Promise<ActionResult> {
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
     }
-    const { id, name, kind, scaleId, shortDescription, longDescription, color } = parsed.data;
+    const {
+      id,
+      name,
+      kind,
+      scaleId,
+      shortDescription,
+      longDescription,
+      color,
+      customValues,
+    } = parsed.data;
 
     const db = getDb();
     const existing = await db
@@ -155,25 +194,51 @@ export async function updateDimension(input: unknown): Promise<ActionResult> {
       .limit(1);
     if (!existing[0]) return { ok: false, error: 'Dimensión no encontrada' };
 
+    let resolvedScaleId: string | null = scaleId ?? null;
+    if (resolvedScaleId) {
+      const scaleRows = await db
+        .select({ id: intensityLevels.scaleId })
+        .from(intensityLevels)
+        .where(eq(intensityLevels.scaleId, resolvedScaleId))
+        .limit(1);
+      if (!scaleRows[0]) {
+        return { ok: false, error: 'Escala no encontrada' };
+      }
+    }
+
     await db
       .update(dimensions)
       .set({
         name,
         kind,
-        scaleId,
+        scaleId: resolvedScaleId,
         shortDescription: shortDescription ?? null,
         longDescription: longDescription ?? null,
-        // Color lives on dimensions in the mockup but the schema doesn't have
-        // a dedicated column. We piggy-back the hex code into a short
-        // description update? No — we keep it simple and ignore for now.
         updatedAt: new Date(),
       })
       .where(eq(dimensions.id, id));
 
+    // Replace the dimension_values with the new list from the wizard.
+    if (customValues) {
+      await db.delete(dimensionValues).where(eq(dimensionValues.dimensionId, id));
+      if (customValues.length > 0) {
+        await db.insert(dimensionValues).values(
+          customValues.map((v) => ({
+            dimensionId: id,
+            label: v.label,
+            value: v.value,
+            color: v.color,
+            order: v.order,
+          })),
+        );
+      }
+    }
+
     await writeAudit(user.id, id, 'dimension.update', {
       name,
       kind,
-      scaleId,
+      scaleId: resolvedScaleId,
+      valueCount: customValues?.length ?? 0,
     });
     revalidatePath('/dimensiones');
     revalidatePath(`/dimensiones/${id}/editar`);

@@ -4,6 +4,13 @@
 import { describe, expect, it } from 'vitest';
 import { ArchiveDimensionInput, CreateDimensionInput, UpdateDimensionInput, autoSlug } from './schemas';
 
+const SAMPLE_VALUE = {
+  label: 'Bajo',
+  value: 'low',
+  color: '#1c6e3a',
+  order: 0,
+};
+
 describe('autoSlug', () => {
   it('lowercases and hyphenates', () => {
     expect(autoSlug('Sesgo de Odio')).toBe('sesgo-de-odio');
@@ -22,19 +29,16 @@ describe('CreateDimensionInput', () => {
     kind: 'category' as const,
     scaleId: 'scale_abc',
     color: 'tk-odio',
+    customValues: [SAMPLE_VALUE],
   };
 
   it('accepts a minimal valid dimension', () => {
     const r = CreateDimensionInput.safeParse(base);
     expect(r.success).toBe(true);
   });
-  it('accepts an explicit slug', () => {
-    const r = CreateDimensionInput.safeParse({ ...base, slug: 'my-custom-slug' });
+  it('accepts an explicit null scaleId (custom text-only)', () => {
+    const r = CreateDimensionInput.safeParse({ ...base, scaleId: null });
     expect(r.success).toBe(true);
-  });
-  it('rejects an invalid slug (uppercase)', () => {
-    const r = CreateDimensionInput.safeParse({ ...base, slug: 'My-Slug' });
-    expect(r.success).toBe(false);
   });
   it('rejects an invalid color (not tk-*)', () => {
     const r = CreateDimensionInput.safeParse({ ...base, color: 'red-500' });
@@ -48,8 +52,32 @@ describe('CreateDimensionInput', () => {
     const r = CreateDimensionInput.safeParse({ ...base, name: 'a' });
     expect(r.success).toBe(false);
   });
-  it('rejects empty scaleId', () => {
-    const r = CreateDimensionInput.safeParse({ ...base, scaleId: '' });
+  it('rejects empty customValues', () => {
+    const r = CreateDimensionInput.safeParse({ ...base, customValues: [] });
+    expect(r.success).toBe(false);
+  });
+  it('rejects too many customValues (>20)', () => {
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      label: `v${i}`,
+      value: `v${i}`,
+      color: '#000000',
+      order: i,
+    }));
+    const r = CreateDimensionInput.safeParse({ ...base, customValues: many });
+    expect(r.success).toBe(false);
+  });
+  it('rejects customValues with an empty label', () => {
+    const r = CreateDimensionInput.safeParse({
+      ...base,
+      customValues: [{ ...SAMPLE_VALUE, label: '' }],
+    });
+    expect(r.success).toBe(false);
+  });
+  it('rejects customValues with a non-hex color', () => {
+    const r = CreateDimensionInput.safeParse({
+      ...base,
+      customValues: [{ ...SAMPLE_VALUE, color: 'red' }],
+    });
     expect(r.success).toBe(false);
   });
   it('treats empty shortDescription as undefined', () => {
@@ -65,16 +93,26 @@ describe('CreateDimensionInput', () => {
 });
 
 describe('UpdateDimensionInput', () => {
-  it('requires an id', () => {
-    const r = UpdateDimensionInput.safeParse({
-      name: 'Foo', kind: 'category', scaleId: 's', color: 'tk-x',
-    });
+  const base = {
+    id: 'd_abc',
+    name: 'Foo',
+    kind: 'category' as const,
+    scaleId: 's',
+    color: 'tk-x',
+    customValues: [SAMPLE_VALUE],
+  };
+
+  it('rejects when id is missing', () => {
+    const { id: _omit, ...rest } = base;
+    const r = UpdateDimensionInput.safeParse(rest);
+    expect(r.success).toBe(false);
+  });
+  it('rejects when id is empty', () => {
+    const r = UpdateDimensionInput.safeParse({ ...base, id: '' });
     expect(r.success).toBe(false);
   });
   it('accepts a valid update', () => {
-    const r = UpdateDimensionInput.safeParse({
-      id: 'd_abc', name: 'Foo', kind: 'category', scaleId: 's', color: 'tk-x',
-    });
+    const r = UpdateDimensionInput.safeParse(base);
     expect(r.success).toBe(true);
   });
 });
