@@ -1,0 +1,3115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Etiquetador DCM · Mockup navegable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #fafaf7;
+    --surface:   #ffffff;
+    --line:      #e6e3dc;
+    --line-soft: #efeee7;
+    --ink-1:     #14171e;
+    --ink-2:     #3a4256;
+    --ink-3:     #6b6f7d;
+    --ink-4:     #9aa0ad;
+    --primary:   #0e4a52;
+    --primary-2: #1d6e75;
+    --accent:    #c75d3a;
+    --ok:        #2f8a5a;
+    --warn:      #b58300;
+    --bad:       #b04143;
+    --info:      #3b6cb0;
+    --tag-emot:  #f6e7d6;
+    --tag-stat:  #e3eef5;
+    --tag-gen:   #efe1ec;
+    --tag-semi:  #f4ecd6;
+    --tag-race:  #e6e1d6;
+    --tag-odio:  #f0d8d3;
+    --tag-rel:   #e0e8da;
+    --tag-demo:  #e1e6ec;
+    --tag-tend:  #e9dfe6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink-1);
+    font-family:'Outfit',system-ui,sans-serif;font-size:14px;line-height:1.5}
+  button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:transparent;color:inherit}
+  a{color:inherit;text-decoration:none}
+  code,kbd{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+  /* Sidebar */
+  .side{background:#102529;color:#cfd8db;padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 18px;border-bottom:1px solid #1e3a3f;margin-bottom:14px}
+  .side .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#1d6e75,#c75d3a);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+  .side .brand .meta{font-size:13px;font-weight:600;color:#fff;line-height:1.1}
+  .side .brand .meta small{display:block;font-size:11px;color:#7a8e93;font-weight:400;margin-top:2px}
+  .side .section-title{font-size:10px;letter-spacing:0.08em;color:#7a8e93;text-transform:uppercase;padding:14px 8px 6px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{text-align:left;padding:8px 10px;border-radius:7px;color:#cfd8db;display:flex;align-items:center;gap:10px;font-size:13px;width:100%}
+  .nav button:hover{background:#1a3338;color:#fff}
+  .nav button.active{background:#1d6e75;color:#fff;font-weight:500}
+  .nav svg{width:15px;height:15px;opacity:0.9;flex-shrink:0}
+  .nav .badge{margin-left:auto;font-size:10px;background:#c75d3a;color:#fff;padding:1px 6px;border-radius:8px;font-weight:600}
+  .side .footer{margin-top:24px;padding:14px 8px;border-top:1px solid #1e3a3f;font-size:11px;color:#7a8e93}
+  .side .footer .who{display:flex;align-items:center;gap:8px;color:#cfd8db;margin-bottom:6px;font-size:12px}
+  .side .footer .who .avatar{width:26px;height:26px;border-radius:50%;background:#1d6e75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+
+  /* Top bar */
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .top .crumbs{font-size:13px;color:var(--ink-3)}
+  .top .crumbs b{color:var(--ink-1);font-weight:600}
+  .top .right{display:flex;align-items:center;gap:14px}
+  .top .right .pill{background:#f0ede4;border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+  .top .right .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:7px;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink-1)}
+  .btn:hover{border-color:var(--ink-3)}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
+  .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+  .btn.ghost:hover{background:#f0ede4}
+
+  .page{padding:24px 28px 60px;max-width:1400px}
+  .page h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;margin:0 0 4px;letter-spacing:-0.01em}
+  .page .lead{color:var(--ink-3);margin:0 0 24px;max-width:760px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+  .card h3{margin:0 0 12px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h3 .count{margin-left:auto;font-size:11px;background:#f0ede4;color:var(--ink-2);padding:2px 8px;border-radius:10px;font-weight:500}
+  .grid{display:grid;gap:16px}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .g-split{grid-template-columns:1.4fr 1fr}
+  .g-34{grid-template-columns:3fr 4fr}
+  .g-23{grid-template-columns:2fr 3fr}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-weight:600;text-align:left;padding:9px 12px;color:var(--ink-2);background:#f6f4ed;border-bottom:1px solid var(--line);font-size:11.5px;letter-spacing:0.03em;text-transform:uppercase}
+  td{padding:11px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink-2)}
+  tr:last-child td{border-bottom:0}
+  tr:hover td{background:#fafaf2}
+  td b{color:var(--ink-1);font-weight:600}
+
+  .tag{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:500;background:#eee;border:1px solid transparent}
+  .tag .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-3)}
+  .tag.sesgo-estadistico{background:var(--tag-stat)}
+  .tag.sesgo-emotividad{background:var(--tag-emot)}
+  .tag.sesgo-odio{background:var(--tag-odio);color:#7a1a1c}
+  .tag.sesgo-tendencioso{background:var(--tag-tend)}
+  .tag.sesgo-semiotica{background:var(--tag-semi)}
+  .tag.sesgo-genero{background:var(--tag-gen)}
+  .tag.sesgo-raza{background:var(--tag-race)}
+  .tag.sesgo-religion{background:var(--tag-rel)}
+  .tag.sesgo-demografico{background:var(--tag-demo)}
+  .tag.intensidad-baja{background:#e6f1ec;color:#2f8a5a}
+  .tag.intensidad-media{background:#fbf2dc;color:#8a6b00}
+  .tag.intensidad-alta{background:#f6dcd9;color:#8a1a1c}
+  .tag.status-done{background:#e6f1ec;color:var(--ok)}
+  .tag.status-progress{background:#fbf2dc;color:var(--warn)}
+  .tag.status-blocked{background:#f6dcd9;color:var(--bad)}
+  .tag.status-todo{background:#eee;color:var(--ink-3)}
+
+  .view{display:none;animation:fade 0.25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Etiquetado */
+  .et-head{display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;margin-bottom:8px}
+  .et-head .prog{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-2)}
+  .et-head .prog .count{font-weight:600;color:var(--ink-1);font-size:15px}
+  .progress{height:6px;background:#eee;border-radius:4px;width:200px;overflow:hidden}
+  .progress .bar{height:100%;background:linear-gradient(90deg,var(--primary-2),var(--accent));border-radius:4px}
+
+  .et-grid{display:grid;grid-template-columns:280px 1fr 300px;gap:18px}
+  .context-box{background:#fafaf2;border:1px dashed var(--line);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--ink-2);max-height:280px;overflow-y:auto;white-space:pre-wrap}
+  .context-box .highlight{background:#fff3c4;border-radius:3px;padding:1px 2px;color:var(--ink-1)}
+  .context-box .badge-frag{display:inline-block;background:var(--primary);color:#fff;font-size:10px;padding:1px 7px;border-radius:8px;margin-left:6px;font-weight:500;letter-spacing:0.03em}
+
+  .frag-card{background:#fdfaf1;border:2px solid var(--accent);border-radius:10px;padding:18px 20px;font-size:16px;line-height:1.65;color:var(--ink-1);position:relative}
+  .frag-card .frag-num{position:absolute;top:-10px;left:14px;background:var(--accent);color:#fff;font-size:11px;padding:2px 10px;border-radius:10px;font-weight:600;letter-spacing:0.04em}
+  .frag-card mark{background:#fce4ba;color:var(--ink-1);padding:1px 3px;border-radius:2px}
+
+  .dims{display:flex;flex-direction:column;gap:12px}
+  .dim{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .dim .label{font-size:12.5px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:7px;margin-bottom:8px}
+  .dim .label .help{margin-left:auto;color:var(--ink-4);cursor:help}
+  .dim .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .opt{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;text-align:center;background:#fafaf2;cursor:pointer;transition:all 0.15s}
+  .opt:hover{border-color:var(--ink-3);background:#fff}
+  .opt.selected.no{background:#e6f1ec;border-color:var(--ok);color:var(--ok);font-weight:600}
+  .opt.selected.bajo{background:#fdf2dc;border-color:var(--warn);color:#8a6b00;font-weight:600}
+  .opt.selected.alto{background:#f6dcd9;border-color:var(--bad);color:#8a1a1c;font-weight:600}
+  .notes{width:100%;min-height:48px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:inherit;font-size:12.5px;resize:vertical;background:#fafaf2;color:var(--ink-2)}
+
+  .actions{display:flex;align-items:center;gap:10px;padding:14px 0 0}
+  .actions .spacer{flex:1}
+  .actions .hint{font-size:12px;color:var(--ink-4);display:flex;align-items:center;gap:6px}
+  kbd{background:#fafaf2;border:1px solid var(--line);border-bottom-width:2px;padding:1px 5px;border-radius:4px;font-size:11px}
+
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .label{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+  .kpi .value{font-size:28px;font-weight:600;color:var(--ink-1);font-family:'DM Serif Display',serif}
+  .kpi .delta{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:4px}
+  .kpi .delta.up{color:var(--ok)}
+  .kpi .delta.down{color:var(--bad)}
+
+  .bench-row{display:grid;grid-template-columns:160px 1fr 70px;gap:14px;align-items:center;padding:7px 0}
+  .bench-row .lbl{font-size:13px;color:var(--ink-2)}
+  .bench-row .lbl b{color:var(--ink-1);font-weight:600}
+  .bar-bg{height:14px;background:#efeee7;border-radius:4px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--primary-2),var(--accent));border-radius:4px}
+  .bar-fill.ok{background:linear-gradient(90deg,var(--ok),#1e6a44)}
+  .bar-fill.warn{background:linear-gradient(90deg,var(--warn),#8a6300)}
+  .bar-fill.bad{background:linear-gradient(90deg,var(--bad),#8a1a1c)}
+  .bench-row .val{text-align:right;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+  .diff{font-size:12px;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:6px;background:#fbf2dc;color:#8a6b00}
+  .diff.ok{background:#e6f1ec;color:var(--ok)}
+  .diff.bad{background:#f6dcd9;color:#8a1a1c}
+
+  .compare .vs{padding:6px 9px;border-radius:6px;background:#f6f4ed;font-size:12.5px}
+  .compare .vs.b{background:#f6dcd9;color:#7a1a1c;font-weight:600}
+  .compare .vs.a{background:#e0e8da;color:#2f5d2c;font-weight:600}
+  .compare .vs.mine{background:#dde6ec;color:#1d4a72;font-weight:600}
+
+  .login-wrap{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 0px)}
+  .login-art{background:linear-gradient(135deg,#0e4a52,#1d6e75);position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:42px;color:#fff}
+  .login-art::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(circle at 80% 20%,rgba(199,93,58,0.35),transparent 50%),
+    radial-gradient(circle at 20% 80%,rgba(255,255,255,0.1),transparent 50%)}
+  .login-art .art-text{position:relative;z-index:1;max-width:380px}
+  .login-art h2{font-family:'DM Serif Display',serif;font-size:36px;line-height:1.15;margin:0 0 12px;font-weight:400}
+  .login-art p{margin:0;opacity:0.85;line-height:1.55}
+  .login-form{background:var(--surface);display:flex;align-items:center;justify-content:center;padding:40px}
+  .login-form .panel{width:340px}
+  .login-form h1{font-family:'DM Serif Display',serif;font-size:30px;margin:0 0 4px;font-weight:400}
+  .login-form .lead{margin:0 0 28px;color:var(--ink-3)}
+  .login-form label{font-size:12.5px;font-weight:500;display:block;margin-bottom:5px;color:var(--ink-2)}
+  .login-form input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;margin-bottom:14px;font:inherit;font-size:14px}
+  .login-form input:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2)}
+  .login-form .row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-3);margin:6px 0 22px}
+
+  .ic{width:15px;height:15px;display:inline-block;vertical-align:middle}
+
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:32px 18px;text-align:center;background:#fafaf2;transition:all 0.2s}
+  .drop:hover{border-color:var(--primary-2);background:#f6faf8}
+  .drop .ic-big{width:36px;height:36px;color:var(--ink-3);margin-bottom:10px}
+  .drop h4{margin:0 0 4px;font-size:14px}
+  .drop p{margin:0 0 12px;font-size:12.5px;color:var(--ink-3)}
+
+  .dim-edit{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:30px 1fr 200px 130px auto;gap:14px;align-items:center}
+  .dim-edit .num{width:30px;height:30px;border-radius:8px;background:#f0ede4;color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .dim-edit .name input{font-weight:600;font-size:14px;border:0;background:transparent;padding:3px 0;width:100%;color:var(--ink-1);border-bottom:1px dashed transparent}
+  .dim-edit .name input:focus{outline:0;border-bottom-color:var(--ink-3)}
+  .dim-edit .cats{display:flex;gap:5px;flex-wrap:wrap}
+  .dim-edit .cats .ct{font-size:11px;padding:2px 8px;background:#f6f4ed;border-radius:10px;color:var(--ink-2)}
+  .dim-edit .cats .ct.add{border:1px dashed var(--line);color:var(--ink-4);background:transparent}
+  .dim-edit .scale select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fafaf2;color:var(--ink-2)}
+
+  .role-row{display:grid;grid-template-columns:240px 1fr 110px 110px 80px;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line-soft);align-items:center;font-size:13px}
+  .role-row.head{background:#f6f4ed;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
+  .role-row .name{display:flex;align-items:center;gap:9px}
+  .role-row .name .avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .role-row .name .meta b{display:block;color:var(--ink-1);font-weight:600}
+  .role-row .name .meta small{color:var(--ink-3);font-size:11.5px}
+
+  .kappa{display:flex;align-items:center;gap:18px;padding:18px;background:#fafaf2;border-radius:10px}
+  .kappa .ring{width:88px;height:88px;border-radius:50%;background:conic-gradient(var(--ok) 0 0,var(--ok) 0 calc(var(--p)*1%),#e6e3dc calc(var(--p)*1%) 100%);display:flex;align-items:center;justify-content:center;position:relative}
+  .kappa .ring::before{content:"";position:absolute;inset:8px;background:var(--surface);border-radius:50%}
+  .kappa .ring .v{position:relative;font-family:'DM Serif Display',serif;font-size:22px;font-weight:600;color:var(--ink-1)}
+  .kappa .text{flex:1}
+  .kappa .text h4{margin:0 0 4px;font-size:14px}
+  .kappa .text p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .kappa .text .threshold{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+  .kappa .text .threshold b{color:var(--ok)}
+
+  .sample{display:flex;flex-direction:column;gap:5px}
+  .sample .bubble{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13.5px;line-height:1.55;color:var(--ink-1);position:relative}
+  .sample .bubble .who{font-size:11px;color:var(--ink-3);margin-bottom:5px;font-weight:600;display:flex;align-items:center;gap:5px}
+  .sample .bubble .who .av{width:18px;height:18px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+  .sample .bubble .who.mine .av{background:#3b6cb0}
+  .sample .bubble .who.validator .av{background:var(--accent)}
+  .sample .bubble.taged{border-left:3px solid var(--primary-2)}
+  .sample .bubble.validate{border-left:3px solid var(--accent)}
+  .sample .bubble.corrected{background:#fdf6e3;border-left-color:var(--warn)}
+
+  .toc{position:sticky;top:80px;align-self:flex-start}
+  .toc h4{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;padding-left:6px}
+  .toc a{display:block;padding:6px 10px;font-size:12.5px;color:var(--ink-2);border-radius:5px;margin-bottom:1px}
+  .toc a:hover{background:#f0ede4;color:var(--ink-1)}
+  .toc a b{color:var(--ink-1);font-weight:600}
+
+
+  /* Taxonomy catalog (global) */
+  .tax-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .tax-toolbar input[type=search]{flex:1;padding:9px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13.5px;background:#fafaf2}
+  .tax-toolbar input[type=search]:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .tax-toolbar select{padding:8px 11px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;background:#fafaf2;color:var(--ink-2)}
+  .tax-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+  .tax-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;transition:all 0.15s;position:relative}
+  .tax-card:hover{border-color:var(--primary-2);transform:translateY(-1px);box-shadow:0 4px 16px -2px rgba(0,0,0,0.06)}
+  .tax-card.is-archived{opacity:0.65;background:#fafaf2}
+  .tax-card-head{display:flex;align-items:flex-start;gap:12px}
+  .tax-color{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .tax-color.tk-emot{background:#f6e7d6;color:#7a3b1c}
+  .tax-color.tk-stat{background:#e3eef5;color:#1d4a72}
+  .tax-color.tk-gen{background:#efe1ec;color:#5a3060}
+  .tax-color.tk-semi{background:#f4ecd6;color:#5a4400}
+  .tax-color.tk-race{background:#e6e1d6;color:#5a4400}
+  .tax-color.tk-odio{background:#f0d8d3;color:#7a1a1c}
+  .tax-color.tk-rel{background:#e0e8da;color:#2f5d2c}
+  .tax-color.tk-demo{background:#e1e6ec;color:#1d4a72}
+  .tax-color.tk-tend{background:#e9dfe6;color:#5a3060}
+  .tax-color.tk-toxic{background:#fde2d2;color:#8a3b1c}
+  .tax-color.tk-fact{background:#dde6ec;color:#1d4a72}
+  .tax-card-head h4{margin:0 0 2px;font-size:14.5px;font-weight:600;color:var(--ink-1)}
+  .tax-card-head p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+  .tax-card-meta{display:flex;gap:5px;flex-wrap:wrap}
+  .tax-card-foot{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-3)}
+  .tax-card-foot .actions-mini{display:flex;gap:4px}
+  .btn-mini{padding:4px 9px;font-size:11.5px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink-2);cursor:pointer}
+  .btn-mini:hover{border-color:var(--ink-3);background:#fafaf2}
+  .btn-mini.primary-mini{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn-mini.primary-mini:hover{background:var(--primary-2);border-color:var(--primary-2)}
+  .btn-mini.danger-mini{color:var(--bad);border-color:#e8c4c5;background:#fdf2f2}
+  .btn-mini.danger-mini:hover{background:#f6dcd9;border-color:var(--bad)}
+  .tax-used-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;background:#e3eef5;color:#1d4a72;border-radius:10px;font-weight:600}
+  .tax-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:var(--surface);transition:all 0.15s}
+  .tax-row:hover{border-color:var(--ink-3)}
+  .tax-row .meta-col{flex:1;min-width:0}
+  .tax-row .meta-col b{color:var(--ink-1);font-weight:600;font-size:14px;display:block}
+  .tax-row .meta-col small{color:var(--ink-3);font-size:12px}
+  .tax-row .used-col{text-align:right;min-width:120px}
+  .tax-row .used-col b{display:block;font-size:15px;color:var(--ink-1);font-weight:600}
+  .tax-row .used-col small{color:var(--ink-3);font-size:11px}
+  .picker-row.is-assigned{background:#e6f1ec;border-color:var(--ok);cursor:default}
+  .picker-row.is-assigned .av-extra{display:inline-flex;align-items:center;gap:3px;background:var(--ok);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .scale-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;background:#f6f4ed;color:var(--ink-2);border-radius:10px}
+  .empty-state{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;background:#fafaf2;border:1px dashed var(--line);border-radius:9px}
+  .empty-state h4{margin:0 0 6px;color:var(--ink-1);font-size:14px}
+
+
+  /* Segmentation editor */
+  .seg-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+  @media (max-width:1100px){.seg-grid{grid-template-columns:1fr}}
+  .seg-form-row{display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center}
+  .seg-form-row label{font-size:12.5px;font-weight:500;color:var(--ink-2)}
+  .seg-form-row input,.seg-form-row select{font:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);width:100%}
+  .seg-form-row input:focus,.seg-form-row select:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .seg-form-row .seg-hint{font-size:11.5px;color:var(--ink-4);margin-top:4px}
+  .seg-toggle{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .seg-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary-2);cursor:pointer}
+  .seg-toggle label{margin:0;cursor:pointer;font-weight:500}
+
+  .preview-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .preview-stats{display:flex;gap:14px;font-size:12px;color:var(--ink-3)}
+  .preview-stats b{color:var(--ink-1);font-weight:600}
+  .preview-input{width:100%;min-height:120px;max-height:200px;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;line-height:1.55;background:#fafaf2;color:var(--ink-1);resize:vertical;font-family:inherit}
+  .preview-input:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+
+  .frag-chip{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:#fafaf2;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+  .frag-chip .frag-num{min-width:30px;height:30px;background:var(--primary);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+  .frag-chip .frag-text{font-size:12.5px;line-height:1.55;color:var(--ink-2);flex:1}
+  .frag-chip .frag-meta{font-size:10.5px;color:var(--ink-4);margin-top:4px;display:flex;gap:8px}
+  .frag-chip .frag-meta span{background:#f6f4ed;padding:1px 7px;border-radius:10px}
+
+  .seg-help{background:#fdf6e3;border:1px solid #e8d59a;border-left:3px solid var(--warn);padding:11px 13px;border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400;margin-top:14px}
+  .seg-help b{color:#5a4400}
+
+
+  /* Taxonomy creation wizard */
+  .wiz-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0;max-width:min(720px,calc(100vw - 32px));width:100%;margin:24px auto;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden}
+  .wiz-header{padding:22px 28px 18px;border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .wiz-header h2{font-size:19px;font-weight:600;margin:0 0 4px;color:var(--ink-1)}
+  .wiz-header p{margin:0;font-size:12.5px;color:var(--ink-3)}
+
+  .wiz-steps{display:flex;align-items:center;gap:0;padding:18px 28px;background:#fafaf2;border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .wiz-step{display:flex;align-items:center;gap:10px;flex:1;position:relative}
+  .wiz-step .wiz-num{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid var(--line);color:var(--ink-3);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+  .wiz-step .wiz-label{font-size:11.5px;color:var(--ink-3);font-weight:500;white-space:nowrap}
+  .wiz-step:not(:last-child)::after{content:'';flex:1;height:1px;background:var(--line);margin:0 8px}
+  .wiz-step.active .wiz-num{background:var(--primary-2);border-color:var(--primary-2);color:#fff}
+  .wiz-step.active .wiz-label{color:var(--ink-1);font-weight:600}
+  .wiz-step.done .wiz-num{background:#1c8a4a;border-color:#1c8a4a;color:#fff}
+  .wiz-step.done .wiz-num::before{content:'✓';font-size:14px}
+  .wiz-step.done .wiz-num span{display:none}
+  .wiz-step.done .wiz-label{color:var(--ink-2)}
+
+  .wiz-body{padding:24px 28px;overflow-y:auto;flex:1 1 auto;min-height:0}
+  .wiz-step-panel{display:none}
+  .wiz-step-panel.active{display:block}
+
+  .wiz-row{margin-bottom:18px}
+  .wiz-row label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+  .wiz-row label .req{color:#c0392b;margin-left:2px}
+  .wiz-row input[type=text],.wiz-row textarea,.wiz-row select{width:100%;font:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);box-sizing:border-box}
+  .wiz-row input:focus,.wiz-row textarea:focus,.wiz-row select:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .wiz-row textarea{min-height:70px;resize:vertical;font-family:inherit;line-height:1.5}
+  .wiz-row .wiz-hint{font-size:11.5px;color:var(--ink-4);margin-top:5px}
+  .wiz-row .wiz-err{font-size:11.5px;color:#c0392b;margin-top:5px;display:none}
+  .wiz-row.has-error input,.wiz-row.has-error textarea{border-color:#c0392b}
+  .wiz-row.has-error .wiz-err{display:block}
+
+  .wiz-scale-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .wiz-scale-card{padding:14px 16px;border:2px solid var(--line);border-radius:9px;cursor:pointer;background:#fafaf2;transition:all 0.15s}
+  .wiz-scale-card:hover{border-color:var(--primary-2);background:#fff}
+  .wiz-scale-card.selected{border-color:var(--primary-2);background:#eaf2f8}
+  .wiz-scale-card .sc-title{font-size:13px;font-weight:600;color:var(--ink-1);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+  .wiz-scale-card .sc-pill{font-size:10px;background:var(--primary);color:#fff;padding:1px 7px;border-radius:8px;font-weight:500}
+  .wiz-scale-card .sc-desc{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+  .wiz-scale-card .sc-ex{font-size:10.5px;color:var(--ink-4);margin-top:5px;font-style:italic}
+
+  .wiz-value-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafaf2;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+  .wiz-value-row .v-num{width:24px;height:24px;background:#fff;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2);flex-shrink:0}
+  .wiz-value-row .v-color{width:30px;height:30px;border-radius:6px;flex-shrink:0;cursor:pointer;position:relative;border:1px solid rgba(0,0,0,0.1)}
+  .wiz-value-row .v-color input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+  .wiz-value-row input.v-name{flex:1;font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:#fff}
+  .wiz-value-row input.v-name:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2)}
+  .wiz-value-row .v-del{background:transparent;border:0;width:26px;height:26px;border-radius:5px;cursor:pointer;color:var(--ink-3);font-size:14px}
+  .wiz-value-row .v-del:hover{background:#fbe6e6;color:#c0392b}
+
+
+  .cs-vrow{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#fff;border:1px solid var(--line-soft);border-radius:6px;margin-bottom:5px}
+  .cs-vcolor{width:26px;height:26px;border-radius:5px;flex-shrink:0;position:relative;cursor:pointer;border:1px solid rgba(0,0,0,0.1)}
+  .cs-vcolor input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+  .cs-vname{flex:1;font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--ink-1)}
+  .cs-vname:hover{border-color:var(--line-soft);background:#fafaf2}
+  .cs-vname:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
+  .cs-vnum{font-size:10.5px;color:var(--ink-4);font-weight:600;min-width:18px;text-align:right}
+  .wiz-color-suggest{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap}
+  .wiz-color-suggest .swatch{width:20px;height:20px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,0.1)}
+  .wiz-color-suggest .swatch.active{outline:2px solid var(--ink-1);outline-offset:1px}
+  .wiz-color-suggest .lbl{font-size:10.5px;color:var(--ink-4);margin-right:4px}
+
+  .wiz-summary{background:#fafaf2;border:1px solid var(--line);border-radius:9px;padding:16px 18px;margin-bottom:16px}
+  .wiz-summary .sm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+  .wiz-summary .sm-row:last-child{border-bottom:0}
+  .wiz-summary .sm-label{color:var(--ink-3);font-weight:500}
+  .wiz-summary .sm-value{color:var(--ink-1);text-align:right;max-width:60%;font-weight:500}
+  .wiz-summary .sm-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .wiz-summary .sm-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-size:10.5px;color:#fff;font-weight:500}
+  .wiz-summary .sm-chip .sm-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.5)}
+
+  .wiz-toggle{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:#fafaf2;border:1px solid var(--line);border-radius:7px;margin-top:10px}
+  .wiz-toggle input{margin-top:2px;accent-color:var(--primary-2);width:15px;height:15px;cursor:pointer}
+  .wiz-toggle label{margin:0;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
+  .wiz-toggle .tg-sub{font-size:11px;color:var(--ink-4);margin-top:2px;display:block}
+
+  .wiz-footer{padding:14px 28px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;background:#fafaf2;flex-shrink:0}
+  .wiz-footer .wiz-actions{display:flex;gap:10px}
+
+
+  /* Tabs */
+  .tabs-bar{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .tabs-bar .tab{padding:11px 18px;font-size:13px;font-weight:500;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;transition:color 0.15s}
+  .tabs-bar .tab:hover{color:var(--ink-1)}
+  .tabs-bar .tab.active{color:var(--primary-2);border-bottom-color:var(--primary-2);font-weight:600}
+  .tabs-bar .tab .tab-count{background:#f0ede4;color:var(--ink-2);padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600}
+  .tabs-bar .tab.active .tab-count{background:var(--primary-2);color:#fff}
+
+  /* Tax list (new) */
+  .dim-list{display:flex;flex-direction:column;gap:10px}
+  .dim-row{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--surface);border:1px solid var(--line);border-radius:9px;transition:border-color 0.15s}
+  .dim-row:hover{border-color:#c5d8e8}
+  .dim-row .dim-color{width:46px;height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;flex-shrink:0}
+  .dim-row .dim-info{flex:1;min-width:0}
+  .dim-row .dim-info .dim-name{font-size:14px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+  .dim-row .dim-info .dim-desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:3px}
+  .dim-row .dim-info .dim-meta{display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap}
+  .dim-row .dim-info .dim-meta .scale-pill{font-size:10.5px;background:#f0ede4;color:var(--ink-2);padding:1.5px 8px;border-radius:9px;font-weight:500}
+  .dim-row .dim-info .dim-meta .assigned-pill{font-size:10.5px;background:#e6f4ec;color:#1c6e3a;padding:1.5px 8px;border-radius:9px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+  .dim-row .dim-info .dim-meta .unassigned-pill{font-size:10.5px;background:#fafaf2;color:var(--ink-4);padding:1.5px 8px;border-radius:9px;font-weight:500;border:1px dashed var(--line)}
+  .dim-row .dim-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .dim-row .dim-actions .used{border-right:1px solid var(--line-soft);padding-right:10px;margin-right:2px;text-align:right;font-size:11px;color:var(--ink-3);min-width:60px}
+  .dim-row .dim-actions .used b{display:block;color:var(--ink-1);font-size:14px;font-weight:600;margin-bottom:1px}
+  .dim-row .dim-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .dim-row .dim-actions button:hover{background:#fafaf2}
+  .dim-row .dim-actions button.assign-btn{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .dim-row .dim-actions button.assign-btn:hover{background:#0d3656}
+  .dim-row .dim-actions button.danger-btn{background:#fff;color:#a13d3d;border-color:#e8c5c5}
+  .dim-row .dim-actions button.danger-btn:hover{background:#fbe6e6}
+
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+
+  /* Taxonomy groups (new entity) */
+  .tx-grp-card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0;display:flex;flex-direction:column;overflow:hidden;margin-bottom:14px;transition:border-color 0.15s}
+  .tx-grp-card:hover{border-color:#c5d8e8}
+  .tx-grp-head{padding:14px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px}
+  .tx-grp-head .grp-avatar{width:48px;height:48px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:600;flex-shrink:0;background:linear-gradient(135deg,#0e4a52,#1d6e75)}
+  .tx-grp-head .grp-avatar.amber{background:linear-gradient(135deg,#5a4400,#8a6300)}
+  .tx-grp-head .grp-avatar.rose{background:linear-gradient(135deg,#7a1a1c,#b04143)}
+  .tx-grp-head .grp-avatar.violet{background:linear-gradient(135deg,#3d2a4d,#5a4080)}
+  .tx-grp-head .grp-avatar.cyan{background:linear-gradient(135deg,#0d4a5a,#1a7088)}
+  .tx-grp-head .grp-info{flex:1;min-width:0}
+  .tx-grp-head .grp-name{font-size:15px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+  .tx-grp-head .grp-desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:2px}
+  .tx-grp-head .grp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .tx-grp-head .grp-actions .count{font-size:11px;color:var(--ink-3);text-align:right}
+  .tx-grp-head .grp-actions .count b{display:block;color:var(--ink-1);font-size:18px;font-weight:600;line-height:1.1}
+  .tx-grp-head .grp-actions button{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .tx-grp-head .grp-actions button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .tx-grp-head .grp-actions button.danger{background:#fff;color:#a13d3d;border-color:#e8c5c5}
+  .tx-grp-body{padding:12px 18px;background:#fafaf2}
+  .tx-grp-body .dim-list-mini{display:flex;flex-wrap:wrap;gap:7px}
+  .tx-grp-body .dim-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border:1px solid var(--line);border-radius:14px;font-size:11.5px;color:var(--ink-1);font-weight:500}
+  .tx-grp-body .dim-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tx-grp-body .empty-dims{font-size:11.5px;color:var(--ink-4);font-style:italic}
+
+  .grp-add-dim{margin-top:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .grp-add-dim select{font:inherit;font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-1);max-width:240px}
+  .grp-add-dim button{padding:5px 11px;font-size:11.5px;border-radius:6px;border:1px solid var(--primary-2);background:#eaf2f8;color:var(--primary-2);cursor:pointer;font-weight:500}
+
+  @media (max-width: 1180px){
+    .et-grid{grid-template-columns:1fr}
+  }
+
+  /* Project picker (for views that require an active project) */
+  .picker-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 32px;max-width:min(680px,calc(100vw - 32px));width:100%;margin:24px auto;text-align:center;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden}
+  .picker-card .ic-big{width:48px;height:48px;color:var(--primary-2);margin-bottom:14px}
+  .picker-card h2{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;margin:0 0 6px}
+  .picker-card .lead{color:var(--ink-3);margin:0 0 22px}
+  .picker-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-bottom:0;overflow-y:auto;overflow-x:hidden;flex:1 1 auto;min-height:0;padding-right:6px}
+  .picker-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;cursor:pointer;background:#fafaf2;transition:all 0.15s}
+  .picker-row:hover{border-color:var(--primary-2);background:#fff;transform:translateX(2px)}
+  .picker-row .av{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--primary-2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0}
+  .picker-row .meta{flex:1}
+  .picker-row .meta b{color:var(--ink-1);font-weight:600;font-size:14.5px;display:block}
+  .picker-row .meta small{color:var(--ink-3);font-size:12px}
+  .picker-row .badge-count{font-size:11px;background:#f0ede4;color:var(--ink-2);padding:3px 9px;border-radius:11px;font-weight:500}
+  .picker-row .arrow{color:var(--ink-4)}
+
+  /* Top-bar project switcher */
+  .proj-switcher{cursor:pointer;display:flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--line);border-radius:8px;background:#fafaf2;font-size:13px;transition:all 0.15s}
+  .proj-switcher:hover{border-color:var(--primary-2);background:#fff}
+  .proj-switcher .av{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--primary-2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;flex-shrink:0}
+  .proj-switcher b{color:var(--ink-1);font-weight:600;line-height:1.1}
+  .proj-switcher b small{display:block;color:var(--ink-3);font-weight:400;font-size:10.5px;margin-top:1px}
+  .proj-switcher .chev{color:var(--ink-4);margin-left:2px}
+  .proj-switcher.is-empty{border-color:var(--warn);background:#fdf6e3}
+  .proj-switcher.is-empty b{color:#5a4400}
+  .proj-switcher.is-empty b small{color:#8a6b00}
+
+  /* Multi-assignee cells */
+  .assignees{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .assignee{display:inline-flex;align-items:center;gap:5px;padding:2px 4px 2px 2px;border-radius:14px;background:#f6f4ed;font-size:12px}
+  .assignee .av{width:20px;height:20px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+  .assignee.lead .av{background:linear-gradient(135deg,var(--primary-2),var(--accent))}
+  .assignee.locked{background:#fdf2dc;color:#8a6b00}
+  .assignee.locked .av{background:var(--warn)}
+  .assignee-pending{color:var(--ink-4);font-size:12px;font-style:italic;padding:2px 8px;border:1px dashed var(--line);border-radius:14px}
+  .group-size-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;background:#e3eef5;color:#1d4a72;border-radius:10px;font-weight:600;margin-left:6px}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">D</div>
+      <div class="meta">DCM Etiquetador<small>EpData · LLM Juez · v0.4</small></div>
+    </div>
+
+    <div class="section-title">Proyecto</div>
+    <nav class="nav" id="nav-project">
+      <button data-view="login"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Acceso</button>
+      <button data-view="dashboard" class="active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Proyectos<svg style="margin-left:auto;width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      <button data-view="upload"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Cargar Excel</button>
+    </nav>
+
+    <div class="section-title">Catálogo</div>
+    <nav class="nav" id="nav-catalog">
+      <button data-view="taxonomies"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="6" cy="7" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/></svg>Dimensiones</button>
+      <button data-view="taxonomy-groups"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Taxonomías</button>
+    </nav>
+
+    <div class="section-title">Configuración</div>
+    <nav class="nav" id="nav-config">
+      <button data-view="dimensions"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="18" r="1.5" fill="currentColor"/><circle cx="16" cy="6" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="18" r="1.5" fill="currentColor"/></svg>Taxonomías del proyecto<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="roles"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Roles y equipos<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="paquetes"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 16v5h-5"/><path d="M8 21H3v-5"/><path d="M3 8V3h5"/><rect x="6" y="6" width="12" height="12"/></svg>Paquetes<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button data-view="segmentation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M9 3v18M15 3v18" stroke-dasharray="2 2" opacity="0.4"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="6" cy="18" r="1" fill="currentColor"/><circle cx="18" cy="6" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="18" r="1" fill="currentColor"/></svg>Segmentación<svg class="lock" style="margin-left:auto;width:11px;height:11px;opacity:0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+    </nav>
+
+    <div class="section-title">Etiquetado</div>
+    <nav class="nav" id="nav-tag">
+      <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
+      <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
+      <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
+    </nav>
+
+    <div class="section-title">Cierre</div>
+    <nav class="nav" id="nav-close">
+      <button data-view="reporte"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reporte</button>
+      <button data-view="kappa"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Kappa de Fleiss</button>
+    </nav>
+
+    <div class="footer">
+      <div class="who"><div class="avatar">MR</div>Marta R. · Superadmin</div>
+      <div>Proyecto activo:<br><b style="color:#cfd8db">EpData 2026-Q3</b></div>
+    </div>
+  </aside>
+
+  <main>
+
+    <div class="top">
+      <div class="crumbs">EpData 2026-Q3 · <b id="crumb">Proyectos</b></div>
+      <div class="right">
+        <span class="pill"><span class="dot"></span>3.662 fragmentos cargados</span>
+        <div class="proj-switcher is-empty" id="proj-switcher" onclick="openPicker()" title="Selecciona un proyecto">
+          <div class="av" id="proj-av">·</div>
+          <b id="proj-name">Seleccionar proyecto<small>ninguno activo</small></b>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <button class="btn ghost"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button class="btn primary"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo proyecto</button>
+      </div>
+    </div>
+
+    <!-- LOGIN -->
+    <section class="view" id="view-login">
+      <div class="login-wrap" style="margin:-24px -28px 0">
+        <div class="login-art">
+          <div class="art-text">
+            <h2>El sesgo se mide, no se opina.</h2>
+            <p>Plataforma de etiquetado y validación para el LLM Juez de Europa Press. Cada fragmento pasa por dos etiquetadores, se valida y se consolida en un dataset auditable.</p>
+          </div>
+        </div>
+        <div class="login-form">
+          <div class="panel">
+            <h1>Entrar</h1>
+            <p class="lead">Acceso restringido al equipo de etiquetado.</p>
+            <label>Email</label>
+            <input type="email" value="marta.rodriguez@epdata.es">
+            <label>Contraseña</label>
+            <input type="password" value="••••••••••">
+            <div class="row">
+              <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" checked> Recordarme</label>
+              <a href="#" style="color:var(--primary-2)">¿Olvidaste la contraseña?</a>
+            </div>
+            <button class="btn primary" style="width:100%;justify-content:center;padding:10px" onclick="go('dashboard')">Entrar</button>
+            <p style="text-align:center;font-size:12px;color:var(--ink-3);margin-top:18px">Acceso mediante SSO corporativo de Europa Press disponible.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="page">
+        <h1>Proyectos de etiquetado</h1>
+        <p class="lead">Vista global del estado de los proyectos activos. Cada proyecto atraviesa cinco etapas: definición, carga, configuración, etiquetado y consolidación.</p>
+
+        <div class="grid g-4" style="margin-bottom:24px">
+          <div class="kpi"><div class="label">Proyectos activos</div><div class="value">3</div><div class="delta up">+1 vs. mes anterior</div></div>
+          <div class="kpi"><div class="label">Fragmentos cargados</div><div class="value">3.662</div><div class="delta">3.074 de Reader T2</div></div>
+          <div class="kpi"><div class="label">Etiquetadores</div><div class="value">12</div><div class="delta">4 equipos · 6 roles</div></div>
+          <div class="kpi"><div class="label">Kappa global</div><div class="value">0,82</div><div class="delta down">−0,03 vs. ronda 1</div></div>
+        </div>
+
+        <div class="card">
+          <h3>Proyectos recientes <span class="count">3 activos</span></h3>
+          <table>
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Fragmentos</th><th>Avance</th><th>Equipo</th><th>Creado</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>EpData 2026-Q3</b><br><small style="color:var(--ink-3)">Validación cuantitativa</small></td>
+                <td><span class="tag status-progress"><span class="dot" style="background:var(--warn)"></span>En etiquetado</span></td>
+                <td>1.847 / 3.662</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:50%"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">50%</small></td>
+                <td>6 personas</td>
+                <td><small style="color:var(--ink-3)">hace 2 días</small></td>
+                <td><button class="btn ghost" onclick="go('tagging')">Abrir →</button></td>
+              </tr>
+              <tr>
+                <td><b>EpData 2026-Q2</b><br><small style="color:var(--ink-3)">Consolidación final</small></td>
+                <td><span class="tag status-done"><span class="dot" style="background:var(--ok)"></span>Validado</span></td>
+                <td>1.224 / 1.224</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:100%;background:linear-gradient(90deg,var(--ok),#1e6a44)"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">100%</small></td>
+                <td>5 personas</td>
+                <td><small style="color:var(--ink-3)">hace 2 meses</small></td>
+                <td><button class="btn ghost" onclick="go('reporte')">Reporte →</button></td>
+              </tr>
+              <tr>
+                <td><b>EpData Sintético v1</b><br><small style="color:var(--ink-3)">Línea base juez</small></td>
+                <td><span class="tag status-todo"><span class="dot" style="background:var(--ink-3)"></span>En configuración</span></td>
+                <td>0 / 200</td>
+                <td><div class="progress" style="width:130px"><div class="bar" style="width:8%"></div></div><small style="color:var(--ink-3);font-size:11px;margin-left:8px">8%</small></td>
+                <td>3 personas</td>
+                <td><small style="color:var(--ink-3)">ayer</small></td>
+                <td><button class="btn ghost" onclick="go('dimensions')">Configurar →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- UPLOAD -->
+    <section class="view" id="view-upload">
+      <div class="page">
+        <h1>Cargar Excel maestro</h1>
+        <p class="lead">Punto de entrada del corpus. Acepta .xlsx o .csv. Se trabaja siempre sobre una copia interna, el archivo original no se modifica.</p>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Archivo</h3>
+            <div class="drop">
+              <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <h4>Suelta el archivo aquí</h4>
+              <p>o haz clic para seleccionar — máximo 50 MB, columnas A–AZ</p>
+              <button class="btn">Seleccionar archivo</button>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f6f4ed;border-radius:7px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <svg style="color:var(--ok)" class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div><b>EpData_Reader_T2_2026Q3.xlsx</b><br><small style="color:var(--ink-3)">3,8 MB · 3.662 filas · hoja "respuestas"</small></div>
+              </div>
+              <button class="btn ghost" style="color:var(--bad)">Quitar</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Selección de columnas <span class="count">3 de 14</span></h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Columna principal (pivote)</b><br><small style="color:var(--ink-3)">respuestaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">A</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Identificador de pregunta</b><br><small style="color:var(--ink-3)">conversacionId</small></span>
+                <code class="tag" style="background:#f6f4ed">B</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Pregunta original</b><br><small style="color:var(--ink-3)">preguntaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">C</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line);opacity:0.7">
+                <input type="checkbox"> <span style="flex:1">Metadatos auxiliares<br><small style="color:var(--ink-3)">timestamp, variante, éxito</small></span>
+              </label>
+            </div>
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Detección de duplicados:</b> se encontraron 28 duplicados por columna <code>conversacionId</code>. Se marcarán para revisión antes de dividir en paquetes.
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Resultado del pre-procesado <span class="count">3.634 fragmentos únicos</span></h3>
+          <div class="grid g-4">
+            <div class="kpi" style="background:#fafaf2"><div class="label">Filas totales</div><div class="value" style="font-size:22px">3.662</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Únicas tras dedupe</div><div class="value" style="font-size:22px">3.634</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">% fragmentables</div><div class="value" style="font-size:22px">38%</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Tokens medios</div><div class="value" style="font-size:22px">412</div></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+            <button class="btn">Cancelar</button>
+            <button class="btn primary" onclick="go('dimensions')">Continuar a dimensiones →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIMENSIONS -->
+    <section class="view" id="view-dimensions">
+      <div id="view-dimensions-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-dimensions-content">
+      <div class="page">
+        <h1>Taxonomías del proyecto</h1>
+        <p class="lead">Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en <b id="dim-active-project">este proyecto</b>. Cada taxonomía carga sus dimensiones automáticamente. Las taxonomías se gestionan en el <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">catálogo de taxonomías</a>.</p>
+
+        <div class="tabs-bar">
+          <div class="tab active" data-tab="all" onclick="switchDimTab('all')">
+            Todas las taxonomías
+            <span class="tab-count" id="dim-count-all">0</span>
+          </div>
+          <div class="tab" data-tab="assigned" onclick="switchDimTab('assigned')">
+            Asignadas a este proyecto
+            <span class="tab-count" id="dim-count-assigned">0</span>
+          </div>
+        </div>
+
+        <!-- TAB: TODAS LAS CREADAS -->
+        <div class="tab-panel active" id="dim-panel-all">
+          <div class="dim-list" id="dim-list-all"></div>
+        </div>
+
+        <!-- TAB: ASIGNADAS A ESTE PROYECTO -->
+        <div class="tab-panel" id="dim-panel-assigned">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#e3eef5;border:1px solid #c5d8e8;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#1d4a72">
+            <div style="display:flex;align-items:center;gap:7px">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Estas son las dimensiones que se cargarán al anotar en <b id="dim-active-project-2">este proyecto</b>. Para añadir más, ve a la pestaña <b>Todas las creadas</b>.</span>
+            </div>
+          </div>
+          <div class="dim-list" id="dim-list-assigned"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+          <button class="btn">Restablecer a valores por defecto</button>
+          <button class="btn primary" onclick="go('roles')">Guardar y continuar →</button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+        <!-- TAXONOMY GROUPS (new entity) -->
+    <section class="view" id="view-taxonomy-groups">
+      <div class="page">
+        <h1>Taxonomías</h1>
+        <p class="lead">Agrupa dimensiones en paquetes conceptuales y asígnalas como conjunto a los proyectos. Una dimensión puede vivir en varias taxonomías.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value" id="tax-grp-count-active">4</div><div class="delta">0 archivadas</div></div>
+          <div class="kpi"><div class="label">Asignaciones a proyectos</div><div class="value" id="tax-grp-count-assignments">5</div><div class="delta">3 proyectos · 1.25 por taxonomía</div></div>
+        </div>
+
+        <div class="tax-toolbar" style="margin-bottom:14px">
+          <input type="search" placeholder="Buscar dimensión..." id="tax-grp-search" oninput="renderTaxonomyGroups()" />
+          <select>
+            <option>Todas las escalas</option>
+            <option>Más de 3 dimensiones</option>
+            <option>Menos de 3 dimensiones</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: archivadas</option>
+            <option>Todas</option>
+          </select>
+          <button class="btn primary" style="margin-left:auto" onclick="openNewTaxonomyGroupDialog()">+ Nueva taxonomía</button>
+        </div>
+
+        <div id="tax-grp-list"></div>
+      </div>
+    </section>
+
+    <!-- TAXONOMY CATALOG (global) -->
+    <section class="view" id="view-taxonomies">
+      <div class="page">
+        <h1>Dimensiones</h1>
+        <p class="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable que se carga en los proyectos al anotar. Agrupa varias dimensiones en una <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">taxonomía</a> para asignarlas como conjunto. Solo el super admin puede crear, editar o archivar.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Dimensiones activas</div><div class="value">4</div><div class="delta">1 archivada</div></div>
+          <div class="kpi"><div class="label">Asignaciones totales</div><div class="value">5</div><div class="delta">2 proyectos · 1.25 por dimensión</div></div>
+        </div>
+
+        <div class="tax-toolbar">
+          <input type="search" placeholder="Buscar dimensión..." />
+          <select>
+            <option>Todas las escalas</option>
+            <option>2 niveles</option>
+            <option>3 niveles</option>
+            <option>5 niveles</option>
+            <option>Likert</option>
+            <option>Libre</option>
+          </select>
+          <select>
+            <option>Estado: activas</option>
+            <option>Estado: todas</option>
+            <option>Estado: archivadas</option>
+          </select>
+          <button class="btn primary" onclick="openDimensionWizard()">+ Nueva dimensión</button>
+        </div>
+
+        <div class="tax-grid" id="tax-grid">
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-odio">O</div>
+              <div>
+                <h4>Sesgo de odio</h4>
+                <p>Detecta insinuaciones o discurso explícito de odio en el contenido etiquetable.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">2 proyectos</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores (no escala). Cambio de escala requeriría migración.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-gen">G</div>
+              <div>
+                <h4>Sesgo de género</h4>
+                <p>Detecta tratamiento desigual o estereotipos por razón de género en el contenido.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">3 niveles</span>
+              <span class="scale-pill">3 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 12 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-toxic">T</div>
+              <div>
+                <h4>Toxicidad</h4>
+                <p>Mide el nivel de toxicidad general (insultos, vulgaridad, agresividad).</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 5</span>
+              <span class="scale-pill">5 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 5 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card">
+            <div class="tax-card-head">
+              <div class="tax-color tk-fact">F</div>
+              <div>
+                <h4>Incoherencia factual</h4>
+                <p>Marca respuestas que contradicen datos verificables del propio contexto o del corpus.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">2 niveles</span>
+              <span class="scale-pill">2 valores</span>
+              <span class="tax-used-pill">1 proyecto</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Creada por <b style="color:var(--ink-2)">Marta R.</b> · hace 2 días</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="go('dimensions')">Ver usos</button>
+                <button class="btn-mini" onclick="alert('Editor: cambiar nombre, descripción, valores.')">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tax-card is-archived">
+            <div class="tax-card-head">
+              <div class="tax-color" style="background:#e6e3dc;color:var(--ink-3)">P</div>
+              <div>
+                <h4 style="text-decoration:line-through;color:var(--ink-3)">Polaridad política</h4>
+                <p>Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.</p>
+              </div>
+            </div>
+            <div class="tax-card-meta">
+              <span class="scale-pill">Likert 7</span>
+              <span class="scale-pill" style="background:#e6e1d6;color:var(--ink-3)">archivada</span>
+            </div>
+            <div class="tax-card-foot">
+              <small>Archivada por <b style="color:var(--ink-2)">Marta R.</b> · hace 1 día</small>
+              <div class="actions-mini">
+                <button class="btn-mini" onclick="alert('Dimensión restaurada.')">Restaurar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ROLES -->
+    <section class="view" id="view-roles">
+      <div id="view-roles-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-roles-content">
+      <div class="page">
+        <h1>Roles y equipos</h1>
+        <p class="lead">Cada equipo contiene dos etiquetadores comparables (paquete espejo), un apoyo cuantitativo y un validador cualitativo. Los paquetes están aislados por equipo para evitar contaminación.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos</div><div class="value">4</div><div class="delta">2 paquetizados · 2 sin asignar</div></div>
+          <div class="kpi"><div class="label">Usuarios activos</div><div class="value">12 / 14</div><div class="delta">2 inactivos sin asignar</div></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="role-row head">
+            <div>Persona</div><div>Email</div><div>Rol</div><div>Equipo</div><div>Estado</div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar">MR</div><div class="meta"><b>Marta Rodríguez</b><small>Superadmin</small></div></div>
+            <div style="color:var(--ink-2)">marta.rodriguez@epdata.es</div>
+            <div><span class="tag sesgo-estadistico">Superadministrador</span></div>
+            <div>Todos</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">PG</div><div class="meta"><b>Pedro Gómez</b><small>Etiquetador</small></div></div>
+            <div style="color:var(--ink-2)">pedro.gomez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetador</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">LF</div><div class="meta"><b>Lucía Fernández</b><small>Etiquetadora</small></div></div>
+            <div style="color:var(--ink-2)">lucia.fernandez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetadora</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">CA</div><div class="meta"><b>Carlos Antúnez</b><small>Apoyo cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">carlos.antunez@epdata.es</div>
+            <div><span class="tag sesgo-demografico">Apoyo cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">SV</div><div class="meta"><b>Sara Velasco</b><small>Validadora cualitativa</small></div></div>
+            <div style="color:var(--ink-2)">sara.velasco@unir.es</div>
+            <div><span class="tag sesgo-religion">Validadora cualitativa</span></div>
+            <div>Cualitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">JM</div><div class="meta"><b>Javier Moreno</b><small>Validador cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">javier.moreno@epdata.es</div>
+            <div><span class="tag sesgo-genero">Validador cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-progress">En revisión</span></div>
+          </div>
+
+          <div class="role-row" style="opacity:0.55">
+            <div class="name"><div class="avatar" style="background:var(--ink-3)">+</div><div class="meta"><b>Añadir persona</b><small>Invitar por email</small></div></div>
+            <div style="color:var(--ink-3)">—</div>
+            <div>—</div>
+            <div>—</div>
+            <div><button class="btn ghost" style="color:var(--primary-2)">Invitar →</button></div>
+          </div>
+        </div>
+      </div>
+          </div>
+    </section>
+
+    <!-- PAQUETES -->
+    <section class="view" id="view-paquetes">
+      <div id="view-paquetes-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-paquetes-content">
+      <div class="page">
+        <h1>División en paquetes</h1>
+        <p class="lead">El corpus se divide en paquetes que se asignan a un grupo configurable de N etiquetadores (dúo, trío, cuarteto o más) del mismo equipo. Esto habilita la comparación interjueces y el cálculo de Kappa de Fleiss (o Krippendorff α, o mayoría ponderada).</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="card">
+            <h3>Configuración de la división</h3>
+            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+              <label>Estrategia</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Por número de paquetes</option><option>Por tamaño de paquete</option></select>
+              <label>Nº paquetes</label>
+              <input class="btn" style="text-align:left;background:#fafaf2" value="46 paquetes × 2 (espejo)">
+              <label>Distribución</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Aleatoria estratificada por sección</option><option>Aleatoria simple</option><option>Orden natural</option></select>
+              <label>Asignación</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Automática (mismo equipo)</option><option>Manual</option></select>
+              <label>Tamaño del grupo</label>
+              <select class="btn" style="text-align:left;background:#fafaf2" id="group-size-select">
+                <option value="2">Dúo (2 etiquetadores)</option>
+                <option value="3" selected>Trío (3 etiquetadores)</option>
+                <option value="4">Cuarteto (4 etiquetadores)</option>
+                <option value="5">Quinteto (5 etiquetadores)</option>
+                <option value="custom">Personalizado (N)</option>
+              </select>
+              <label>Métrica de consenso</label>
+              <select class="btn" style="text-align:left;background:#fafaf2">
+                <option>Fleiss Kappa (N jueces, categórica)</option>
+                <option>Krippendorff α (N jueces, mixto)</option>
+                <option>Mayoría ponderada (N≥3)</option>
+                <option>Consenso total (N jueces, todos iguales)</option>
+              </select>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn">Previsualizar división</button>
+              <button class="btn primary" onclick="go('tagging')">Asignar y notificar →</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Resultado de la división</h3>
+            <div class="bench-row"><span class="lbl"><b>Equipo A</b> · trío <small style="color:var(--ink-3)">(3)</small></span><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div><span class="val">23/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo B</b> · cuarteto <small style="color:var(--ink-3)">(4)</small></span><div class="bar-bg"><div class="bar-fill" style="width:74%"></div></div><span class="val">17/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo C</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo D</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:#fdf6e3;border-radius:7px;font-size:12.5px;color:#5a4400">
+              <b>Equipos C y D</b> sin etiquetadores. Recomendación: invitar al menos 2 personas por equipo antes de asignar.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Paquetes asignados <span class="count">23 visibles</span></h3>
+          <table>
+            <thead><tr>
+              <th>Paquete</th>
+              <th>Fragmentos</th>
+              <th>Grupo</th>
+              <th>Asignaciones</th>
+              <th>Estados</th>
+              <th>Versión</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><b>PK-A-001</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v2</span> · <span class="tag status-progress">v1</span></td>
+                <td><small style="color:var(--ink-3)">A: v2 · B: v1</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-002</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">trío</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                  <span class="assignee"><span class="av">MR</span>Marta R.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span></td>
+                <td><small style="color:var(--ok)">3 envíos · 1 pendiente</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-003</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">cuarteto</span> Equipo B</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">AD</span>Ana D.</span>
+                  <span class="assignee"><span class="av">DM</span>Diego M.</span>
+                  <span class="assignee"><span class="av">SR</span>Sara R.</span>
+                  <span class="assignee"><span class="av">JV</span>Javier V.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span> · <span class="assignee-pending">asignado</span></td>
+                <td><small style="color:var(--ink-3)">3 envíos · 1 sin iniciar</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-004</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v3</span> · <span class="tag status-done">v2</span></td>
+                <td><small style="color:var(--warn)">Reenviado por inconsistencia</small></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+          </div>
+    </section>
+
+    <!-- SEGMENTATION (H3) -->
+    <section class="view" id="view-segmentation">
+      <div id="view-segmentation-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">La segmentación se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-segmentation-content">
+      <div class="page">
+        <h1>Configuración de segmentación</h1>
+        <p class="lead">Define cómo se parten los textos largos en fragmentos etiquetables. Esta configuración se aplica al corpus completo del proyecto antes de dividir en paquetes.</p>
+
+        <div class="seg-grid">
+          <!-- IZQUIERDA: formulario de configuración -->
+          <div class="card">
+            <h3>Parámetros</h3>
+            <div class="seg-form-row">
+              <label>Nombre de la config</label>
+              <input type="text" value="Default (palabras)" id="seg-name" />
+              <label></label>
+              <div class="seg-hint">Identifica esta configuración si más adelante quieres tener varias (p. ej. "Estricta" para campo abierto, "Laxa" para resúmenes).</div>
+
+              <label>Unidad</label>
+              <select id="seg-unit" onchange="updateSegmentationPreview()">
+                <option value="token">Token (≈ 4 caracteres)</option>
+                <option value="word" selected>Palabra</option>
+                <option value="sentence">Frase</option>
+                <option value="paragraph">Párrafo</option>
+                <option value="character">Carácter</option>
+              </select>
+              <label></label>
+              <div class="seg-hint">Recomendado: <b>palabra</b> o <b>frase</b>. Token es para textos técnicos; párrafo para respuestas estructuradas.</div>
+
+              <label>Tamaño máximo</label>
+              <input type="number" id="seg-max" value="120" min="10" max="2000" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Si el texto excede este tamaño, se parte en varios fragmentos.</div>
+
+              <label>Overlap (caracteres)</label>
+              <input type="number" id="seg-overlap" value="20" min="0" max="200" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Caracteres de solapamiento entre fragmentos consecutivos. Útil para mantener contexto entre cortes.</div>
+
+              <label></label>
+              <div class="seg-toggle">
+                <input type="checkbox" id="seg-respect" checked onchange="updateSegmentationPreview()" />
+                <label for="seg-respect">Respetar límites de frase y párrafo</label>
+              </div>
+              <label></label>
+              <div class="seg-hint">Si está activo, nunca se parte una palabra/frase. Si está desactivado, el corte es por tamaño exacto.</div>
+
+              <label>Tolerancia</label>
+              <input type="number" id="seg-tolerance" value="15" min="0" max="50" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Porcentaje de desvío permitido sobre el tamaño máximo antes de forzar un corte. 0 = exacto.</div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+              <button class="btn">Restablecer</button>
+              <button class="btn primary">Guardar configuración</button>
+            </div>
+
+            <div class="seg-help">
+              <b>Tip:</b> El fragmento más pequeño permitido es 10 unidades (palabras/tokens). Si una respuesta tiene menos, queda como un único fragmento.
+            </div>
+          </div>
+
+          <!-- DERECHA: live preview -->
+          <div class="card">
+            <h3>Live preview <span style="margin-left:auto;font-size:11px;background:#f0ede4;color:var(--ink-2);padding:2px 9px;border-radius:10px;font-weight:500">texto de ejemplo real</span></h3>
+
+            <div class="preview-toolbar">
+              <div class="preview-stats" id="seg-stats">
+                <span><b>—</b> fragmentos</span>
+                <span><b>—</b> avg</span>
+                <span><b>—</b> min</span>
+                <span><b>—</b> max</span>
+              </div>
+              <button class="btn-mini" onclick="document.getElementById('seg-sample').value = ''; updateSegmentationPreview()">Limpiar</button>
+            </div>
+
+            <textarea class="preview-input" id="seg-sample" oninput="updateSegmentationPreview()">El mercado inmobiliario español ha experimentado fluctuaciones significativas en las últimas dos décadas. Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones, seguidas de una caída dramática durante la crisis financiera: en 2009 bajaron a 27.821 transacciones, una contracción del 61%. La recuperación ha sido lenta pero sostenida. En 2024 se registraron 63.859 transacciones, aproximándose a los niveles previos a la crisis. El dato más reciente de 2025 muestra 56.108 operaciones, indicando cierta volatilidad en el mercado actual.</textarea>
+
+            <div style="margin-top:14px" id="seg-preview">
+              <div class="empty-state" style="margin:0">
+                <h4>Cargando vista previa...</h4>
+                Edita los parámetros arriba para ver cómo se parte el texto.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- TAGGING (la pantalla clave) -->
+    <section class="view" id="view-tagging">
+      <div class="page">
+        <div class="et-head">
+          <div>
+            <h1 style="margin-bottom:4px">Etiquetar fragmento</h1>
+            <p class="lead" style="margin:0">Paquete <b>PK-A-001</b> · Etiquetador: <b>Pedro Gómez</b> · Borrador local autoguardado hace 14 s</p>
+          </div>
+          <div class="prog">
+            <div><span class="count">12</span> / 80</div>
+            <div class="progress"><div class="bar" style="width:15%"></div></div>
+            <div style="color:var(--ink-3);font-size:12px">15%</div>
+          </div>
+        </div>
+
+        <div class="et-grid">
+          <div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3)">Contexto completo</h3>
+              <div class="context-box"><b>Pregunta del periodista:</b> ¿Cómo ha cambiado la tasa de gonorrea por habitante en Uzbekistán en los últimos años?
+
+<span class="badge-frag">Fragmento 1 de 1</span>
+
+No dispongo de datos sobre la tasa de gonorrea en <span class="highlight">Uzbekistán</span>. Los datos disponibles en EpData para esta consulta se limitan a <span class="highlight">España</span>, donde la serie cubre el período 1982–2019.
+
+Si te interesa conocer la evolución de la gonorrea en España, puedo proporcionarte ese análisis. En caso contrario, te recomiendo consultar fuentes epidemiológicas internacionales como la <span class="highlight">Organización Mundial de la Salud (OMS)</span> o bases de datos de vigilancia de enfermedades transmisibles de organismos regionales que cubran Asia Central.
+
+¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?</div>
+            </div>
+
+            <div class="card" style="padding:14px 16px;margin-top:14px">
+              <h3>Metadatos</h3>
+              <div style="display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:12.5px">
+                <span style="color:var(--ink-3)">Conversación</span><code>219528a8-95d6-411b-a14a-7560bac4f49f</code>
+                <span style="color:var(--ink-3)">Variante</span><span>1</span>
+                <span style="color:var(--ink-3)">Longitud</span><span>582 chars · 116 tokens</span>
+                <span style="color:var(--ink-3)">Éxito API</span><span><span class="tag status-done">OK</span></span>
+                <span style="color:var(--ink-3)">Evidencias</span><span>—</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="frag-card">
+              <span class="frag-num">FRAGMENTO ACTIVO · 1/1</span>
+              No dispongo de datos sobre la tasa de gonorrea en <mark>Uzbekistán</mark>. Los datos disponibles en EpData para esta consulta se limitan a <mark>España</mark>, donde la serie cubre el período <mark>1982–2019</mark>.
+
+Si te interesa conocer la evolución de la gonorrea en España, puedo proporcionarte ese análisis. En caso contrario, te recomiendo consultar fuentes epidemiológicas internacionales como la <mark>Organización Mundial de la Salud (OMS)</mark> o bases de datos de vigilancia de enfermedades transmisibles de organismos regionales que cubran Asia Central.
+
+¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?
+            </div>
+
+            <div class="dims" style="margin-top:16px">
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-estadistico"><span class="dot" style="background:#1d4a72"></span>1. Sesgo estadístico</span><span class="help" title="¿La respuesta presenta datos cuantitativos o cualitativos correctos, o falta información factual?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+                <div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…"></div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-emotividad"><span class="dot" style="background:#7a3b1c"></span>2. Emotividad</span><span class="help" title="¿El tono es neutro, valorativo o cargado?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-odio"><span class="dot" style="background:#7a1a1c"></span>3. Odio / discurso de odio</span><span class="help" title="¿Contiene insinuaciones o discurso explícito de odio?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-tendencioso"><span class="dot" style="background:#5a3060"></span>4. Carácter tendencioso</span><span class="help" title="¿Imparcial o con sesgo (sutil o claro)?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-semiotica"><span class="dot" style="background:#5a4400"></span>5. Semiótica</span><span class="help" title="¿Literal, figurado o sarcástico?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">Literal</div>
+                  <div class="opt">Figurado</div>
+                  <div class="opt">Sarcástico</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-genero"><span class="dot" style="background:#5a3060"></span>6. Género</span><span class="help" title="¿Tratamiento neutral o con sesgo de género?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-raza"><span class="dot" style="background:#5a4400"></span>7. Raza / etnia</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-religion"><span class="dot" style="background:#2f5d2c"></span>8. Religión</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+
+              <div class="dim">
+                <div class="label"><span class="tag sesgo-demografico"><span class="dot" style="background:#1d4a72"></span>9. Sesgo demográfico</span><span class="help" title="¿Ausente, o relacionado con edad/origen/clase?">?</span></div>
+                <div class="opts">
+                  <div class="opt selected no">No</div>
+                  <div class="opt">Bajo</div>
+                  <div class="opt">Alto</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <div class="hint"><kbd>←</kbd> Anterior · <kbd>→</kbd> Siguiente · <kbd>S</kbd> Saltar · <kbd>Enter</kbd> Guardar y enviar</div>
+              <div class="spacer"></div>
+              <button class="btn">Borrador</button>
+              <button class="btn primary">Guardar y siguiente →</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="padding:14px">
+              <h3>Paquete PK-A-001 <span class="count">12/80</span></h3>
+              <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px" id="fraggrid"></div>
+              <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11.5px;color:var(--ink-3)">
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--ok);border-radius:2px;vertical-align:middle"></span> Listo</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:2px;vertical-align:middle"></span> Actual</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:#e6e3dc;border-radius:2px;vertical-align:middle"></span> Pendiente</span>
+                <span><span style="display:inline-block;width:9px;height:9px;background:var(--warn);border-radius:2px;vertical-align:middle"></span> Saltado</span>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px;margin-top:14px">
+              <h3>Borrador local</h3>
+              <div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">
+                <p style="margin:0 0 6px"><b>SQLite</b> en este dispositivo</p>
+                <p style="margin:0 0 6px"><span class="tag status-done">Sincronizado</span> <small style="color:var(--ink-3)">hace 14 s</small></p>
+                <p style="margin:0;font-size:11.5px;color:var(--ink-3)">Si pierdes conexión, los cambios se conservan en local y se sincronizan al volver.</p>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px;margin-top:14px">
+              <h3>Evidencias <span class="count">0</span></h3>
+              <div style="font-size:12.5px;color:var(--ink-3);text-align:center;padding:14px;background:#fafaf2;border-radius:7px;border:1px dashed var(--line)">
+                Arrastra aquí citas textuales o pegue un [REP:…]<br>para justificar la decisión.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISCREPANCIAS -->
+    <section class="view" id="view-discrepancias">
+      <div class="page">
+        <h1>Detección de inconsistencias</h1>
+        <p class="lead">Comparación automática entre los paquetes espejo de Pedro (A) y Lucía (B). Las discrepancias por encima del umbral definido por el Superadministrador bloquean la aprobación y se reenvían al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">80</div><div class="delta">100% del paquete</div></div>
+          <div class="kpi"><div class="label">Discrepancias detectadas</div><div class="value" style="color:var(--bad)">14</div><div class="delta down">17,5% · umbral global 12%</div></div>
+        </div>
+
+        <div class="card" style="padding:14px 16px;margin-bottom:18px">
+          <h3>Discrepancias por dimensión</h3>
+          <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:4%"></div></div><span class="val">4%</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Vista fragmento a fragmento <span class="count">14 con discrepancia</span></h3>
+          <table class="compare">
+            <thead><tr><th style="width:60px">#</th><th>Fragmento</th><th style="width:160px">Pedro (A)</th><th style="width:160px">Lucía (B)</th><th style="width:90px">Δ</th><th style="width:90px">Acción</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>003</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"La deuda pública ha alcanzado su máximo histórico del 123,1% del PIB, impulsada por los gastos de respuesta a la pandemia…"</td>
+                <td><span class="vs b">4. Tendencioso: ALTO</span></td>
+                <td><span class="vs a">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>007</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"El mercado inmobiliario español ha experimentado fluctuaciones significativas… Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>012</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Lo siento, no ha sido posible generar la visualización solicitada en este momento."</td>
+                <td><span class="vs mine">4. Tendencioso: NO</span></td>
+                <td><span class="vs b">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--warn)">Revisar</button></td>
+              </tr>
+              <tr>
+                <td>019</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"En 2021 la deuda alcanzó su máximo histórico del 123,1% del PIB…"</td>
+                <td><span class="vs mine">6. Género: NO</span></td>
+                <td><span class="vs a">6. Género: NO</span></td>
+                <td><span class="diff ok">=</span></td>
+                <td><span class="tag status-done">OK</span></td>
+              </tr>
+              <tr>
+                <td>021</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Isla Bouvet es un territorio deshabitado sin población civil ni infraestructura vial…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALIDACIÓN CUALITATIVA -->
+    <section class="view" id="view-validacion">
+      <div class="page">
+        <h1>Validación cualitativa</h1>
+        <p class="lead">Muestra aleatoria sistemática generada para revisión manual. El validador ve la etiqueta del etiquetador y un espacio para su juicio. Si el error supera el umbral, el paquete vuelve al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Muestra actual</div><div class="value">23 / 80</div><div class="delta">29% del paquete · 5%–30% configurable</div></div>
+          <div class="kpi"><div class="label">Errores detectados</div><div class="value" style="color:var(--bad)">3</div><div class="delta down">13% · umbral 8%</div></div>
+        </div>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Muestra 7/23</h3>
+            <div class="sample" style="margin-top:10px">
+              <div class="bubble taged">
+                <div class="who mine"><div class="av">PG</div>Pedro (Etiquetador) · v1</div>
+                <div>¿Cómo ha cambiado la cantidad de armas químicas en Myanmar a lo largo del tiempo?</div>
+                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">
+                  <span class="tag sesgo-estadistico">1. Estadístico: NO</span>
+                  <span class="tag sesgo-tendencioso">4. Tendencioso: NO</span>
+                  <span class="tag sesgo-demografico">9. Demográfico: NO</span>
+                </div>
+              </div>
+
+              <div class="bubble validate">
+                <div class="who validator"><div class="av">SV</div>Sara (Validadora) · en revisión</div>
+                <div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin-top:4px;font-size:12.5px">
+                  <span style="color:var(--ink-3)">Juicio</span>
+                  <span><b>Rechazar</b> · la respuesta debería explicitar que la pregunta no entra en el alcance</span>
+                  <span style="color:var(--ink-3)">Motivo</span>
+                  <span>Respuesta elusiva sin reconocer el sinsentido del enunciado</span>
+                  <span style="color:var(--ink-3)">Reetiquetar</span>
+                  <span><span class="tag sesgo-tendencioso" style="background:#f6dcd9">4. Tendencioso: BAJO</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Estadísticas de la muestra</h3>
+            <div class="bench-row"><span class="lbl">Coinciden</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">20</span></div>
+            <div class="bench-row"><span class="lbl">Corregidas</span><div class="bar-bg"><div class="bar-fill warn" style="width:13%"></div></div><span class="val">3</span></div>
+            <div class="bench-row"><span class="lbl">Rechazadas</span><div class="bar-bg"><div class="bar-fill bad" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <h3 style="margin-top:18px">Distribución de correcciones por dimensión</h3>
+            <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill warn" style="width:66%"></div></div><span class="val">2</span></div>
+            <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:33%"></div></div><span class="val">1</span></div>
+            <div class="bench-row"><span class="lbl">1. Estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Decisión recomendada:</b> reenviar paquete a Pedro (A) para reetiquetar las 3 correcciones, manteniendo a Lucía como referencia. Subir el umbral de "Tendencioso" en el manual.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTE -->
+    <section class="view" id="view-reporte">
+      <div class="page">
+        <div class="grid g-34">
+          <div class="toc">
+            <h4>Reporte de inconsistencias</h4>
+            <a href="#"><b>Resumen ejecutivo</b></a>
+            <a href="#">Discrepancias por dimensión</a>
+            <a href="#">Paquetes reenviados</a>
+            <a href="#">Acciones tomadas</a>
+            <a href="#">Trazabilidad de versiones</a>
+            <a href="#">Anexo: muestra de correcciones</a>
+          </div>
+
+          <div>
+            <h1>Reporte de inconsistencias</h1>
+            <p class="lead">Documento exportable en Word generado tras el cierre de la ronda 2 del proyecto <b>EpData 2026-Q3</b>. Resumen ejecutivo + detalle por dimensión + acciones recomendadas.</p>
+
+            <div class="grid g-3" style="margin-bottom:18px">
+              <div class="kpi"><div class="label">Paquetes revisados</div><div class="value">23</div></div>
+              <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">1.840</div></div>
+              <div class="kpi"><div class="label">Tasa de inconsistencia</div><div class="value">14,2%</div></div>
+            </div>
+
+            <div class="card" id="resumen">
+              <h3>1. Resumen ejecutivo</h3>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0 0 10px">
+                De los <b>23 paquetes espejo</b> procesados en la ronda 2, <b>14 (60,8%)</b> superaron el umbral global de discrepancia (12%) y fueron reenviados al etiquetador. La dimensión con mayor desacuerdo fue <span class="tag sesgo-tendencioso">4. Carácter tendencioso</span>, con un 31% de fragmentos discrepantes, principalmente por la dificultad de distinguir respuestas "informativas" de respuestas "evasivas" (caso típico: <i>"lo siento, no ha sido posible generar la visualización"</i>).
+              </p>
+              <p style="font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0">
+                Se recomienda reforzar el manual de rúbricas en la dimensión 4 y elevar el peso de la validación cualitativa para esta dimensión en la siguiente ronda.
+              </p>
+            </div>
+
+            <div class="card" id="por-dimension" style="margin-top:14px">
+              <h3>2. Discrepancias por dimensión</h3>
+              <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+              <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+              <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+              <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+              <div class="bench-row"><span class="lbl">Resto</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+            </div>
+
+            <div class="card" id="reenviados" style="margin-top:14px">
+              <h3>3. Paquetes reenviados <span class="count">14 de 23</span></h3>
+              <table>
+                <thead><tr><th>Paquete</th><th>Reenvíos</th><th>Versión final</th><th>Estado</th><th>Notas</th></tr></thead>
+                <tbody>
+                  <tr><td><b>PK-A-001</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4</td></tr>
+                  <tr><td><b>PK-A-004</b></td><td>1</td><td>v2</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 2</td></tr>
+                  <tr><td><b>PK-A-007</b></td><td>3</td><td>v4</td><td><span class="tag status-blocked">Bloqueado</span></td><td>3 rondas sin converger · escalada a experto</td></tr>
+                  <tr><td><b>PK-A-011</b></td><td>2</td><td>v3</td><td><span class="tag status-done">Aprobado</span></td><td>Reenviado por dimensión 4 + 6</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card" id="acciones" style="margin-top:14px">
+              <h3>4. Acciones tomadas</h3>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div><b>Reenvío automático</b> a etiquetadores de los 14 paquetes con discrepancia superior al umbral.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg><div><b>Escalada a experta cualitativa</b> de 1 paquete bloqueado tras 3 reenvíos.</div></div>
+                <div style="display:flex;gap:11px;padding:10px 13px;background:#fafaf2;border-radius:7px"><svg class="ic" style="color:var(--primary-2);margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><div><b>Actualización del manual de rúbricas</b> con 4 ejemplos canónicos para la dimensión 4.</div></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+              <button class="btn">Vista previa</button>
+              <button class="btn">Enviar por email (SMTP/API)</button>
+              <button class="btn primary">Exportar a Word →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAPPA -->
+    <section class="view" id="view-kappa">
+      <div class="page">
+        <h1>Fiabilidad inter-jueces</h1>
+        <p class="lead">Cálculo final del Kappa de Fleiss. El sistema calcula la métrica cuando existen dos jueces comparables y se ejecuta localmente para mantener la trazabilidad. El reporte se envía por email compatible con Gmail y Outlook.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kappa" style="--p:82">
+            <div class="ring"><div class="v">0,82</div></div>
+            <div class="text">
+              <h4>Kappa de Fleiss global</h4>
+              <p>Concordancia inter-jueces considerando las 9 dimensiones. Interpretación: <b>sustancial</b>.</p>
+              <div class="threshold">Umbral de consenso del proyecto: <b>≥ 0,85</b>. Faltan <b>0,03</b> para consolidar la ronda.</div>
+            </div>
+          </div>
+          <div class="kappa" style="--p:79">
+            <div class="ring"><div class="v">0,79</div></div>
+            <div class="text">
+              <h4>Kappa ronda anterior (referencia)</h4>
+              <p>Calculado sobre la misma muestra sin correcciones de validación cualitativa.</p>
+              <div class="threshold">Variación: <b style="color:var(--ok)">+0,03</b> tras incorporar la validación cualitativa.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Kappa por dimensión</h3>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:91%"></div></div><span class="val">0,91</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:89%"></div></div><span class="val">0,89</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">0,87</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:84%"></div></div><span class="val">0,84</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:81%"></div></div><span class="val">0,81</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:78%"></div></div><span class="val">0,78</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:74%"></div></div><span class="val">0,74</span></div>
+          <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:64%"></div></div><span class="val">0,64</span></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>Configuración de envío del reporte</h3>
+          <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+            <label>Proveedor</label>
+            <select class="btn" style="text-align:left;background:#fafaf2"><option>Gmail (OAuth2)</option><option>Outlook / Microsoft 365</option><option>SMTP genérico</option></select>
+            <label>Destinatarios</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="redaccion@epdata.es, ccss@unir.es, marta.rodriguez@epdata.es">
+            <label>Asunto</label>
+            <input class="btn" style="text-align:left;background:#fafaf2" value="[EpData 2026-Q3] Reporte de Kappa — ronda 2">
+            <label>Adjuntar</label>
+            <span><span class="tag status-done">Reporte Word</span> <span class="tag status-done">CSV de consolidado</span></span>
+            <label>Operación</label>
+            <span style="display:flex;gap:10px"><button class="btn">Programar</button><button class="btn primary">Enviar ahora</button></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <!-- PROJECT PICKER OVERLAY -->
+    <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:24px">
+        <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <h2>Elige el proyecto a configurar</h2>
+        <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+        <div class="picker-list" id="picker-list"></div>
+        <button class="btn" onclick="closePicker()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- TAXONOMY PICKER OVERLAY -->
+    <!-- TAXONOMY WIZARD (creación) -->
+    <div id="tax-wizard-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:60;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="wiz-card">
+        <div class="wiz-header">
+          <h2>Crear nueva dimensión</h2>
+          <p>Las las dimensiones son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
+        </div>
+
+        <div class="wiz-steps">
+          <div class="wiz-step active" data-step="1">
+            <div class="wiz-num"><span>1</span></div>
+            <div class="wiz-label">Nombre</div>
+          </div>
+          <div class="wiz-step" data-step="2">
+            <div class="wiz-num"><span>2</span></div>
+            <div class="wiz-label">Escala</div>
+          </div>
+          <div class="wiz-step" data-step="3">
+            <div class="wiz-num"><span>3</span></div>
+            <div class="wiz-label">Valores</div>
+          </div>
+          <div class="wiz-step" data-step="4">
+            <div class="wiz-num"><span>4</span></div>
+            <div class="wiz-label">Descripción</div>
+          </div>
+        </div>
+
+        <div class="wiz-body">
+          <!-- STEP 1: Nombre -->
+          <div class="wiz-step-panel active" data-panel="1">
+            <div class="wiz-row" id="wiz-row-dim-name">
+              <label>Nombre de la dimensión <span class="req">*</span></label>
+              <input type="text" id="wiz-dim-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
+              <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
+              <div class="wiz-err">El nombre es obligatorio.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Slug (identificador interno)</label>
+              <input type="text" id="wiz-dim-slug" placeholder="sesgo-de-odio" />
+              <div class="wiz-hint">Solo letras, números y guiones. Se usa en URLs y en la API.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción breve</label>
+              <textarea id="wiz-dim-short" placeholder="Una línea que aparecerá en el catálogo."></textarea>
+              <div class="wiz-hint">Opcional. Hasta 200 caracteres.</div>
+            </div>
+          </div>
+
+          <!-- STEP 2: Escala -->
+          <div class="wiz-step-panel" data-panel="2">
+            <div class="wiz-row">
+              <label>Tipo de escala <span class="req">*</span></label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la dimensión y cómo se puntúan.</div>
+              <div class="wiz-scale-grid" id="wiz-scale-grid">
+                <div class="wiz-scale-card" data-scale="boolean" onclick="selectScale('boolean')">
+                  <div class="sc-title">Booleano <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Sí / No. Para presencia de un rasgo.</div>
+                  <div class="sc-ex">Ej. "¿Contiene error factual?"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="binary" onclick="selectScale('binary')">
+                  <div class="sc-title">Binario <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Positivo / Negativo. Para polaridad.</div>
+                  <div class="sc-ex">Ej. "Tono: positivo vs negativo"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="3-level" onclick="selectScale('3-level')">
+                  <div class="sc-title">Tres niveles <span class="sc-pill">3 valores</span></div>
+                  <div class="sc-desc">Bajo / Medio / Alto. Para intensidad.</div>
+                  <div class="sc-ex">Ej. "Sesgo: bajo, medio, alto"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="5-level" onclick="selectScale('5-level')">
+                  <div class="sc-title">Cinco niveles <span class="sc-pill">5 valores</span></div>
+                  <div class="sc-desc">Escala Likert estándar para matices.</div>
+                  <div class="sc-ex">Ej. "Calidad periodística"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="likert" onclick="selectScale('likert')">
+                  <div class="sc-title">Likert 1–7 <span class="sc-pill">7 valores</span></div>
+                  <div class="sc-desc">Para análisis fino o psicometría.</div>
+                  <div class="sc-ex">Ej. "Credibilidad percibida"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="text" onclick="selectScale('text')">
+                  <div class="sc-title">Texto libre <span class="sc-pill">N valores</span></div>
+                  <div class="sc-desc">El anotador escribe el valor manualmente.</div>
+                  <div class="sc-ex">Ej. "Etiqueta abierta"</div>
+                </div>
+                <div class="wiz-scale-card wiz-scale-new" onclick="openCustomScaleDialog()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;border-color:var(--primary-2);background:transparent;text-align:center;min-height:118px">
+                  <div style="font-size:24px;color:var(--primary-2);font-weight:300;line-height:1">+</div>
+                  <div class="sc-title" style="color:var(--primary-2);margin-top:6px">Crear escala personalizada</div>
+                  <div class="sc-desc" style="text-align:center">Define un tipo propio con sus valores.</div>
+                </div>
+              </div>
+              <div style="margin-top:12px;font-size:11.5px;color:var(--ink-4)">
+                ¿No encaja con ninguna? <a href="#" onclick="openCustomScaleDialog();return false" style="color:var(--primary-2);font-weight:500;text-decoration:underline">Crea una escala a medida</a> con sus propios valores.
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 3: Valores -->
+          <div class="wiz-step-panel" data-panel="3">
+            <div class="wiz-row">
+              <label>Valores de la dimensión</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:10px" id="wiz-values-hint">Define cada valor con su nombre y color. Aparecerán como opciones al anotar.</div>
+              <div id="wiz-values-list"></div>
+              <button class="btn-mini" id="wiz-add-value" onclick="addWizValue()">+ Añadir valor</button>
+              <div class="wiz-hint" style="margin-top:8px" id="wiz-values-count"></div>
+              <div class="wiz-err" id="wiz-values-err">Al menos un valor debe tener nombre.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Paleta sugerida</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:8px">Aplica a los valores automáticamente si no los has personalizado.</div>
+              <div class="wiz-color-suggest" id="wiz-palette-suggest"></div>
+            </div>
+          </div>
+
+          <!-- STEP 4: Descripción y resumen -->
+          <div class="wiz-step-panel" data-panel="4">
+            <div class="wiz-row">
+              <label>Resumen</label>
+              <div class="wiz-summary" id="wiz-summary"></div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción completa</label>
+              <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
+              <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Visibilidad inicial</label>
+              <div class="wiz-toggle">
+                <input type="checkbox" id="wiz-visible" checked />
+                <div>
+                  <label for="wiz-visible">Visible para project admin desde el inicio</label>
+                  <span class="tg-sub">Si lo desactivas, solo tú (super admin) la verás hasta que la asignes.</span>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-row">
+              <label>Plantilla sugerida <span style="color:var(--ink-4);font-weight:400">(rellenar automáticamente)</span></label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn-mini" onclick="fillWizTemplate('hate')">Plantilla: Sesgo de odio</button>
+                <button class="btn-mini" onclick="fillWizTemplate('quality')">Plantilla: Calidad periodística</button>
+                <button class="btn-mini" onclick="fillWizTemplate('emotion')">Plantilla: Tono emocional</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wiz-footer">
+          <button class="btn" id="wiz-btn-cancel" onclick="closeTaxonomyWizard()">Cancelar</button>
+          <div class="wiz-actions">
+            <button class="btn" id="wiz-btn-prev" onclick="wizPrev()" style="display:none">← Atrás</button>
+            <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
+            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear dimensión</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOM SCALE DIALOG -->
+    <div id="custom-scale-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:60px;text-align:left;max-width:520px">
+        <h2 style="text-align:center;font-size:17px;margin-bottom:4px">Crear escala personalizada</h2>
+        <p class="lead" style="text-align:center;margin-bottom:18px">Define un tipo de escala propio para esta taxonomía. Quedará guardada para futuras taxonomías.</p>
+
+        <div class="wiz-row">
+          <label>Nombre de la escala <span style="color:#c0392b">*</span></label>
+          <input type="text" id="cs-name" placeholder="Ej. Polaridad 0-10, Impacto periodístico" />
+          <div class="wiz-hint">Como aparecerá al crear taxonomías.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Tipo de valores</label>
+          <select id="cs-type">
+            <option value="categorical">Categórico (lista cerrada)</option>
+            <option value="numerical">Numérico (rango 0-N)</option>
+            <option value="free">Texto libre (anotador escribe)</option>
+          </select>
+          <div class="wiz-hint">Categórico: el anotador elige de N opciones. Numérico: introduce un número 0-N. Libre: campo abierto.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-count-row">
+          <label>Número de valores</label>
+          <input type="number" id="cs-count" value="4" min="1" max="10" />
+          <div class="wiz-hint">Entre 1 y 10. Para numérico, será el valor máximo del rango.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-num-range-row" style="display:none">
+          <label>Rango numérico</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" value="0" style="width:80px" disabled />
+            <span style="color:var(--ink-3)">a</span>
+            <input type="number" id="cs-num-max" value="10" min="2" max="100" />
+          </div>
+          <div class="wiz-hint">El anotador introduce un valor entre 0 y N.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-values-preview-row" style="display:none">
+          <label>Vista previa de valores</label>
+          <div id="cs-values-preview" style="background:#fafaf2;border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div class="wiz-hint">Si los nombres no te convencen, puedes editarlos en el siguiente paso del wizard.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Descripción (opcional)</label>
+          <textarea id="cs-desc" placeholder="¿Cuándo se usa esta escala?" style="min-height:50px"></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
+          <button class="btn" onclick="closeCustomScaleDialog()">Cancelar</button>
+          <button class="btn primary" onclick="saveCustomScale()">Crear y usar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="dimension-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.45);z-index:50;backdrop-filter:blur(2px);overflow-y:auto">
+      <div class="picker-card" style="margin-top:24px;text-align:left">
+        <h2 style="text-align:center">Asignar dimensiones</h2>
+        <p class="lead" style="text-align:center">Marca las dimensiones que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
+        <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
+          <input type="search" placeholder="Buscar taxonomía..." id="dim-picker-search" />
+        </div>
+        <div class="picker-list" id="dim-picker-list"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);flex-shrink:0">
+          <button class="btn" onclick="closeDimensionPicker()">Cancelar</button>
+          <button class="btn primary" onclick="closeDimensionPicker()">Listo</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const views = document.querySelectorAll('.view');
+  const navBtns = document.querySelectorAll('.nav button[data-view]');
+  const crumb = document.getElementById('crumb');
+  const titles = {
+    login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
+    dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
+    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
+    paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
+    validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
+  };
+  function go(name){
+    views.forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    crumb.textContent = titles[name] || name;
+    document.querySelector('main').scrollTo(0,0);
+    window.scrollTo(0,0);
+
+    // Si la vista requiere proyecto y no hay uno activo, mostrar el gate
+    if (requiresProject(name) && !activeProject){
+      const gate = document.getElementById('view-' + name + '-gate');
+      const content = document.getElementById('view-' + name + '-content');
+      if (gate) gate.style.display = 'block';
+      if (content) content.style.display = 'none';
+    } else if (requiresProject(name) && activeProject){
+      const gate = document.getElementById('view-' + name + '-gate');
+      const content = document.getElementById('view-' + name + '-content');
+      if (gate) gate.style.display = 'none';
+      if (content) content.style.display = 'block';
+    }
+    // Re-render dinámico de las vistas que lo necesitan
+    if (name === 'dimensions' && activeProject) {
+      renderProjectDimensions();
+    }
+    if (name === 'taxonomy-groups') {
+      renderTaxonomyGroups();
+    }
+    if (name === 'taxonomies') {
+      renderDimensionsCatalog();
+    }
+  }
+  navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+
+  // ─── Project picker (multi-project) ───
+  const PROJECTS = [
+    { id:'epdata-2026q3', name:'EpData 2026-Q3',      desc:'Validación cuantitativa · 3.662 fragmentos',        tag:'E', color:'linear-gradient(135deg,#0e4a52,#1d6e75)' },
+    { id:'epdata-2026q2', name:'EpData 2026-Q2',      desc:'Consolidación final · 1.224 fragmentos',           tag:'E', color:'linear-gradient(135deg,#0e4a52,#1d6e75)' },
+    { id:'epdata-sint',   name:'EpData Sintético v1', desc:'Línea base juez · 200 fragmentos',                tag:'E', color:'linear-gradient(135deg,#5a4400,#8a6300)' },
+    { id:'ods-2026',      name:'ODS 2026 (demo)',     desc:'Pilotaje en otros indicadores de odio · 412',     tag:'O', color:'linear-gradient(135deg,#7a1a1c,#b04143)' },
+  ];
+  let activeProject = null;
+
+  function requiresProject(viewName){
+    // 'taxonomies' es global, no requiere proyecto.
+    // 'dimensions' (taxonomías del proyecto) sí lo requiere.
+    return ['dimensions','roles','paquetes','segmentation'].includes(viewName);
+  }
+
+  function renderPickerRows(container){
+    container.innerHTML = '';
+    PROJECTS.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'picker-row';
+      row.onclick = () => { setProject(p.id); closePicker(); };
+      row.innerHTML = `
+        <div class="av" style="background:${p.color}">${p.tag}</div>
+        <div class="meta"><b>${p.name}</b><small>${p.desc}</small></div>
+        <span class="badge-count">3 equipos</span>
+        <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function openPicker(){
+    document.getElementById('picker-overlay').style.display = 'block';
+    renderPickerRows(document.getElementById('picker-list'));
+  }
+  function closePicker(){
+    document.getElementById('picker-overlay').style.display = 'none';
+  }
+
+  function setProject(projectId){
+    const p = PROJECTS.find(x => x.id === projectId);
+    if (!p) return;
+    activeProject = p;
+    const sw = document.getElementById('proj-switcher');
+    sw.classList.remove('is-empty');
+    document.getElementById('proj-av').textContent = p.tag;
+    document.getElementById('proj-av').style.background = p.color;
+    document.getElementById('proj-name').innerHTML = `${p.name}<small>activo</small>`;
+    // Si la vista actual requiere proyecto, la desbloqueamos
+    const viewName = document.querySelector('.nav button.active')?.dataset.view;
+    if (viewName && requiresProject(viewName)){
+      const gate = document.getElementById('view-' + viewName + '-gate');
+      const content = document.getElementById('view-' + viewName + '-content');
+      if (gate) gate.style.display = 'none';
+      if (content) content.style.display = 'block';
+      // Re-render dinámico si es dimensions
+      if (viewName === 'dimensions') renderProjectDimensions();
+    }
+  }
+
+  // Inicializar pickers inline en las 3 vistas que lo requieren
+  document.querySelectorAll('[data-inline-picker]').forEach(el => renderPickerRows(el));
+
+  // ─── Taxonomies (catálogo global) ───
+  // Estado: array de objetos taxonomía con su asignación por proyecto.
+  // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
+  // y POST /api/projects/[id]/taxonomies.
+  const DIMENSIONS = [
+    { id:'tx-odio',          name:'Sesgo de odio',         color:'tk-odio',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Detecta insinuaciones o discurso explícito de odio en el contenido.' },
+    { id:'tx-emotividad',    name:'Emotividad',            color:'tk-emot',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.' },
+    { id:'tx-tendencioso',   name:'Carácter tendencioso',  color:'tk-tend',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?' },
+    { id:'tx-semiotica',     name:'Semiótica',             color:'tk-semi',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.' },
+    { id:'tx-genero',        name:'Género',                color:'tk-gen',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?' },
+    { id:'tx-raza',          name:'Raza / etnia',          color:'tk-race',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido racista o con sesgo étnico.' },
+    { id:'tx-religion',      name:'Religión',              color:'tk-rel',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido con sesgo religioso.' },
+    { id:'tx-demografico',   name:'Sesgo demográfico',     color:'tk-demo',  scale:'3 niveles', values:4, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta sesgo por edad, origen o clase social.' },
+    { id:'tx-estadistico',   name:'Sesgo estadístico',     color:'tk-stat',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Evalúa si los datos cuantitativos/cualitativos son correctos, faltan fuentes o hay cifras imprecisas.' },
+    { id:'tx-toxicidad',     name:'Toxicidad',             color:'tk-toxic', scale:'Likert 5',  values:5, assignedTo:['ods-2026'],                       usedInAnnotations:0, status:'active', shortDesc:'Mide el nivel de toxicidad general (insultos, vulgaridad, agresividad).' },
+    { id:'tx-fact',          name:'Incoherencia factual',  color:'tk-fact',  scale:'2 niveles', values:2, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Marca respuestas que contradicen datos verificables del propio contexto o del corpus.' },
+    { id:'tx-polaridad',     name:'Polaridad política',    color:'',         scale:'Likert 7',  values:7, assignedTo:[],                                  usedInAnnotations:0, status:'archived', shortDesc:'Idea antigua. Reemplazada por Toxicidad + Sesgo demográfico.' },
+  ];
+
+  // ─── TAXONOMIES: grupos de dimensiones (N:M) ───
+  // Cada taxonomía referencia dimensiones por su id. Una dimensión puede
+  // vivir en varias taxonomías (e.g. Emotividad → "Aspectos formales" + "Tono emocional").
+  const TAXONOMIES = [
+    {
+      id:'tx-sociodemo',
+      name:'Sesgos sociodemográficos',
+      shortDesc:'Sesgos contra grupos protegidos: odio, género, raza, religión, demografía.',
+      color:'rose',
+      dimensions:['tx-odio','tx-genero','tx-raza','tx-religion','tx-demografico'],
+      assignedTo:['epdata-2026q3','epdata-2026q2'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-10'
+    },
+    {
+      id:'tx-calidad',
+      name:'Calidad periodística',
+      shortDesc:'Rigor factual, datos, fuentes, verificación. Métricas formales de calidad.',
+      color:'amber',
+      dimensions:['tx-estadistico','tx-fact'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-12'
+    },
+    {
+      id:'tx-formal',
+      name:'Aspectos formales del discurso',
+      shortDesc:'Estilo, retórica, carga emocional, figuras literarias. Cómo se dice, no qué se dice.',
+      color:'cyan',
+      dimensions:['tx-tendencioso','tx-semiotica','tx-emotividad'],
+      assignedTo:['epdata-2026q3'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-07-15'
+    },
+    {
+      id:'tx-toxic',
+      name:'Toxicidad y discurso dañino',
+      shortDesc:'Insultos, vulgaridad, agresividad. No incluye odio estructural (eso va en sociodemo).',
+      color:'violet',
+      dimensions:['tx-toxicidad'],
+      assignedTo:['ods-2026'],
+      status:'active',
+      createdBy:'Marta R. (superadmin)',
+      createdAt:'2026-08-01'
+    },
+  ];
+
+  // Index auxiliar para resolver ids de dimensión → objeto
+  function dimById(id) { return DIMENSIONS.find(d => d.id === id); }
+  function dimName(id) { const d = dimById(id); return d ? d.name : '?'; }
+  function dimColor(id) { const d = dimById(id); return d ? (d.color || 'tk-stat') : 'tk-stat'; }
+
+
+  function isAssignedToActiveProject(tax) {
+    if (!activeProject) return false;
+    return tax.assignedTo.includes(activeProject.id);
+  }
+
+  function openDimensionPicker() {
+    if (!activeProject) {
+      alert('Selecciona primero un proyecto activo en el switcher del top bar.');
+      return;
+    }
+    document.getElementById('dimension-picker-overlay').style.display = 'block';
+    renderDimensionPicker();
+    setTimeout(() => {
+      const search = document.getElementById('dim-picker-search');
+      if (search) search.focus();
+    }, 100);
+  }
+
+  function closeDimensionPicker() {
+    document.getElementById('dimension-picker-overlay').style.display = 'none';
+  }
+
+  function renderDimensionPicker() {
+    const list = document.getElementById('dim-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const available = DIMENSIONS.filter(t => t.status === 'active');
+    available.forEach(tax => {
+      const isAssigned = isAssignedToActiveProject(tax);
+      const row = document.createElement('div');
+      row.className = 'picker-row' + (isAssigned ? ' is-assigned' : '');
+      row.innerHTML = `
+        <div class="av tax-color ${tax.color}" style="width:34px;height:34px;font-size:12px">${tax.name.charAt(0)}</div>
+        <div class="meta" style="flex:1">
+          <b>${tax.name}</b>
+          <small>${tax.scale} · ${tax.values} valores${tax.assignedTo.length > 0 ? ' · ' + tax.assignedTo.length + (tax.assignedTo.length === 1 ? ' proyecto' : ' proyectos') : ''}</small>
+        </div>
+        ${isAssigned
+          ? '<span class="av-extra">✓ Asignada</span>'
+          : '<button class="btn-mini primary-mini" onclick="assignTaxonomy(\''+tax.id+'\')">Asignar</button>'}
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function assignTaxonomy(taxId) {
+    const tax = DIMENSIONS.find(t => t.id === taxId);
+    if (!tax || !activeProject) return;
+    if (!tax.assignedTo.includes(activeProject.id)) {
+      tax.assignedTo.push(activeProject.id);
+      // In a real app: POST /api/projects/[id]/taxonomies
+    }
+    renderDimensionPicker();
+    renderProjectDimensions();
+  }
+
+  function unassignTaxonomy(taxId) {
+    if (!activeProject) return;
+    const tax = DIMENSIONS.find(t => t.id === taxId);
+    if (!tax) return;
+    tax.assignedTo = tax.assignedTo.filter(id => id !== activeProject.id);
+    // In a real app: DELETE /api/projects/[id]/taxonomies/[taxId]
+    renderProjectDimensions();
+  }
+
+  // ─── Taxonomy creation wizard (4 pasos) ───
+  const WIZ_PALETTE = ['#d97757','#a85a35','#7d6c4f','#3d8268','#5b8fb8','#8b6db5','#c79d3c','#9c5b8b'];
+  const WIZ_SCALE_DEFAULTS = {
+    'boolean':  [{name:'Sí', color:'#d97757'}, {name:'No', color:'#3d8268'}],
+    'binary':   [{name:'Positivo', color:'#3d8268'}, {name:'Negativo', color:'#d97757'}],
+    '3-level':  [{name:'Bajo', color:'#3d8268'}, {name:'Medio', color:'#c79d3c'}, {name:'Alto', color:'#d97757'}],
+    '5-level':  [{name:'Muy bajo', color:'#1c8a4a'}, {name:'Bajo', color:'#3d8268'}, {name:'Medio', color:'#c79d3c'}, {name:'Alto', color:'#a85a35'}, {name:'Muy alto', color:'#c0392b'}],
+    'likert':   Array.from({length:7}, (_,i)=>({name:`${i+1}`, color:`hsl(${20 + i*15}, 55%, ${50 - i*3}%)`})),
+    'text':     [{name:'(texto libre)', color:'#7d6c4f'}]
+  };
+  const WIZ_SCALE_LABEL = {
+    'boolean':'Booleano (2 valores)','binary':'Binario (2 valores)','3-level':'Tres niveles (3 valores)',
+    '5-level':'Cinco niveles (5 valores)','likert':'Likert 1-7 (7 valores)','text':'Texto libre (N valores)'
+  };
+  const WIZ_TEMPLATES = {
+    hate: 'Esta taxonomía identifica expresiones de odio o rechazo dirigidas a grupos protegidos (raza, religión, género, orientación sexual, etnia, nacionalidad, discapacidad). NO se considera odio: críticas políticas,报道 negativo de hechos, uso de vocabulario crudo sin carga. SÍ se considera: deshumanización, generalización ofensiva, insulto identitario, incitación. Distinguir de "Carácter tendencioso" (que es más sutil).',
+    quality: 'Evalúa la calidad periodística en cuatro dimensiones: rigor factual (¿citas verificables?), equilibrio (¿múltiples fuentes?), contexto (¿datos de fondo?), claridad (¿comprensible para un lector general?). Asignar 1 si falla gravemente en alguna dimensión, 5 si cumple las cuatro. Diferenciar de "Sesgo de odio": una pieza puede tener odio sin ser de baja calidad técnica.',
+    emotion: 'Mide el tono emocional dominante: positivo (esperanza, logro, celebración), negativo (miedo, tristeza, conflicto), neutro (hechos sin carga), mixto (combina varios). Si hay coexistencia clara, asignar "mixto". Para escalar intensidad usar "Carácter tendencioso".'
+  };
+
+  // ─── Custom scale dialog ───
+  const CUSTOM_SCALES = [
+    // Persistidas para futuras taxonomías (en real, esto va a BD)
+    { id:'cs-polarity', name:'Polaridad 0-10', type:'numerical', count:11, numMax:10, desc:'Para análisis de sentimiento con granularidad alta.' },
+  ];
+
+  function openCustomScaleDialog() {
+    document.getElementById('cs-name').value = '';
+    document.getElementById('cs-desc').value = '';
+    document.getElementById('cs-type').value = 'categorical';
+    document.getElementById('cs-count').value = 4;
+    document.getElementById('cs-num-max').value = 10;
+    csCurrentValues = []; // reset
+    updateCustomScalePreview();
+    document.getElementById('custom-scale-overlay').style.display = 'block';
+    setTimeout(() => document.getElementById('cs-name').focus(), 100);
+  }
+
+  function closeCustomScaleDialog() {
+    document.getElementById('custom-scale-overlay').style.display = 'none';
+  }
+
+  // Estado temporal de valores editables en la creación de escala
+  let csCurrentValues = [];
+
+  function syncCsValues(newCount) {
+    // Mantiene los nombres/colores editados y rellena con defaults los huecos
+    const defaults = defaultNamesForCount(newCount);
+    const out = [];
+    for (let i = 0; i < newCount; i++) {
+      const existing = csCurrentValues[i];
+      if (existing && existing.name && existing.name.trim()) {
+        out.push({ name: existing.name, color: existing.color || WIZ_PALETTE[i % WIZ_PALETTE.length] });
+      } else {
+        out.push({ name: defaults[i] || `Opción ${i+1}`, color: WIZ_PALETTE[i % WIZ_PALETTE.length] });
+      }
+    }
+    csCurrentValues = out;
+  }
+
+  function updateCsValue(i, field, value) {
+    if (csCurrentValues[i]) csCurrentValues[i][field] = value;
+  }
+
+  // Cambia la UI según el tipo seleccionado
+  function updateCustomScalePreview() {
+    const type = document.getElementById('cs-type').value;
+    const count = parseInt(document.getElementById('cs-count').value) || 1;
+    const previewRow = document.getElementById('cs-values-preview-row');
+    const numRangeRow = document.getElementById('cs-num-range-row');
+    const countRow = document.getElementById('cs-count-row');
+    const preview = document.getElementById('cs-values-preview');
+
+    if (type === 'free') {
+      previewRow.style.display = 'none';
+      numRangeRow.style.display = 'none';
+      countRow.style.display = 'none';
+      return;
+    }
+    countRow.style.display = '';
+    if (type === 'numerical') {
+      numRangeRow.style.display = '';
+      previewRow.style.display = 'none';
+    } else {
+      numRangeRow.style.display = 'none';
+      previewRow.style.display = '';
+      // Sincronizar array con el nuevo count (conservando ediciones)
+      syncCsValues(count);
+      // Renderizar inputs editables
+      preview.innerHTML = csCurrentValues.map((v, i) => `
+        <div class="cs-vrow">
+          <div class="cs-vcolor" style="background:${v.color}" title="Click para cambiar color">
+            <input type="color" value="${v.color}" onchange="updateCsValue(${i},'color',this.value); this.parentElement.style.background=this.value;" />
+          </div>
+          <input class="cs-vname" value="${escapeAttr(v.name)}" oninput="updateCsValue(${i},'name',this.value)" placeholder="Nombre del valor ${i+1}" />
+          <span class="cs-vnum">#${i+1}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  function defaultNamesForCount(count) {
+    if (count === 1) return ['Sí'];
+    if (count === 2) return ['Opción A', 'Opción B'];
+    if (count === 3) return ['Bajo', 'Medio', 'Alto'];
+    if (count === 4) return ['Muy bajo', 'Bajo', 'Alto', 'Muy alto'];
+    if (count === 5) return ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto'];
+    if (count <= 10) {
+      return Array.from({length: count}, (_, i) => `Opción ${i+1}`);
+    }
+    return [];
+  }
+
+  function saveCustomScale() {
+    const name = document.getElementById('cs-name').value.trim();
+    if (!name) {
+      document.getElementById('cs-name').focus();
+      document.getElementById('cs-name').style.borderColor = '#c0392b';
+      return;
+    }
+    const type = document.getElementById('cs-type').value;
+    const count = parseInt(document.getElementById('cs-count').value) || 1;
+    const numMax = parseInt(document.getElementById('cs-num-max').value) || 10;
+    const desc = document.getElementById('cs-desc').value.trim();
+
+    const id = 'cs-' + name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+
+    if (type === 'free') {
+      WIZ_SCALE_DEFAULTS[id] = [{name:'(texto libre)', color:'#7d6c4f'}];
+      WIZ_SCALE_LABEL[id] = `${name} (texto libre)`;
+    } else if (type === 'numerical') {
+      WIZ_SCALE_DEFAULTS[id] = Array.from({length: numMax + 1}, (_, i) => ({name: String(i), color: `hsl(${20 + i*8}, 55%, ${55 - i*2}%)`}));
+      WIZ_SCALE_LABEL[id] = `${name} (0-${numMax})`;
+    } else {
+      // Categórico: usar los valores editados en csCurrentValues
+      WIZ_SCALE_DEFAULTS[id] = csCurrentValues.map(v => ({name: v.name || 'Sin nombre', color: v.color}));
+      WIZ_SCALE_LABEL[id] = `${name} (${count} valores)`;
+    }
+
+    // Persistir
+    CUSTOM_SCALES.push({ id, name, type, count, numMax, desc });
+
+    // Cerrar el modal
+    closeCustomScaleDialog();
+
+    // Seleccionar automáticamente y pasar al paso 3
+    wizState.step = 1; // reset para que selectScale salte correctamente
+    selectScale(id);
+
+    // Insertar un card en el grid (solo si no existe) — usando el último + Personalizada
+    const grid = document.getElementById('wiz-scale-grid');
+    const newCard = document.createElement('div');
+    newCard.className = 'wiz-scale-card';
+    newCard.dataset.scale = id;
+    newCard.onclick = () => selectScale(id);
+    newCard.innerHTML = `<div class="sc-title">${escapeHtml(name)} <span class="sc-pill">${type==='numerical'?'0-'+numMax:type==='free'?'libre':count+' valores'}</span></div><div class="sc-desc">${escapeHtml(desc || 'Escala personalizada')}</div><div class="sc-ex">Creada ahora</div>`;
+    // Insertar antes del card "+ Personalizada"
+    const newCardEl = grid.querySelector('.wiz-scale-new');
+    grid.insertBefore(newCard, newCardEl);
+
+    // Avanzar al paso 3
+    wizState.step = 2;
+    wizState.step = 3;
+    renderWizValues();
+    updateWizUI();
+  }
+
+  // Listeners para el dialog
+  document.addEventListener('DOMContentLoaded', () => {
+    const type = document.getElementById('cs-type');
+    const count = document.getElementById('cs-count');
+    if (type) type.addEventListener('change', updateCustomScalePreview);
+    if (count) count.addEventListener('input', updateCustomScalePreview);
+  });
+  // Si el DOM ya está listo al momento de inyectar el JS, también engancho
+  setTimeout(() => {
+    const type = document.getElementById('cs-type');
+    const count = document.getElementById('cs-count');
+    if (type) type.addEventListener('change', updateCustomScalePreview);
+    if (count) count.addEventListener('input', updateCustomScalePreview);
+  }, 50);
+
+  // ─── Taxonomy groups: render + gestión ───
+  function renderTaxonomyGroups() {
+    const container = document.getElementById('tax-grp-list');
+    if (!container) return;
+    const search = (document.getElementById('tax-grp-search')?.value || '').toLowerCase().trim();
+    const list = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES : [];
+    const filtered = search ? list.filter(t => t.name.toLowerCase().includes(search) || t.shortDesc.toLowerCase().includes(search)) : list;
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera con el botón superior derecho.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(tax => {
+      const dims = (tax.dimensions || []).map(did => {
+        const d = dimById(did);
+        if (!d) return '';
+        return `<span class="dim-pill"><span class="dot" style="background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+      }).join('');
+      const dimCount = (tax.dimensions || []).length;
+      const projCount = (tax.assignedTo || []).length;
+      return `
+        <div class="tx-grp-card" data-tx-grp-id="${tax.id}">
+          <div class="tx-grp-head">
+            <div class="grp-avatar ${tax.color || 'cyan'}">${(tax.name||'?').charAt(0).toUpperCase()}</div>
+            <div class="grp-info">
+              <div class="grp-name">${escapeHtml(tax.name)}</div>
+              <div class="grp-desc">${escapeHtml(tax.shortDesc || '')}</div>
+            </div>
+            <div class="grp-actions">
+              <div class="count"><b>${dimCount}</b>dimensiones</div>
+              <div class="count"><b>${projCount}</b>${projCount === 1 ? 'proyecto' : 'proyectos'}</div>
+              <button onclick="archiveTaxonomyGroup('${tax.id}')">Archivar</button>
+              <button class="primary" onclick="openAssignDialog('${tax.id}')">Asignar a proyecto</button>
+            </div>
+          </div>
+          <div class="tx-grp-body">
+            ${dims || '<div class="empty-dims">Sin dimensiones todavía. Añade alguna abajo.</div>'}
+            <div class="grp-add-dim">
+              <select id="add-dim-${tax.id}">
+                <option value="">+ Añadir dimensión existente…</option>
+                ${DIMENSIONS.filter(d => !(tax.dimensions || []).includes(d.id)).map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('')}
+              </select>
+              <button onclick="addDimToGroup('${tax.id}')">Añadir</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // KPIs
+    const activeCount = list.filter(t => t.status === 'active').length;
+    const totalAssignments = list.reduce((s, t) => s + (t.assignedTo || []).length, 0);
+    const projects = new Set();
+    list.forEach(t => (t.assignedTo || []).forEach(p => projects.add(p)));
+    const a1 = document.getElementById('tax-grp-count-active');
+    const a2 = document.getElementById('tax-grp-count-assignments');
+    if (a1) a1.textContent = activeCount;
+    if (a2) a2.textContent = totalAssignments;
+  }
+
+  function colorForTax(tk) {
+    // Mapear tk-* a un color hex para los dots
+    const map = {
+      'tk-odio':'#d97757','tk-emot':'#a85a35','tk-tend':'#7d6c4f','tk-semi':'#3d8268',
+      'tk-gen':'#5b8fb8','tk-race':'#8b6db5','tk-rel':'#c79d3c','tk-demo':'#9c5b8b',
+      'tk-stat':'#5a7d8f','tk-toxic':'#7a1a1c','tk-fact':'#1c6e3a'
+    };
+    return map[tk] || '#7d6c4f';
+  }
+
+  function addDimToGroup(taxId) {
+    const sel = document.getElementById('add-dim-' + taxId);
+    const dimId = sel?.value;
+    if (!dimId) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.dimensions) tax.dimensions = [];
+    if (tax.dimensions.includes(dimId)) return;
+    tax.dimensions.push(dimId);
+    renderTaxonomyGroups();
+    showToast(`"${dimName(dimId)}" añadida a "${tax.name}".`, 2500);
+  }
+
+  function archiveTaxonomyGroup(taxId) {
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!confirm(`¿Archivar la taxonomía "${tax.name}"? Se ocultará del catálogo y no podrá asignarse a nuevos proyectos, pero las anotaciones existentes se conservan.`)) return;
+    tax.status = 'archived';
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" archivada.`, 2500);
+  }
+
+  function openAssignDialog(taxId) {
+    // Simplificado: prompt para elegir proyecto
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    const choice = prompt(`Asignar "${tax.name}" a qué proyecto?
+Proyectos disponibles:
+- epdata-2026q3 (EpData 2026-Q3)
+- epdata-2026q2 (EpData 2026-Q2)
+- epdata-sint (EpData Sintético v1)
+- ods-2026 (ODS 2026)
+
+Escribe el id del proyecto (o deja vacío para cancelar):`);
+    if (!choice) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (tax.assignedTo.includes(choice)) {
+      showToast(`Ya estaba asignada.`, 2000);
+      return;
+    }
+    tax.assignedTo.push(choice);
+    renderTaxonomyGroups();
+    showToast(`"${tax.name}" asignada a ${choice}.`, 2500);
+  }
+
+  function openNewTaxonomyGroupDialog() {
+    const name = prompt('Nombre de la nueva taxonomía (grupo):');
+    if (!name) return;
+    const desc = prompt('Descripción breve:') || '';
+    const color = prompt('Color (rose / amber / cyan / violet):', 'cyan') || 'cyan';
+    const id = 'tx-' + name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+    TAXONOMIES.push({
+      id, name, shortDesc: desc, color, dimensions: [], assignedTo: [],
+      status: 'active', createdBy: 'Marta R. (superadmin)', createdAt: new Date().toISOString().slice(0,10)
+    });
+    renderTaxonomyGroups();
+    showToast(`Taxonomía "${name}" creada. Añade dimensiones desde su tarjeta.`, 3500);
+  }
+
+  let wizState = {
+    step: 1,
+    scale: null,
+    values: [],
+    name: '',
+    slug: '',
+    shortDesc: '',
+    longDesc: '',
+    visible: true
+  };
+
+  function openDimensionWizard() {
+    // reset
+    wizState = { step: 1, scale: null, values: [], name: '', slug: '', shortDesc: '', longDesc: '', visible: true };
+    document.getElementById('wiz-dim-name').value = '';
+    document.getElementById('wiz-dim-slug').value = '';
+    document.getElementById('wiz-dim-short').value = '';
+    document.getElementById('wiz-dim-long').value = '';
+    document.querySelectorAll('.wiz-scale-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('wiz-values-list').innerHTML = '';
+    document.getElementById('wiz-row-dim-name').classList.remove('has-error');
+    document.getElementById('wiz-values-err').style.display = 'none';
+    updateWizUI();
+    renderPaletteSuggest();
+    document.getElementById('tax-wizard-overlay').style.display = 'block';
+    setTimeout(() => document.getElementById('wiz-dim-name').focus(), 100);
+  }
+
+  function closeTaxonomyWizard() {
+    document.getElementById('tax-wizard-overlay').style.display = 'none';
+  }
+
+  function autoSlug() {
+    const name = document.getElementById('wiz-dim-name').value || '';
+    const slug = name.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    document.getElementById('wiz-dim-slug').value = slug;
+  }
+
+  function selectScale(scale) {
+    wizState.scale = scale;
+    document.querySelectorAll('.wiz-scale-card').forEach(c => {
+      c.classList.toggle('selected', c.dataset.scale === scale);
+    });
+    // Pre-fill values
+    wizState.values = WIZ_SCALE_DEFAULTS[scale].map(v => ({...v}));
+    renderWizValues();
+  }
+
+  function renderWizValues() {
+    const list = document.getElementById('wiz-values-list');
+    const scale = wizState.scale;
+    if (!scale) { list.innerHTML = ''; return; }
+
+    // For text scale, no editing of values
+    if (scale === 'text') {
+      list.innerHTML = `<div class="wiz-hint" style="padding:14px;background:#fafaf2;border:1px solid var(--line-soft);border-radius:7px">En modo texto libre, los anotadores escriben el valor. No es necesario definir valores fijos.</div>`;
+      document.getElementById('wiz-add-value').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('wiz-add-value').style.display = '';
+    const maxValues = (scale === 'likert') ? 7 : 99;
+
+    list.innerHTML = wizState.values.map((v, i) => `
+      <div class="wiz-value-row">
+        <div class="v-num">${i+1}</div>
+        <div class="v-color" style="background:${v.color}"><input type="color" value="${v.color}" onchange="updateWizValue(${i}, 'color', this.value)" /></div>
+        <input class="v-name" value="${escapeAttr(v.name)}" oninput="updateWizValue(${i}, 'name', this.value)" />
+        <button class="v-del" onclick="removeWizValue(${i})" title="Eliminar">✕</button>
+      </div>
+    `).join('');
+
+    const cnt = document.getElementById('wiz-values-count');
+    cnt.textContent = `${wizState.values.length} valor(es). ` +
+      (scale === 'likert' ? 'Fijo en 7.' :
+       scale === 'boolean' || scale === 'binary' ? 'Fijo en 2.' :
+       scale === '3-level' ? 'Recomendado 3 (puedes ajustar).' :
+       scale === '5-level' ? 'Recomendado 5 (puedes ajustar).' :
+       '');
+  }
+
+  function updateWizValue(i, field, value) {
+    wizState.values[i][field] = value;
+  }
+
+  function addWizValue() {
+    const scale = wizState.scale;
+    if (scale === 'likert') return;
+    const next = wizState.values.length + 1;
+    const color = WIZ_PALETTE[(next - 1) % WIZ_PALETTE.length];
+    wizState.values.push({ name: '', color });
+    renderWizValues();
+  }
+
+  function removeWizValue(i) {
+    if (wizState.values.length <= 1) return;
+    wizState.values.splice(i, 1);
+    renderWizValues();
+  }
+
+  function renderPaletteSuggest() {
+    const el = document.getElementById('wiz-palette-suggest');
+    if (!el) return;
+    el.innerHTML = '<span class="lbl">Paleta del sistema:</span>' + WIZ_PALETTE.map(c => `<div class="swatch" style="background:${c}" title="${c}"></div>`).join('');
+  }
+
+  function fillWizTemplate(key) {
+    document.getElementById('wiz-dim-long').value = WIZ_TEMPLATES[key] || '';
+  }
+
+  function wizNext() {
+    // validate current step
+    if (!validateWizStep(wizState.step)) return;
+    if (wizState.step < 4) {
+      wizState.step++;
+      if (wizState.step === 3) renderWizValues();
+      if (wizState.step === 4) renderWizSummary();
+      updateWizUI();
+    }
+  }
+
+  function wizPrev() {
+    if (wizState.step > 1) {
+      wizState.step--;
+      updateWizUI();
+    }
+  }
+
+  function validateWizStep(step) {
+    if (step === 1) {
+      const name = document.getElementById('wiz-dim-name').value.trim();
+      if (!name) {
+        document.getElementById('wiz-row-dim-name').classList.add('has-error');
+        document.getElementById('wiz-dim-name').focus();
+        return false;
+      }
+      document.getElementById('wiz-row-dim-name').classList.remove('has-error');
+      wizState.name = name;
+      wizState.slug = document.getElementById('wiz-dim-slug').value.trim() || autoSlugFromName(name);
+      wizState.shortDesc = document.getElementById('wiz-dim-short').value.trim();
+      return true;
+    }
+    if (step === 2) {
+      if (!wizState.scale) {
+        alert('Selecciona un tipo de escala.');
+        return false;
+      }
+      return true;
+    }
+    if (step === 3) {
+      if (wizState.scale === 'text') return true;
+      const named = wizState.values.filter(v => v.name && v.name.trim());
+      if (named.length === 0) {
+        document.getElementById('wiz-values-err').style.display = 'block';
+        return false;
+      }
+      document.getElementById('wiz-values-err').style.display = 'none';
+      return true;
+    }
+    if (step === 4) return true;
+    return true;
+  }
+
+  function autoSlugFromName(name) {
+    return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  function updateWizUI() {
+    // Step indicator
+    document.querySelectorAll('.wiz-step').forEach(s => {
+      const n = parseInt(s.dataset.step);
+      s.classList.toggle('active', n === wizState.step);
+      s.classList.toggle('done', n < wizState.step);
+    });
+    // Panels
+    document.querySelectorAll('.wiz-step-panel').forEach(p => {
+      p.classList.toggle('active', parseInt(p.dataset.panel) === wizState.step);
+    });
+    // Buttons
+    document.getElementById('wiz-btn-prev').style.display = wizState.step > 1 ? '' : 'none';
+    document.getElementById('wiz-btn-next').style.display = wizState.step < 4 ? '' : 'none';
+    document.getElementById('wiz-btn-create').style.display = wizState.step === 4 ? '' : 'none';
+    // Cancel
+    document.getElementById('wiz-btn-cancel').textContent = wizState.step === 1 ? 'Cancelar' : '×';
+  }
+
+  function renderWizSummary() {
+    const sm = document.getElementById('wiz-summary');
+    if (!sm) return;
+    const chips = wizState.values.filter(v => v.name && v.name.trim())
+      .map(v => `<span class="sm-chip" style="background:${v.color}"><span class="sm-dot"></span>${escapeHtml(v.name)}</span>`).join('');
+    sm.innerHTML = `
+      <div class="sm-row"><span class="sm-label">Nombre</span><span class="sm-value">${escapeHtml(wizState.name)}</span></div>
+      <div class="sm-row"><span class="sm-label">Slug</span><span class="sm-value" style="font-family:monospace;font-size:11.5px">${escapeHtml(wizState.slug)}</span></div>
+      <div class="sm-row"><span class="sm-label">Escala</span><span class="sm-value">${WIZ_SCALE_LABEL[wizState.scale] || wizState.scale}</span></div>
+      <div class="sm-row"><span class="sm-label">Valores (${wizState.values.length})</span><span class="sm-value sm-chips">${chips || '<span style="color:var(--ink-4);font-style:italic">texto libre</span>'}</span></div>
+      ${wizState.shortDesc ? `<div class="sm-row"><span class="sm-label">Descripción breve</span><span class="sm-value">${escapeHtml(wizState.shortDesc)}</span></div>` : ''}
+    `;
+  }
+
+  function wizCreate() {
+    // Sync final values
+    wizState.longDesc = document.getElementById('wiz-dim-long').value.trim();
+    wizState.visible = document.getElementById('wiz-visible').checked;
+
+    // Build new taxonomy object
+    const id = 'tx-' + wizState.slug + '-' + Date.now().toString(36);
+    const newTax = {
+      id, name: wizState.name, slug: wizState.slug,
+      color: wizState.values[0]?.color || '#7d6c4f',
+      scale: wizState.scale, values: wizState.values.length,
+      assignedTo: [], usedInAnnotations: 0, status: 'active',
+      shortDesc: wizState.shortDesc, longDesc: wizState.longDesc,
+      createdAt: new Date().toISOString().slice(0,10),
+      createdBy: 'Marta R. (superadmin)'
+    };
+    DIMENSIONS.unshift(newTax);
+    closeTaxonomyWizard();
+    renderDimensionsCatalog();
+    showToast(`Taxonomía "${wizState.name}" creada. Asignar a proyectos →`, 4500);
+  }
+
+  function escapeAttr(s) { return (s||'').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function escapeHtml(s) { return (s||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function showToast(msg, ms) {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2332;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,0.3);max-width:520px;text-align:center`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; }, ms - 300);
+    setTimeout(() => t.remove(), ms);
+  }
+
+  function renderDimensionsCatalog() {
+    // En el mockup, recargamos la vista. En la app real, sería re-render del grid.
+    const card = document.querySelector('#view-taxonomies .card');
+    if (!card) return;
+    // Re-render simple: refresca la página de catálogo
+    go('taxonomies');
+  }
+
+  // ─── Dimensiones view: tabs + render dinámico desde TAXONOMIES ───
+  let currentDimTab = 'all';
+
+  function switchDimTab(tab) {
+    currentDimTab = tab;
+    document.querySelectorAll('.tabs-bar .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.remove('active');
+    });
+    const panel = document.getElementById('dim-panel-' + tab);
+    if (panel) panel.classList.add('active');
+  }
+
+  function isAssignedToActive(tx) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    return ap && tx.assignedTo && tx.assignedTo.includes(ap);
+  }
+
+  function renderDimRow(tx, mode) {
+    // mode: 'all' (con botón asignar/desasignar) | 'assigned' (solo desasignar)
+    const assigned = isAssignedToActive(tx);
+    const colorClass = tx.color || 'tk-stat';
+    const used = tx.usedInAnnotations || 0;
+    const projectsCount = (tx.assignedTo || []).length;
+    const status = tx.status || 'active';
+
+    // Meta pills
+    let meta = '';
+    if (tx.scale) meta += `<span class="scale-pill">${escapeHtml(tx.scale)}</span>`;
+    if (tx.values != null) meta += `<span class="scale-pill">${tx.values} valores</span>`;
+
+    // Actions según modo
+    let actions = '';
+    if (mode === 'all') {
+      actions = `
+        <div class="used"><b>${used}</b><small>anotaciones</small></div>
+        ${assigned
+          ? `<button class="danger-btn" onclick="unassignTaxonomy('${tx.id}')">Desasignar</button>`
+          : `<button class="assign-btn" onclick="assignTaxonomy('${tx.id}')">Asignar</button>`
+        }
+      `;
+    } else {
+      actions = `
+        <div class="used"><b>${used}</b><small>anotaciones</small></div>
+        <button class="danger-btn" onclick="unassignTaxonomy('${tx.id}')">Desasignar</button>
+      `;
+    }
+
+    // Status indicator (top-right of meta-col)
+    let statusBadge = '';
+    if (status === 'archived') statusBadge = `<span class="scale-pill" style="background:#e8e4d8;color:#7d6c4f">archivada</span>`;
+    if (status === 'draft') statusBadge = `<span class="scale-pill" style="background:#fdf6e3;color:#7d6c4f">borrador</span>`;
+
+    // Assignment indicator pill
+    let assignmentPill = '';
+    if (assigned) {
+      assignmentPill = `<span class="assigned-pill"><svg style="width:9px;height:9px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Asignada</span>`;
+    } else if (mode === 'all') {
+      assignmentPill = `<span class="unassigned-pill">No asignada</span>`;
+    }
+
+    return `
+      <div class="dim-row" data-tx-id="${tx.id}">
+        <div class="dim-color ${colorClass}">${escapeHtml((tx.name||'?').charAt(0).toUpperCase())}</div>
+        <div class="dim-info">
+          <div class="dim-name">
+            ${escapeHtml(tx.name || 'Sin nombre')}
+            ${statusBadge}
+          </div>
+          <div class="dim-desc">${tx.shortDesc || tx.longDesc ? escapeHtml(tx.shortDesc || tx.longDesc) : '<span style="color:var(--ink-4);font-style:italic">Sin descripción</span>'}</div>
+          <div class="dim-meta">
+            ${meta}
+            ${assignmentPill}
+            <span class="scale-pill">${projectsCount} ${projectsCount === 1 ? 'proyecto' : 'proyectos'}</span>
+          </div>
+        </div>
+        <div class="dim-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  // Render principal: usa TAXONOMIES (grupos), no DIMENSIONS (átomos)
+  function renderProjectDimensions() {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    const apName = ap ? (ap.startsWith('epdata-2026q3') ? 'EpData 2026-Q3' : ap) : 'este proyecto';
+    const el1 = document.getElementById('dim-active-project');
+    const el2 = document.getElementById('dim-active-project-2');
+    if (el1) el1.textContent = apName;
+    if (el2) el2.textContent = apName;
+
+    // Las taxonomías (grupos) son lo que se asigna al proyecto
+    const allTaxonomies = (typeof TAXONOMIES !== 'undefined') ? TAXONOMIES.filter(t => t.status !== 'archived') : [];
+    const assignedTaxonomies = allTaxonomies.filter(t => t.assignedTo && t.assignedTo.includes(ap));
+
+    // Update counts
+    const cAll = document.getElementById('dim-count-all');
+    const cAss = document.getElementById('dim-count-assigned');
+    if (cAll) cAll.textContent = allTaxonomies.length;
+    if (cAss) cAss.textContent = assignedTaxonomies.length;
+
+    // Render listas
+    const listAll = document.getElementById('dim-list-all');
+    const listAss = document.getElementById('dim-list-assigned');
+    if (listAll) {
+      if (allTaxonomies.length === 0) {
+        listAll.innerHTML = '<div class="empty-state"><h4>No hay taxonomías (grupos)</h4>Crea la primera en el <a href="#" onclick="go(\'taxonomy-groups\');return false">catálogo de taxonomías</a>.</div>';
+      } else {
+        listAll.innerHTML = allTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'all')).join('');
+      }
+    }
+    if (listAss) {
+      if (assignedTaxonomies.length === 0) {
+        listAss.innerHTML = '<div class="empty-state"><h4>Ninguna taxonomía asignada aún</h4>Ve a la pestaña <b>Todas las taxonomías</b> y marca las que quieras usar en este proyecto.</div>';
+      } else {
+        listAss.innerHTML = assignedTaxonomies.map(tx => renderTaxonomyGroupRow(tx, 'assigned')).join('');
+      }
+    }
+  }
+
+  // Render de una fila de taxonomía-grupo en view-dimensions
+  function renderTaxonomyGroupRow(tx, mode) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : '';
+    const assigned = ap && tx.assignedTo && tx.assignedTo.includes(ap);
+    const dimCount = (tx.dimensions || []).length;
+    // Resolver nombres de las dimensiones
+    const dimChips = (tx.dimensions || []).map(did => {
+      const d = (typeof DIMENSIONS !== 'undefined') ? DIMENSIONS.find(x => x.id === did) : null;
+      if (!d) return '';
+      return `<span class="dim-pill" style="padding:3px 9px;font-size:11px;background:#fff;border:1px solid var(--line);border-radius:13px"><span class="dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:${colorForTax(d.color)}"></span>${escapeHtml(d.name)}</span>`;
+    }).join('');
+
+    const projCount = (tx.assignedTo || []).length;
+
+    let actions = '';
+    if (mode === 'all') {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        ${assigned
+          ? `<button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>`
+          : `<button class="assign-btn" onclick="assignTaxonomyGroup('${tx.id}')">Asignar</button>`
+        }
+      `;
+    } else {
+      actions = `
+        <div class="used"><b>${dimCount}</b><small>dimensiones</small></div>
+        <button class="danger-btn" onclick="unassignTaxonomyGroup('${tx.id}')">Desasignar</button>
+      `;
+    }
+
+    let assignmentPill = '';
+    if (assigned) {
+      assignmentPill = `<span class="assigned-pill"><svg style="width:9px;height:9px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Asignada</span>`;
+    } else if (mode === 'all') {
+      assignmentPill = `<span class="unassigned-pill">No asignada</span>`;
+    }
+
+    return `
+      <div class="dim-row" data-tx-grp-id="${tx.id}">
+        <div class="dim-color ${tx.color || 'cyan'}">${(tx.name||'?').charAt(0).toUpperCase()}</div>
+        <div class="dim-info">
+          <div class="dim-name">${escapeHtml(tx.name || 'Sin nombre')}</div>
+          <div class="dim-desc">${escapeHtml(tx.shortDesc || '')}</div>
+          <div class="dim-meta">
+            ${dimChips}
+            ${assignmentPill}
+            <span class="scale-pill">${projCount} ${projCount === 1 ? 'proyecto' : 'proyectos'}</span>
+          </div>
+        </div>
+        <div class="dim-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  function assignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) { alert('Selecciona un proyecto primero.'); return; }
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (!tax.assignedTo) tax.assignedTo = [];
+    if (!tax.assignedTo.includes(ap)) tax.assignedTo.push(ap);
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" asignada al proyecto. Carga ${(tax.dimensions||[]).length} dimensiones.`, 3000);
+  }
+
+  function unassignTaxonomyGroup(taxId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) return;
+    const tax = TAXONOMIES.find(t => t.id === taxId);
+    if (!tax) return;
+    if (tax.assignedTo) {
+      tax.assignedTo = tax.assignedTo.filter(p => p !== ap);
+    }
+    renderProjectDimensions();
+    showToast(`Taxonomía "${tax.name}" desasignada.`, 2500);
+  }
+
+  function assignTaxonomy(txId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) { alert('Selecciona un proyecto primero.'); return; }
+    const tx = DIMENSIONS.find(t => t.id === txId);
+    if (!tx) return;
+    if (!tx.assignedTo) tx.assignedTo = [];
+    if (!tx.assignedTo.includes(ap)) tx.assignedTo.push(ap);
+    renderProjectDimensions();
+    showToast(`"${tx.name}" asignada al proyecto.`, 2500);
+  }
+
+  function unassignTaxonomy(txId) {
+    const ap = (typeof activeProject !== 'undefined' && activeProject) ? activeProject.id : null;
+    if (!ap) return;
+    const tx = DIMENSIONS.find(t => t.id === txId);
+    if (!tx) return;
+    if (tx.assignedTo) {
+      tx.assignedTo = tx.assignedTo.filter(p => p !== ap);
+    }
+    renderProjectDimensions();
+    showToast(`"${tx.name}" desasignada del proyecto.`, 2500);
+  }
+
+  // ─── Segmentation: live preview (H3) ───
+  // Aplica la configuración al texto y muestra los fragmentos resultantes.
+  // Esta función es cliente-side; en el server, el use case segment-text
+  // (en application/segmentation/) hace lo mismo contra la BD.
+
+  function segTokenize(text, unit) {
+    if (unit === 'token') {
+      // Aproximación: split por whitespace + signos
+      return text.split(/(\s+|[.,;:!?¿¡])/g).filter(t => t && t.trim().length > 0);
+    }
+    if (unit === 'word') {
+      return text.split(/\s+/g).filter(w => w.length > 0);
+    }
+    if (unit === 'sentence') {
+      // Divide por . ! ? seguidos de espacio o fin
+      return text.split(/(?<=[.!?])\s+/g).filter(s => s.trim().length > 0);
+    }
+    if (unit === 'paragraph') {
+      return text.split(/\n\s*\n+/g).filter(p => p.trim().length > 0);
+    }
+    if (unit === 'character') {
+      return text.split('');
+    }
+    return [text];
+  }
+
+  function segSlice(units, maxSize, overlap, unit, respectBoundaries, tolerance) {
+    // units: array de unidades (palabras, frases, etc.)
+    // maxSize: tamaño máximo en unidades
+    // overlap: unidades de solapamiento
+    // Devuelve: array de strings (cada uno = un fragmento)
+    if (units.length <= maxSize) return [units.join(' ')];
+
+    const toleranceAbs = Math.floor(maxSize * (tolerance || 0) / 100);
+    const minSize = Math.max(10, maxSize - toleranceAbs);
+    const step = Math.max(1, maxSize - overlap);
+
+    const fragments = [];
+    let i = 0;
+    while (i < units.length) {
+      let end = Math.min(i + maxSize, units.length);
+
+      if (respectBoundaries && end < units.length) {
+        // Si la unidad es palabra, retroceder al último espacio
+        if (unit === 'word' || unit === 'token' || unit === 'character') {
+          while (end > i + minSize && !/\s$/.test(units.slice(Math.max(0, end-1), end).join(' '))) {
+            end--;
+          }
+        }
+        // Si la unidad es frase, mantener el límite de frase
+        if (unit === 'sentence') {
+          // ya viene por frase, así que end cae naturalmente al final de una frase
+        }
+      }
+
+      const frag = units.slice(i, end).join(unit === 'character' ? '' : ' ');
+      fragments.push(frag);
+
+      if (end >= units.length) break;
+      i = end - overlap;
+      if (i <= fragments[fragments.length - 2]?.length || i < 0) i = end;
+    }
+    return fragments;
+  }
+
+  function segCount(text, unit) {
+    if (unit === 'token') return text.split(/\s+/).length;
+    if (unit === 'word') return text.split(/\s+/).filter(w => w.length).length;
+    if (unit === 'sentence') return text.split(/(?<=[.!?])\s+/).filter(s => s.trim()).length;
+    if (unit === 'paragraph') return text.split(/\n\s*\n+/).filter(p => p.trim()).length;
+    if (unit === 'character') return text.length;
+    return 1;
+  }
+
+  function updateSegmentationPreview() {
+    const text = document.getElementById('seg-sample')?.value || '';
+    const unit = document.getElementById('seg-unit')?.value || 'word';
+    const maxSize = parseInt(document.getElementById('seg-max')?.value || '120');
+    const overlap = parseInt(document.getElementById('seg-overlap')?.value || '20');
+    const respect = document.getElementById('seg-respect')?.checked ?? true;
+    const tolerance = parseInt(document.getElementById('seg-tolerance')?.value || '15');
+
+    const units = segTokenize(text, unit);
+    const fragments = segSlice(units, maxSize, overlap, unit, respect, tolerance);
+
+    // Stats
+    const sizes = fragments.map(f => segCount(f, unit));
+    const avg = sizes.length ? Math.round(sizes.reduce((a,b)=>a+b,0) / sizes.length) : 0;
+    const min = sizes.length ? Math.min(...sizes) : 0;
+    const max = sizes.length ? Math.max(...sizes) : 0;
+    const stats = document.getElementById('seg-stats');
+    if (stats) {
+      stats.innerHTML = `
+        <span><b>${fragments.length}</b> fragmentos</span>
+        <span><b>${avg}</b> avg</span>
+        <span><b>${min}</b> min</span>
+        <span><b>${max}</b> max</span>
+      `;
+    }
+
+    // Render
+    const preview = document.getElementById('seg-preview');
+    if (!preview) return;
+
+    if (fragments.length === 0 || (fragments.length === 1 && fragments[0].trim() === '')) {
+      preview.innerHTML = `<div class="empty-state" style="margin:0">
+        <h4>Sin texto</h4>
+        Escribe o pega un texto en el campo de arriba para ver cómo se segmenta.
+      </div>`;
+      return;
+    }
+
+    const unitLabel = { token:'tokens', word:'palabras', sentence:'frases', paragraph:'párrafos', character:'caracteres' }[unit];
+
+    preview.innerHTML = fragments.map((frag, i) => {
+      const truncated = frag.length > 220 ? frag.slice(0, 220) + '…' : frag;
+      return `<div class="frag-chip">
+        <div class="frag-num">${i+1}</div>
+        <div style="flex:1">
+          <div class="frag-text">${escapeHtml(truncated)}</div>
+          <div class="frag-meta">
+            <span>${segCount(frag, unit)} ${unitLabel}</span>
+            <span>${frag.length} caracteres</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Init: render preview on load
+  setTimeout(updateSegmentationPreview, 200);
+
+
+
+  const grid = document.getElementById('fraggrid');
+  if (grid){
+    const done = 12, active = 1, skipped = 4, pending = 80 - done - active - skipped;
+    for (let i=0; i<done; i++)   grid.appendChild(Object.assign(document.createElement('div'),{title:'Listo', style:'aspect-ratio:1;background:var(--ok);border-radius:3px;cursor:pointer'}));
+    for (let i=0; i<active; i++) grid.appendChild(Object.assign(document.createElement('div'),{title:'Actual', style:'aspect-ratio:1;background:var(--accent);border-radius:3px;box-shadow:0 0 0 2px var(--accent),0 0 0 4px white inset'}));
+    for (let i=0; i<skipped; i++)grid.appendChild(Object.assign(document.createElement('div'),{title:'Saltado',style:'aspect-ratio:1;background:var(--warn);border-radius:3px'}));
+    for (let i=0; i<pending; i++)grid.appendChild(Object.assign(document.createElement('div'),{title:'Pendiente',style:'aspect-ratio:1;background:#e6e3dc;border-radius:3px'}));
+  }
+</script>
+</body>
+</html>

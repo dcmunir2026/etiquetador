@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Segmentation — mockup (issue 17 (UI segmentation config) + 21 (worker segmentation))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-segmentation</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #17 (UI segmentation config) + 21 (worker segmentation)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-segmentation">
+<div id="view-segmentation-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">La segmentación se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-segmentation-content">
+      <div class="page">
+        <h1>Configuración de segmentación</h1>
+        <p class="lead">Define cómo se parten los textos largos en fragmentos etiquetables. Esta configuración se aplica al corpus completo del proyecto antes de dividir en paquetes.</p>
+
+        <div class="seg-grid">
+          <!-- IZQUIERDA: formulario de configuración -->
+          <div class="card">
+            <h3>Parámetros</h3>
+            <div class="seg-form-row">
+              <label>Nombre de la config</label>
+              <input type="text" value="Default (palabras)" id="seg-name" />
+              <label></label>
+              <div class="seg-hint">Identifica esta configuración si más adelante quieres tener varias (p. ej. "Estricta" para campo abierto, "Laxa" para resúmenes).</div>
+
+              <label>Unidad</label>
+              <select id="seg-unit" onchange="updateSegmentationPreview()">
+                <option value="token">Token (≈ 4 caracteres)</option>
+                <option value="word" selected>Palabra</option>
+                <option value="sentence">Frase</option>
+                <option value="paragraph">Párrafo</option>
+                <option value="character">Carácter</option>
+              </select>
+              <label></label>
+              <div class="seg-hint">Recomendado: <b>palabra</b> o <b>frase</b>. Token es para textos técnicos; párrafo para respuestas estructuradas.</div>
+
+              <label>Tamaño máximo</label>
+              <input type="number" id="seg-max" value="120" min="10" max="2000" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Si el texto excede este tamaño, se parte en varios fragmentos.</div>
+
+              <label>Overlap (caracteres)</label>
+              <input type="number" id="seg-overlap" value="20" min="0" max="200" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Caracteres de solapamiento entre fragmentos consecutivos. Útil para mantener contexto entre cortes.</div>
+
+              <label></label>
+              <div class="seg-toggle">
+                <input type="checkbox" id="seg-respect" checked onchange="updateSegmentationPreview()" />
+                <label for="seg-respect">Respetar límites de frase y párrafo</label>
+              </div>
+              <label></label>
+              <div class="seg-hint">Si está activo, nunca se parte una palabra/frase. Si está desactivado, el corte es por tamaño exacto.</div>
+
+              <label>Tolerancia</label>
+              <input type="number" id="seg-tolerance" value="15" min="0" max="50" onchange="updateSegmentationPreview()" />
+              <label></label>
+              <div class="seg-hint">Porcentaje de desvío permitido sobre el tamaño máximo antes de forzar un corte. 0 = exacto.</div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+              <button class="btn">Restablecer</button>
+              <button class="btn primary">Guardar configuración</button>
+            </div>
+
+            <div class="seg-help">
+              <b>Tip:</b> El fragmento más pequeño permitido es 10 unidades (palabras/tokens). Si una respuesta tiene menos, queda como un único fragmento.
+            </div>
+          </div>
+
+          <!-- DERECHA: live preview -->
+          <div class="card">
+            <h3>Live preview <span style="margin-left:auto;font-size:11px;background:#f0ede4;color:var(--ink-2);padding:2px 9px;border-radius:10px;font-weight:500">texto de ejemplo real</span></h3>
+
+            <div class="preview-toolbar">
+              <div class="preview-stats" id="seg-stats">
+                <span><b>—</b> fragmentos</span>
+                <span><b>—</b> avg</span>
+                <span><b>—</b> min</span>
+                <span><b>—</b> max</span>
+              </div>
+              <button class="btn-mini" onclick="document.getElementById('seg-sample').value = ''; updateSegmentationPreview()">Limpiar</button>
+            </div>
+
+            <textarea class="preview-input" id="seg-sample" oninput="updateSegmentationPreview()">El mercado inmobiliario español ha experimentado fluctuaciones significativas en las últimas dos décadas. Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones, seguidas de una caída dramática durante la crisis financiera: en 2009 bajaron a 27.821 transacciones, una contracción del 61%. La recuperación ha sido lenta pero sostenida. En 2024 se registraron 63.859 transacciones, aproximándose a los niveles previos a la crisis. El dato más reciente de 2025 muestra 56.108 operaciones, indicando cierta volatilidad en el mercado actual.</textarea>
+
+            <div style="margin-top:14px" id="seg-preview">
+              <div class="empty-state" style="margin:0">
+                <h4>Cargando vista previa...</h4>
+                Edita los parámetros arriba para ver cómo se parte el texto.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+  </section>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Discrepancias — mockup (issue 28 (inconsistencies worker) + 29 (discrepancy report))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-discrepancias</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #28 (inconsistencies worker) + 29 (discrepancy report)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-discrepancias">
+<div class="page">
+        <h1>Detección de inconsistencias</h1>
+        <p class="lead">Comparación automática entre los paquetes espejo de Pedro (A) y Lucía (B). Las discrepancias por encima del umbral definido por el Superadministrador bloquean la aprobación y se reenvían al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Fragmentos comparados</div><div class="value">80</div><div class="delta">100% del paquete</div></div>
+          <div class="kpi"><div class="label">Discrepancias detectadas</div><div class="value" style="color:var(--bad)">14</div><div class="delta down">17,5% · umbral global 12%</div></div>
+        </div>
+
+        <div class="card" style="padding:14px 16px;margin-bottom:18px">
+          <h3>Discrepancias por dimensión</h3>
+          <div class="bench-row"><span class="lbl">4. Carácter tendencioso</span><div class="bar-bg"><div class="bar-fill bad" style="width:31%"></div></div><span class="val">31%</span></div>
+          <div class="bench-row"><span class="lbl">2. Emotividad</span><div class="bar-bg"><div class="bar-fill warn" style="width:19%"></div></div><span class="val">19%</span></div>
+          <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:11%"></div></div><span class="val">11%</span></div>
+          <div class="bench-row"><span class="lbl">5. Semiótica</span><div class="bar-bg"><div class="bar-fill ok" style="width:6%"></div></div><span class="val">6%</span></div>
+          <div class="bench-row"><span class="lbl">1. Sesgo estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:4%"></div></div><span class="val">4%</span></div>
+          <div class="bench-row"><span class="lbl">3. Odio</span><div class="bar-bg"><div class="bar-fill ok" style="width:2%"></div></div><span class="val">2%</span></div>
+          <div class="bench-row"><span class="lbl">7. Raza</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">8. Religión</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+          <div class="bench-row"><span class="lbl">9. Demográfico</span><div class="bar-bg"><div class="bar-fill ok" style="width:1%"></div></div><span class="val">1%</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Vista fragmento a fragmento <span class="count">14 con discrepancia</span></h3>
+          <table class="compare">
+            <thead><tr><th style="width:60px">#</th><th>Fragmento</th><th style="width:160px">Pedro (A)</th><th style="width:160px">Lucía (B)</th><th style="width:90px">Δ</th><th style="width:90px">Acción</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>003</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"La deuda pública ha alcanzado su máximo histórico del 123,1% del PIB, impulsada por los gastos de respuesta a la pandemia…"</td>
+                <td><span class="vs b">4. Tendencioso: ALTO</span></td>
+                <td><span class="vs a">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>007</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"El mercado inmobiliario español ha experimentado fluctuaciones significativas… Las transacciones de viviendas alcanzaron máximos en 2007 con 70.928 operaciones…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+              <tr>
+                <td>012</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Lo siento, no ha sido posible generar la visualización solicitada en este momento."</td>
+                <td><span class="vs mine">4. Tendencioso: NO</span></td>
+                <td><span class="vs b">4. Tendencioso: BAJO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--warn)">Revisar</button></td>
+              </tr>
+              <tr>
+                <td>019</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"En 2021 la deuda alcanzó su máximo histórico del 123,1% del PIB…"</td>
+                <td><span class="vs mine">6. Género: NO</span></td>
+                <td><span class="vs a">6. Género: NO</span></td>
+                <td><span class="diff ok">=</span></td>
+                <td><span class="tag status-done">OK</span></td>
+              </tr>
+              <tr>
+                <td>021</td>
+                <td style="font-size:12.5px;color:var(--ink-2);max-width:380px">"Isla Bouvet es un territorio deshabitado sin población civil ni infraestructura vial…"</td>
+                <td><span class="vs mine">2. Emotividad: BAJO</span></td>
+                <td><span class="vs a">2. Emotividad: NO</span></td>
+                <td><span class="diff bad">±1</span></td>
+                <td><button class="btn ghost" style="color:var(--bad)">Reenviar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </section>
+</body>
+</html>

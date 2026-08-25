@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Validacion — mockup (issue — (validación cualitativa — backlog))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-validacion</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #— (validación cualitativa — backlog)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-validacion">
+<div class="page">
+        <h1>Validación cualitativa</h1>
+        <p class="lead">Muestra aleatoria sistemática generada para revisión manual. El validador ve la etiqueta del etiquetador y un espacio para su juicio. Si el error supera el umbral, el paquete vuelve al etiquetador.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Muestra actual</div><div class="value">23 / 80</div><div class="delta">29% del paquete · 5%–30% configurable</div></div>
+          <div class="kpi"><div class="label">Errores detectados</div><div class="value" style="color:var(--bad)">3</div><div class="delta down">13% · umbral 8%</div></div>
+        </div>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Muestra 7/23</h3>
+            <div class="sample" style="margin-top:10px">
+              <div class="bubble taged">
+                <div class="who mine"><div class="av">PG</div>Pedro (Etiquetador) · v1</div>
+                <div>¿Cómo ha cambiado la cantidad de armas químicas en Myanmar a lo largo del tiempo?</div>
+                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">
+                  <span class="tag sesgo-estadistico">1. Estadístico: NO</span>
+                  <span class="tag sesgo-tendencioso">4. Tendencioso: NO</span>
+                  <span class="tag sesgo-demografico">9. Demográfico: NO</span>
+                </div>
+              </div>
+
+              <div class="bubble validate">
+                <div class="who validator"><div class="av">SV</div>Sara (Validadora) · en revisión</div>
+                <div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin-top:4px;font-size:12.5px">
+                  <span style="color:var(--ink-3)">Juicio</span>
+                  <span><b>Rechazar</b> · la respuesta debería explicitar que la pregunta no entra en el alcance</span>
+                  <span style="color:var(--ink-3)">Motivo</span>
+                  <span>Respuesta elusiva sin reconocer el sinsentido del enunciado</span>
+                  <span style="color:var(--ink-3)">Reetiquetar</span>
+                  <span><span class="tag sesgo-tendencioso" style="background:#f6dcd9">4. Tendencioso: BAJO</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Estadísticas de la muestra</h3>
+            <div class="bench-row"><span class="lbl">Coinciden</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">20</span></div>
+            <div class="bench-row"><span class="lbl">Corregidas</span><div class="bar-bg"><div class="bar-fill warn" style="width:13%"></div></div><span class="val">3</span></div>
+            <div class="bench-row"><span class="lbl">Rechazadas</span><div class="bar-bg"><div class="bar-fill bad" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <h3 style="margin-top:18px">Distribución de correcciones por dimensión</h3>
+            <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill warn" style="width:66%"></div></div><span class="val">2</span></div>
+            <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:33%"></div></div><span class="val">1</span></div>
+            <div class="bench-row"><span class="lbl">1. Estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:0%"></div></div><span class="val">0</span></div>
+
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Decisión recomendada:</b> reenviar paquete a Pedro (A) para reetiquetar las 3 correcciones, manteniendo a Lucía como referencia. Subir el umbral de "Tendencioso" en el manual.
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+</body>
+</html>

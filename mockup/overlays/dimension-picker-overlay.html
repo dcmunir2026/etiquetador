@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Dimension Picker Overlay — mockup</title>
+  <link rel="stylesheet" href="../css/view-shared.css">
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/overlay-styles.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>dimension-picker-overlay</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>15 (per-project dimension assignment — checkbox grid)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <p style="font-family: system-ui, sans-serif; font-size: 12px; color: #888; max-width: 600px;">
+    Los overlays son modales / wizards flotantes del mockup (no son
+    <code>&lt;section class="view"&gt;</code>). En el HTML original
+    están ocultos con <code>display:none</code>; en estos archivos
+    extraídos les quitamos el <code>display:none</code> para que se
+    puedan ver al abrirlos en el navegador.
+  </p>
+  <div id="dimension-picker-overlay" style="position:relative;inset:auto;background:transparent;backdrop-filter:none;padding:0">
+<div class="picker-card" style="margin-top:24px;text-align:left">
+        <h2 style="text-align:center">Asignar dimensiones</h2>
+        <p class="lead" style="text-align:center">Marca las dimensiones que quieres usar en este proyecto. Las que ya están asignadas aparecen marcadas.</p>
+        <div class="tax-toolbar" style="margin-bottom:14px;flex-shrink:0">
+          <input type="search" placeholder="Buscar taxonomía..." id="dim-picker-search" />
+        </div>
+        <div class="picker-list" id="dim-picker-list"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);flex-shrink:0">
+          <button class="btn" onclick="closeDimensionPicker()">Cancelar</button>
+          <button class="btn primary" onclick="closeDimensionPicker()">Listo</button>
+        </div>
+      </div>
+  </div>
+</body>
+</html>

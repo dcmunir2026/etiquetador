@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Paquetes — mockup (issue 23 (divide corpus into packages) + 24 (assign mirror pairs) + 30 (package grid))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-paquetes</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #23 (divide corpus into packages) + 24 (assign mirror pairs) + 30 (package grid)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-paquetes">
+<div id="view-paquetes-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-paquetes-content">
+      <div class="page">
+        <h1>División en paquetes</h1>
+        <p class="lead">El corpus se divide en paquetes que se asignan a un grupo configurable de N etiquetadores (dúo, trío, cuarteto o más) del mismo equipo. Esto habilita la comparación interjueces y el cálculo de Kappa de Fleiss (o Krippendorff α, o mayoría ponderada).</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="card">
+            <h3>Configuración de la división</h3>
+            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 18px;align-items:center">
+              <label>Estrategia</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Por número de paquetes</option><option>Por tamaño de paquete</option></select>
+              <label>Nº paquetes</label>
+              <input class="btn" style="text-align:left;background:#fafaf2" value="46 paquetes × 2 (espejo)">
+              <label>Distribución</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Aleatoria estratificada por sección</option><option>Aleatoria simple</option><option>Orden natural</option></select>
+              <label>Asignación</label>
+              <select class="btn" style="text-align:left;background:#fafaf2"><option>Automática (mismo equipo)</option><option>Manual</option></select>
+              <label>Tamaño del grupo</label>
+              <select class="btn" style="text-align:left;background:#fafaf2" id="group-size-select">
+                <option value="2">Dúo (2 etiquetadores)</option>
+                <option value="3" selected>Trío (3 etiquetadores)</option>
+                <option value="4">Cuarteto (4 etiquetadores)</option>
+                <option value="5">Quinteto (5 etiquetadores)</option>
+                <option value="custom">Personalizado (N)</option>
+              </select>
+              <label>Métrica de consenso</label>
+              <select class="btn" style="text-align:left;background:#fafaf2">
+                <option>Fleiss Kappa (N jueces, categórica)</option>
+                <option>Krippendorff α (N jueces, mixto)</option>
+                <option>Mayoría ponderada (N≥3)</option>
+                <option>Consenso total (N jueces, todos iguales)</option>
+              </select>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn">Previsualizar división</button>
+              <button class="btn primary" onclick="go('tagging')">Asignar y notificar →</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Resultado de la división</h3>
+            <div class="bench-row"><span class="lbl"><b>Equipo A</b> · trío <small style="color:var(--ink-3)">(3)</small></span><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div><span class="val">23/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo B</b> · cuarteto <small style="color:var(--ink-3)">(4)</small></span><div class="bar-bg"><div class="bar-fill" style="width:74%"></div></div><span class="val">17/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo C</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div class="bench-row"><span class="lbl"><b>Equipo D</b> · dúos <small style="color:var(--ink-3)">(2)</small></span><div class="bar-bg"><div class="bar-fill warn" style="width:0%"></div></div><span class="val">0/23</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:#fdf6e3;border-radius:7px;font-size:12.5px;color:#5a4400">
+              <b>Equipos C y D</b> sin etiquetadores. Recomendación: invitar al menos 2 personas por equipo antes de asignar.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Paquetes asignados <span class="count">23 visibles</span></h3>
+          <table>
+            <thead><tr>
+              <th>Paquete</th>
+              <th>Fragmentos</th>
+              <th>Grupo</th>
+              <th>Asignaciones</th>
+              <th>Estados</th>
+              <th>Versión</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><b>PK-A-001</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v2</span> · <span class="tag status-progress">v1</span></td>
+                <td><small style="color:var(--ink-3)">A: v2 · B: v1</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-002</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">trío</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                  <span class="assignee"><span class="av">MR</span>Marta R.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span></td>
+                <td><small style="color:var(--ok)">3 envíos · 1 pendiente</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-003</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">cuarteto</span> Equipo B</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">AD</span>Ana D.</span>
+                  <span class="assignee"><span class="av">DM</span>Diego M.</span>
+                  <span class="assignee"><span class="av">SR</span>Sara R.</span>
+                  <span class="assignee"><span class="av">JV</span>Javier V.</span>
+                </div></td>
+                <td><span class="tag status-done">v1</span> · <span class="tag status-done">v1</span> · <span class="tag status-progress">v0</span> · <span class="assignee-pending">asignado</span></td>
+                <td><small style="color:var(--ink-3)">3 envíos · 1 sin iniciar</small></td>
+              </tr>
+              <tr>
+                <td><b>PK-A-004</b></td>
+                <td>80</td>
+                <td><span class="group-size-pill">dúo</span> Equipo A</td>
+                <td><div class="assignees">
+                  <span class="assignee lead"><span class="av">PG</span>Pedro G.</span>
+                  <span class="assignee"><span class="av">LF</span>Lucía F.</span>
+                </div></td>
+                <td><span class="tag status-done">v3</span> · <span class="tag status-done">v2</span></td>
+                <td><small style="color:var(--warn)">Reenviado por inconsistencia</small></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+          </div>
+  </section>
+</body>
+</html>

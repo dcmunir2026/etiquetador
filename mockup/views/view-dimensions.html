@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Dimensions — mockup (issue 15 (UI dimension editor) + 18 (dimension CRUD))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-dimensions</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #15 (UI dimension editor) + 18 (dimension CRUD)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-dimensions">
+<div id="view-dimensions-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-dimensions-content">
+      <div class="page">
+        <h1>Taxonomías del proyecto</h1>
+        <p class="lead">Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en <b id="dim-active-project">este proyecto</b>. Cada taxonomía carga sus dimensiones automáticamente. Las taxonomías se gestionan en el <a href="#" onclick="go('taxonomy-groups');return false" style="color:var(--primary-2);font-weight:500">catálogo de taxonomías</a>.</p>
+
+        <div class="tabs-bar">
+          <div class="tab active" data-tab="all" onclick="switchDimTab('all')">
+            Todas las taxonomías
+            <span class="tab-count" id="dim-count-all">0</span>
+          </div>
+          <div class="tab" data-tab="assigned" onclick="switchDimTab('assigned')">
+            Asignadas a este proyecto
+            <span class="tab-count" id="dim-count-assigned">0</span>
+          </div>
+        </div>
+
+        <!-- TAB: TODAS LAS CREADAS -->
+        <div class="tab-panel active" id="dim-panel-all">
+          <div class="dim-list" id="dim-list-all"></div>
+        </div>
+
+        <!-- TAB: ASIGNADAS A ESTE PROYECTO -->
+        <div class="tab-panel" id="dim-panel-assigned">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#e3eef5;border:1px solid #c5d8e8;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#1d4a72">
+            <div style="display:flex;align-items:center;gap:7px">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Estas son las dimensiones que se cargarán al anotar en <b id="dim-active-project-2">este proyecto</b>. Para añadir más, ve a la pestaña <b>Todas las creadas</b>.</span>
+            </div>
+          </div>
+          <div class="dim-list" id="dim-list-assigned"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+          <button class="btn">Restablecer a valores por defecto</button>
+          <button class="btn primary" onclick="go('roles')">Guardar y continuar →</button>
+        </div>
+      </div>
+      </div>
+  </section>
+</body>
+</html>

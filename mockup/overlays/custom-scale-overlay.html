@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Custom Scale Overlay — mockup</title>
+  <link rel="stylesheet" href="../css/view-shared.css">
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/overlay-styles.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>custom-scale-overlay</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>16 (UI intensity scale editor) — dialog opened from wizard step 2</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <p style="font-family: system-ui, sans-serif; font-size: 12px; color: #888; max-width: 600px;">
+    Los overlays son modales / wizards flotantes del mockup (no son
+    <code>&lt;section class="view"&gt;</code>). En el HTML original
+    están ocultos con <code>display:none</code>; en estos archivos
+    extraídos les quitamos el <code>display:none</code> para que se
+    puedan ver al abrirlos en el navegador.
+  </p>
+  <div id="custom-scale-overlay" style="position:relative;inset:auto;background:transparent;backdrop-filter:none;padding:0">
+<div class="picker-card" style="margin-top:60px;text-align:left;max-width:520px">
+        <h2 style="text-align:center;font-size:17px;margin-bottom:4px">Crear escala personalizada</h2>
+        <p class="lead" style="text-align:center;margin-bottom:18px">Define un tipo de escala propio para esta taxonomía. Quedará guardada para futuras taxonomías.</p>
+
+        <div class="wiz-row">
+          <label>Nombre de la escala <span style="color:#c0392b">*</span></label>
+          <input type="text" id="cs-name" placeholder="Ej. Polaridad 0-10, Impacto periodístico" />
+          <div class="wiz-hint">Como aparecerá al crear taxonomías.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Tipo de valores</label>
+          <select id="cs-type">
+            <option value="categorical">Categórico (lista cerrada)</option>
+            <option value="numerical">Numérico (rango 0-N)</option>
+            <option value="free">Texto libre (anotador escribe)</option>
+          </select>
+          <div class="wiz-hint">Categórico: el anotador elige de N opciones. Numérico: introduce un número 0-N. Libre: campo abierto.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-count-row">
+          <label>Número de valores</label>
+          <input type="number" id="cs-count" value="4" min="1" max="10" />
+          <div class="wiz-hint">Entre 1 y 10. Para numérico, será el valor máximo del rango.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-num-range-row" style="display:none">
+          <label>Rango numérico</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" value="0" style="width:80px" disabled />
+            <span style="color:var(--ink-3)">a</span>
+            <input type="number" id="cs-num-max" value="10" min="2" max="100" />
+          </div>
+          <div class="wiz-hint">El anotador introduce un valor entre 0 y N.</div>
+        </div>
+
+        <div class="wiz-row" id="cs-values-preview-row" style="display:none">
+          <label>Vista previa de valores</label>
+          <div id="cs-values-preview" style="background:#fafaf2;border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div class="wiz-hint">Si los nombres no te convencen, puedes editarlos en el siguiente paso del wizard.</div>
+        </div>
+
+        <div class="wiz-row">
+          <label>Descripción (opcional)</label>
+          <textarea id="cs-desc" placeholder="¿Cuándo se usa esta escala?" style="min-height:50px"></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
+          <button class="btn" onclick="closeCustomScaleDialog()">Cancelar</button>
+          <button class="btn primary" onclick="saveCustomScale()">Crear y usar</button>
+        </div>
+      </div>
+  </div>
+</body>
+</html>

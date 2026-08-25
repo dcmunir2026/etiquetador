@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Upload — mockup (issue 19 (Excel import))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-upload</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #19 (Excel import)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-upload">
+<div class="page">
+        <h1>Cargar Excel maestro</h1>
+        <p class="lead">Punto de entrada del corpus. Acepta .xlsx o .csv. Se trabaja siempre sobre una copia interna, el archivo original no se modifica.</p>
+
+        <div class="grid g-2">
+          <div class="card">
+            <h3>Archivo</h3>
+            <div class="drop">
+              <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <h4>Suelta el archivo aquí</h4>
+              <p>o haz clic para seleccionar — máximo 50 MB, columnas A–AZ</p>
+              <button class="btn">Seleccionar archivo</button>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f6f4ed;border-radius:7px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <svg style="color:var(--ok)" class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div><b>EpData_Reader_T2_2026Q3.xlsx</b><br><small style="color:var(--ink-3)">3,8 MB · 3.662 filas · hoja "respuestas"</small></div>
+              </div>
+              <button class="btn ghost" style="color:var(--bad)">Quitar</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Selección de columnas <span class="count">3 de 14</span></h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Columna principal (pivote)</b><br><small style="color:var(--ink-3)">respuestaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">A</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Identificador de pregunta</b><br><small style="color:var(--ink-3)">conversacionId</small></span>
+                <code class="tag" style="background:#f6f4ed">B</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line)">
+                <input type="checkbox" checked> <span style="flex:1"><b>Pregunta original</b><br><small style="color:var(--ink-3)">preguntaTurno1</small></span>
+                <code class="tag" style="background:#f6f4ed">C</code>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fafaf2;border-radius:7px;border:1px solid var(--line);opacity:0.7">
+                <input type="checkbox"> <span style="flex:1">Metadatos auxiliares<br><small style="color:var(--ink-3)">timestamp, variante, éxito</small></span>
+              </label>
+            </div>
+            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
+              <b>Detección de duplicados:</b> se encontraron 28 duplicados por columna <code>conversacionId</code>. Se marcarán para revisión antes de dividir en paquetes.
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Resultado del pre-procesado <span class="count">3.634 fragmentos únicos</span></h3>
+          <div class="grid g-4">
+            <div class="kpi" style="background:#fafaf2"><div class="label">Filas totales</div><div class="value" style="font-size:22px">3.662</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Únicas tras dedupe</div><div class="value" style="font-size:22px">3.634</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">% fragmentables</div><div class="value" style="font-size:22px">38%</div></div>
+            <div class="kpi" style="background:#fafaf2"><div class="label">Tokens medios</div><div class="value" style="font-size:22px">412</div></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+            <button class="btn">Cancelar</button>
+            <button class="btn primary" onclick="go('dimensions')">Continuar a dimensiones →</button>
+          </div>
+        </div>
+      </div>
+  </section>
+</body>
+</html>

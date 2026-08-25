@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Roles — mockup (issue 5 (user invitation + roles) + 8 (user management per project))</title>
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/view-shared.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>view-roles</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>issue #5 (user invitation + roles) + 8 (user management per project)</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <section class="view active" id="view-roles">
+<div id="view-roles-gate" style="display:none">
+        <div class="picker-card">
+          <svg class="ic-big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>Elige el proyecto a configurar</h2>
+          <p class="lead">Esta sección se configura por proyecto. Selecciona con cuál quieres trabajar.</p>
+          <div class="picker-list" data-inline-picker></div>
+          <button class="btn" onclick="go('dashboard')">Volver al inicio</button>
+        </div>
+      </div>
+      <div id="view-roles-content">
+      <div class="page">
+        <h1>Roles y equipos</h1>
+        <p class="lead">Cada equipo contiene dos etiquetadores comparables (paquete espejo), un apoyo cuantitativo y un validador cualitativo. Los paquetes están aislados por equipo para evitar contaminación.</p>
+
+        <div class="grid g-2" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos</div><div class="value">4</div><div class="delta">2 paquetizados · 2 sin asignar</div></div>
+          <div class="kpi"><div class="label">Usuarios activos</div><div class="value">12 / 14</div><div class="delta">2 inactivos sin asignar</div></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="role-row head">
+            <div>Persona</div><div>Email</div><div>Rol</div><div>Equipo</div><div>Estado</div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar">MR</div><div class="meta"><b>Marta Rodríguez</b><small>Superadmin</small></div></div>
+            <div style="color:var(--ink-2)">marta.rodriguez@epdata.es</div>
+            <div><span class="tag sesgo-estadistico">Superadministrador</span></div>
+            <div>Todos</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">PG</div><div class="meta"><b>Pedro Gómez</b><small>Etiquetador</small></div></div>
+            <div style="color:var(--ink-2)">pedro.gomez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetador</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">LF</div><div class="meta"><b>Lucía Fernández</b><small>Etiquetadora</small></div></div>
+            <div style="color:var(--ink-2)">lucia.fernandez@unir.es</div>
+            <div><span class="tag sesgo-semiotica">Etiquetadora</span></div>
+            <div>Equipo A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:#3b6cb0">CA</div><div class="meta"><b>Carlos Antúnez</b><small>Apoyo cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">carlos.antunez@epdata.es</div>
+            <div><span class="tag sesgo-demografico">Apoyo cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">SV</div><div class="meta"><b>Sara Velasco</b><small>Validadora cualitativa</small></div></div>
+            <div style="color:var(--ink-2)">sara.velasco@unir.es</div>
+            <div><span class="tag sesgo-religion">Validadora cualitativa</span></div>
+            <div>Cualitativa A</div>
+            <div><span class="tag status-done">Activo</span></div>
+          </div>
+
+          <div class="role-row">
+            <div class="name"><div class="avatar" style="background:var(--accent)">JM</div><div class="meta"><b>Javier Moreno</b><small>Validador cuantitativo</small></div></div>
+            <div style="color:var(--ink-2)">javier.moreno@epdata.es</div>
+            <div><span class="tag sesgo-genero">Validador cuantitativo</span></div>
+            <div>Cuantitativa A</div>
+            <div><span class="tag status-progress">En revisión</span></div>
+          </div>
+
+          <div class="role-row" style="opacity:0.55">
+            <div class="name"><div class="avatar" style="background:var(--ink-3)">+</div><div class="meta"><b>Añadir persona</b><small>Invitar por email</small></div></div>
+            <div style="color:var(--ink-3)">—</div>
+            <div>—</div>
+            <div>—</div>
+            <div><button class="btn ghost" style="color:var(--primary-2)">Invitar →</button></div>
+          </div>
+        </div>
+      </div>
+          </div>
+  </section>
+</body>
+</html>
