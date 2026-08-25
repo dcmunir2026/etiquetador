@@ -43,7 +43,7 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   sqlite.pragma('foreign_keys = ON');
 
   _db = drizzle(sqlite, { schema });
-  return _db;
+  return _db!;
 }
 
 export function closeDb(): void {

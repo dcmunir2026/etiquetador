@@ -11,6 +11,7 @@
  */
 
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import * as schema from './index';
 
@@ -31,11 +32,11 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
 
   // Dynamic require so webpack doesn't try to bundle the native module.
   // We use createRequire so we can call require from an ESM context.
-  const { createRequire } = require('node:module') as typeof import('node:module');
   const nodeRequire = createRequire(import.meta.url);
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Database = nodeRequire('better-sqlite3');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { drizzle } = nodeRequire('drizzle-orm/better-sqlite3');
 
   const path = getSqlitePath();
@@ -44,15 +45,14 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   sqlite.pragma('foreign_keys = ON');
 
   _db = drizzle(sqlite, { schema });
-  return _db;
+  return _db!;
 }
 
 export function closeDb(): void {
   if (_db) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createRequire } = require('node:module') as typeof import('node:module');
-    const nodeRequire = createRequire(import.meta.url);
-    const db = (_db as { _: { driver: { connection: { close?: () => void } } })._?.driver?.connection;
+    // Cast through `unknown` to reach the better-sqlite3 native close().
+    // Drizzle's BetterSQLite3Database does not expose a public close().
+    const db = (_db as unknown as { _: { driver: { connection: { close?: () => void } } } })._?.driver?.connection;
     if (db && typeof db.close === 'function') db.close();
     _db = null;
   }

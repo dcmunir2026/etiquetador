@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Topbar } from '@/components/Topbar';
-import { getCurrentUser, getActiveProjectId } from '@/lib/auth';
+import { getCurrentUser, getActiveProjectId } from '@/lib/session';
 import { getDb } from '@/lib/db';
 import { projects } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { ACTIVE_PROJECT_COOKIE } from '@/lib/auth';
+import { ACTIVE_PROJECT_COOKIE } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,15 +15,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const user = await getCurrentUser();
 
   if (!user) {
-    // No user — for now, redirect to a login page; in real auth this is enforced
-    return (
-      <html><body>
-        <div style={{ padding: 40, textAlign: 'center' }}>
-          <h1>Sin sesión</h1>
-          <p>No hay usuario activo. Ve a <a href="/dev/login">/dev/login</a> (temporal, dev only).</p>
-        </div>
-      </body></html>
-    );
+    redirect('/login');
   }
 
   // Load all projects the user is a member of
@@ -40,7 +32,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="app-shell">
       <Sidebar user={user} />
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Topbar user={user} projects={userProjects} activeProject={activeProject} />
+        <Topbar projects={userProjects} activeProject={activeProject} />
         {children}
       </div>
     </div>

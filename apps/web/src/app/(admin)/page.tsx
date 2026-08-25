@@ -1,7 +1,7 @@
 import { getDb } from '@/lib/db';
 import { projects, projectMembers, dimensions, taxonomies, projectTaxonomies, intensityScales, intensityLevels } from '@/lib/db';
 import { sql, eq, count, desc, inArray, and } from 'drizzle-orm';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 

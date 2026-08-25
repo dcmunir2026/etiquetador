@@ -1,0 +1,117 @@
+/* ─── Auth (login / signup) layout ─────────────────────────────────── */
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg);
+}
+@media (max-width: 900px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-art { display: none; }
+}
+
+.auth-art {
+  background: linear-gradient(135deg, #0e4a52, #1d6e75);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 42px;
+  color: #fff;
+}
+.auth-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(199,93,58,0.35), transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1), transparent 50%);
+}
+.auth-art .art-text { position: relative; z-index: 1; max-width: 380px; }
+.auth-art h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 36px;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  font-weight: 400;
+  color: #fff;
+}
+.auth-art p { margin: 0; opacity: 0.85; line-height: 1.55; }
+
+.auth-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.auth-form .panel { width: 340px; max-width: 100%; }
+.auth-form h1 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 30px;
+  margin: 0 0 4px;
+  font-weight: 400;
+}
+.auth-form .lead { margin: 0 0 28px; color: var(--ink-3); }
+
+.auth-form label {
+  font-size: 12.5px;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink-2);
+}
+.auth-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  margin-bottom: 14px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--ink-1);
+}
+.auth-form input:focus {
+  outline: 2px solid var(--primary-2);
+  outline-offset: -1px;
+  border-color: var(--primary-2);
+}
+.auth-form .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin: 6px 0 22px;
+}
+.auth-form .row label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.auth-form .submit {
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+}
+
+.auth-form .err {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #e6c4c4;
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+
+.auth-form .foot {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 18px;
+}

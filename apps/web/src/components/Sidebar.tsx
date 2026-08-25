@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { User } from '@/db/schema';
+import { logoutAction } from '@/lib/logout-action';
+
+type SidebarUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  isSuperAdmin: boolean;
+  avatarColor?: string | null;
+};
 
 const NAV: Array<{ section: string; items: Array<{ href: string; label: string; icon: string; lock?: boolean }> }> = [
   {
@@ -63,7 +71,7 @@ const ICONS: Record<string, JSX.Element> = {
   chart: <><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></>,
 };
 
-export function Sidebar({ user }: { user: User }) {
+export function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
   const initials = (user.name || user.email).split(/[\s@.]/).filter(Boolean).slice(0, 2).map(s => s[0]!.toUpperCase()).join('') || '?';
 
@@ -112,6 +120,24 @@ export function Sidebar({ user }: { user: User }) {
             <div>{user.isSuperAdmin ? 'Superadmin' : 'Project admin'}</div>
           </div>
         </div>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--sidebar-line)',
+              color: 'var(--sidebar-ink)',
+              padding: '5px 10px',
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: 'pointer',
+              marginTop: 4,
+              width: '100%',
+            }}
+          >
+            Cerrar sesión
+          </button>
+        </form>
       </div>
     </aside>
   );

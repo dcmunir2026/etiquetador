@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import type { Project, User } from '@/db/schema';
+import type { Project } from '@/db/schema';
 
 const TITLES: Record<string, string> = {
   '/': 'Acceso',
@@ -36,7 +36,7 @@ function projectTag(slug: string): string {
   return '?';
 }
 
-export function Topbar({ user, projects, activeProject }: { user: User; projects: Project[]; activeProject: Project | null }) {
+export function Topbar({ projects, activeProject }: { projects: Project[]; activeProject: Project | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
