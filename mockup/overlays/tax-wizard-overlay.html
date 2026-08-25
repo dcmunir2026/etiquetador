@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Tax Wizard Overlay — mockup</title>
+  <link rel="stylesheet" href="../css/view-shared.css">
+  <link rel="stylesheet" href="../css/view-styles.css">
+  <link rel="stylesheet" href="../css/overlay-styles.css">
+</head>
+<body style="padding: 24px; background: #fafaf7;">
+  <header style="margin-bottom: 16px; font-family: system-ui, sans-serif; font-size: 13px; color: #555;">
+    <strong>tax-wizard-overlay</strong> · mockup extraído de
+    <code>gh-pages/index.html</code> · <strong>15 (UI dimension editor) + 18 (dimension CRUD) — 4-step wizard with stepper</strong> ·
+    <a href="../../index.html">ver original</a>
+  </header>
+  <p style="font-family: system-ui, sans-serif; font-size: 12px; color: #888; max-width: 600px;">
+    Los overlays son modales / wizards flotantes del mockup (no son
+    <code>&lt;section class="view"&gt;</code>). En el HTML original
+    están ocultos con <code>display:none</code>; en estos archivos
+    extraídos les quitamos el <code>display:none</code> para que se
+    puedan ver al abrirlos en el navegador.
+  </p>
+  <div id="tax-wizard-overlay" style="position:relative;inset:auto;background:transparent;backdrop-filter:none;padding:0">
+<div class="wiz-card">
+        <div class="wiz-header">
+          <h2>Crear nueva dimensión</h2>
+          <p>Las las dimensiones son globales. Una vez creada, puedes asignarla a cualquier proyecto.</p>
+        </div>
+
+        <div class="wiz-steps">
+          <div class="wiz-step active" data-step="1">
+            <div class="wiz-num"><span>1</span></div>
+            <div class="wiz-label">Nombre</div>
+          </div>
+          <div class="wiz-step" data-step="2">
+            <div class="wiz-num"><span>2</span></div>
+            <div class="wiz-label">Escala</div>
+          </div>
+          <div class="wiz-step" data-step="3">
+            <div class="wiz-num"><span>3</span></div>
+            <div class="wiz-label">Valores</div>
+          </div>
+          <div class="wiz-step" data-step="4">
+            <div class="wiz-num"><span>4</span></div>
+            <div class="wiz-label">Descripción</div>
+          </div>
+        </div>
+
+        <div class="wiz-body">
+          <!-- STEP 1: Nombre -->
+          <div class="wiz-step-panel active" data-panel="1">
+            <div class="wiz-row" id="wiz-row-dim-name">
+              <label>Nombre de la dimensión <span class="req">*</span></label>
+              <input type="text" id="wiz-dim-name" placeholder="Ej. Sesgo de odio" oninput="autoSlug()" />
+              <div class="wiz-hint">Será visible para todos los anotadores en la pantalla de etiquetado.</div>
+              <div class="wiz-err">El nombre es obligatorio.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Slug (identificador interno)</label>
+              <input type="text" id="wiz-dim-slug" placeholder="sesgo-de-odio" />
+              <div class="wiz-hint">Solo letras, números y guiones. Se usa en URLs y en la API.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción breve</label>
+              <textarea id="wiz-dim-short" placeholder="Una línea que aparecerá en el catálogo."></textarea>
+              <div class="wiz-hint">Opcional. Hasta 200 caracteres.</div>
+            </div>
+          </div>
+
+          <!-- STEP 2: Escala -->
+          <div class="wiz-step-panel" data-panel="2">
+            <div class="wiz-row">
+              <label>Tipo de escala <span class="req">*</span></label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:12px">Define cuántos valores tendrá la dimensión y cómo se puntúan.</div>
+              <div class="wiz-scale-grid" id="wiz-scale-grid">
+                <div class="wiz-scale-card" data-scale="boolean" onclick="selectScale('boolean')">
+                  <div class="sc-title">Booleano <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Sí / No. Para presencia de un rasgo.</div>
+                  <div class="sc-ex">Ej. "¿Contiene error factual?"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="binary" onclick="selectScale('binary')">
+                  <div class="sc-title">Binario <span class="sc-pill">2 valores</span></div>
+                  <div class="sc-desc">Positivo / Negativo. Para polaridad.</div>
+                  <div class="sc-ex">Ej. "Tono: positivo vs negativo"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="3-level" onclick="selectScale('3-level')">
+                  <div class="sc-title">Tres niveles <span class="sc-pill">3 valores</span></div>
+                  <div class="sc-desc">Bajo / Medio / Alto. Para intensidad.</div>
+                  <div class="sc-ex">Ej. "Sesgo: bajo, medio, alto"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="5-level" onclick="selectScale('5-level')">
+                  <div class="sc-title">Cinco niveles <span class="sc-pill">5 valores</span></div>
+                  <div class="sc-desc">Escala Likert estándar para matices.</div>
+                  <div class="sc-ex">Ej. "Calidad periodística"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="likert" onclick="selectScale('likert')">
+                  <div class="sc-title">Likert 1–7 <span class="sc-pill">7 valores</span></div>
+                  <div class="sc-desc">Para análisis fino o psicometría.</div>
+                  <div class="sc-ex">Ej. "Credibilidad percibida"</div>
+                </div>
+                <div class="wiz-scale-card" data-scale="text" onclick="selectScale('text')">
+                  <div class="sc-title">Texto libre <span class="sc-pill">N valores</span></div>
+                  <div class="sc-desc">El anotador escribe el valor manualmente.</div>
+                  <div class="sc-ex">Ej. "Etiqueta abierta"</div>
+                </div>
+                <div class="wiz-scale-card wiz-scale-new" onclick="openCustomScaleDialog()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;border-color:var(--primary-2);background:transparent;text-align:center;min-height:118px">
+                  <div style="font-size:24px;color:var(--primary-2);font-weight:300;line-height:1">+</div>
+                  <div class="sc-title" style="color:var(--primary-2);margin-top:6px">Crear escala personalizada</div>
+                  <div class="sc-desc" style="text-align:center">Define un tipo propio con sus valores.</div>
+                </div>
+              </div>
+              <div style="margin-top:12px;font-size:11.5px;color:var(--ink-4)">
+                ¿No encaja con ninguna? <a href="#" onclick="openCustomScaleDialog();return false" style="color:var(--primary-2);font-weight:500;text-decoration:underline">Crea una escala a medida</a> con sus propios valores.
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 3: Valores -->
+          <div class="wiz-step-panel" data-panel="3">
+            <div class="wiz-row">
+              <label>Valores de la dimensión</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:10px" id="wiz-values-hint">Define cada valor con su nombre y color. Aparecerán como opciones al anotar.</div>
+              <div id="wiz-values-list"></div>
+              <button class="btn-mini" id="wiz-add-value" onclick="addWizValue()">+ Añadir valor</button>
+              <div class="wiz-hint" style="margin-top:8px" id="wiz-values-count"></div>
+              <div class="wiz-err" id="wiz-values-err">Al menos un valor debe tener nombre.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Paleta sugerida</label>
+              <div class="wiz-hint" style="margin-top:0;margin-bottom:8px">Aplica a los valores automáticamente si no los has personalizado.</div>
+              <div class="wiz-color-suggest" id="wiz-palette-suggest"></div>
+            </div>
+          </div>
+
+          <!-- STEP 4: Descripción y resumen -->
+          <div class="wiz-step-panel" data-panel="4">
+            <div class="wiz-row">
+              <label>Resumen</label>
+              <div class="wiz-summary" id="wiz-summary"></div>
+            </div>
+            <div class="wiz-row">
+              <label>Descripción completa</label>
+              <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
+              <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
+            </div>
+            <div class="wiz-row">
+              <label>Visibilidad inicial</label>
+              <div class="wiz-toggle">
+                <input type="checkbox" id="wiz-visible" checked />
+                <div>
+                  <label for="wiz-visible">Visible para project admin desde el inicio</label>
+                  <span class="tg-sub">Si lo desactivas, solo tú (super admin) la verás hasta que la asignes.</span>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-row">
+              <label>Plantilla sugerida <span style="color:var(--ink-4);font-weight:400">(rellenar automáticamente)</span></label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn-mini" onclick="fillWizTemplate('hate')">Plantilla: Sesgo de odio</button>
+                <button class="btn-mini" onclick="fillWizTemplate('quality')">Plantilla: Calidad periodística</button>
+                <button class="btn-mini" onclick="fillWizTemplate('emotion')">Plantilla: Tono emocional</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wiz-footer">
+          <button class="btn" id="wiz-btn-cancel" onclick="closeTaxonomyWizard()">Cancelar</button>
+          <div class="wiz-actions">
+            <button class="btn" id="wiz-btn-prev" onclick="wizPrev()" style="display:none">← Atrás</button>
+            <button class="btn primary" id="wiz-btn-next" onclick="wizNext()">Siguiente →</button>
+            <button class="btn primary" id="wiz-btn-create" onclick="wizCreate()" style="display:none">Crear dimensión</button>
+          </div>
+        </div>
+      </div>
+  </div>
+</body>
+</html>
