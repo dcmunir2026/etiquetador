@@ -172,10 +172,37 @@ export type DimensionInitial = {
   id: string;
   name: string;
   kind: DimensionKind;
-  scaleId: string;
+  scaleId: string | null;
+  scaleName: string | null;
   shortDescription: string | null;
   longDescription: string | null;
+  /** TK color id (e.g. `tk-odio`). Visual only — no DB column yet, so on
+   *  edit it falls back to the slug-derived color (see `pickColor` in the
+   *  catalog) or `tk-odio` as last resort. */
+  color: string | null;
+  /** Existing dimension_values, sorted by `order`. Empty for a new dim. */
+  values: ValueRow[];
 };
+
+/** Given the dimension's persisted scaleId + scaleName, decide whether the
+ *  scale is one of the 6 hardcoded global presets (match by name) or a
+ *  user-created custom scale. Falls back to the default `3-level` preset
+ *  when the scale can't be resolved. */
+function deriveScaleSelection(
+  scaleId: string | null,
+  scaleName: string | null,
+): { scaleKind: 'global' | 'custom'; scaleKey: string; customScaleId: string | null } {
+  if (scaleId && scaleName) {
+    const name = scaleName.toLowerCase();
+    for (const st of SCALE_TYPES) {
+      if (name.includes(st.title.toLowerCase())) {
+        return { scaleKind: 'global', scaleKey: st.key, customScaleId: null };
+      }
+    }
+    return { scaleKind: 'custom', scaleKey: '3-level', customScaleId: scaleId };
+  }
+  return { scaleKind: 'global', scaleKey: '3-level', customScaleId: null };
+}
 
 const STEPS = [
   { key: 'nombre', label: 'Nombre', n: 1 },
@@ -208,13 +235,40 @@ export default function DimensionForm({
 
   const [name, setName] = useState(initial?.name ?? '');
   const [shortDesc, setShortDesc] = useState(initial?.shortDescription ?? '');
-  const [scaleKind, setScaleKind] = useState<'global' | 'custom'>('global');
-  const [scaleKey, setScaleKey] = useState<string>('3-level');
-  const [customScaleId, setCustomScaleId] = useState<string | null>(null);
-  const [values, setValues] = useState<ValueRow[]>([]);
-  const [showCreateScale, setShowCreateScale] = useState(false);
-  const [color, setColor] = useState(TK_COLORS[0]!.id);
   const [longDesc, setLongDesc] = useState(initial?.longDescription ?? '');
+
+  // Scale selection — derived from the dimension's persisted scaleId
+  // + scaleName when editing, defaults to "3-level" for new.
+  const initialScale = deriveScaleSelection(initial?.scaleId ?? null, initial?.scaleName ?? null);
+  const [scaleKind, setScaleKind] = useState<'global' | 'custom'>(initialScale.scaleKind);
+  const [scaleKey, setScaleKey] = useState<string>(initialScale.scaleKey);
+  const [customScaleId, setCustomScaleId] = useState<string | null>(initialScale.customScaleId);
+
+  // Values: from initial when editing, from the default scale when creating.
+  // For custom scales we re-derive the levels so colors are populated.
+  const initialValues: ValueRow[] = (() => {
+    if (initial && initial.values.length > 0) return initial.values;
+    if (initial && initial.scaleId) {
+      const s = scales.find((x) => x.id === initial.scaleId);
+      if (s) {
+        return s.levels.length > 0
+          ? s.levels.map((lv) => ({
+              label: lv.label,
+              value: lv.value,
+              color: lv.color || '#5a7d8f',
+            }))
+          : [{ label: '', value: '', color: '#5a7d8f' }];
+      }
+    }
+    const st = scaleTypeByKey(initialScale.scaleKey);
+    return st ? st.defaultValues : [];
+  })();
+  const [values, setValues] = useState<ValueRow[]>(initialValues);
+  const [showCreateScale, setShowCreateScale] = useState(false);
+
+  // Color: use the stored value if present; otherwise default to the first
+  // TK color. (DB column doesn't exist yet; see STATUS.md.)
+  const [color, setColor] = useState<string>(initial?.color ?? TK_COLORS[0]!.id);
 
   const [stepError, setStepError] = useState<string | null>(null);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
@@ -223,16 +277,8 @@ export default function DimensionForm({
 
   const slugPreview = useMemo(() => autoSlug(name), [name]);
 
-  // Seed values from the default 3-level scale the first time the form
-  // mounts in 'new' mode.
-  useEffect(() => {
-    if (isEdit) return;
-    if (values.length === 0) {
-      const st = scaleTypeByKey(scaleKey);
-      if (st) setValues(st.defaultValues);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // No startup effect: the initial-state factories above already produce
+  // the right values, scales and color for both new and edit modes.
 
   function deriveValuesFromScale(s: Scale): ValueRow[] {
     if (s.levels.length === 0) {

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DimensionWizardModal, { type ModalTarget } from './DimensionWizardModal';
 import ArchiveButton from '../ArchiveButton';
-import type { DimensionCard, Scale } from './types';
+import type { DimensionCard, Scale, DimensionValueRow } from './types';
+import type { DimensionInitial } from './DimensionForm';
 
 const SLUG_TO_TK: Array<[RegExp, string]> = [
   [/odio|toxic/i, 'tk-odio'],
@@ -24,6 +25,27 @@ function pickColor(slug: string): string {
     if (re.test(slug)) return tk;
   }
   return 'tk-default';
+}
+
+/** Build the `initial` payload for the edit modal from a card row. The
+ *  values list is already sorted by `order` in `page.tsx`. */
+function buildInitialFromCard(card: DimensionCard, scales: Scale[]): DimensionInitial {
+  return {
+    id: card.id,
+    name: card.name,
+    kind: card.kind,
+    scaleId: card.scaleId,
+    scaleName: card.scaleName,
+    shortDescription: card.shortDescription,
+    longDescription: card.longDescription,
+    color: card.color,
+    values: card.values.map<DimensionValueRow>((v) => ({
+      label: v.label,
+      value: v.value,
+      color: v.color,
+      order: v.order,
+    })),
+  };
 }
 
 export default function DimensionsCatalog({
@@ -49,14 +71,7 @@ export default function DimensionsCatalog({
       if (card) {
         setTarget({
           mode: 'edit',
-          initial: {
-            id: card.id,
-            name: card.name,
-            kind: card.kind,
-            scaleId: card.scaleId ?? scales[0]?.id ?? '',
-            shortDescription: card.shortDescription,
-            longDescription: null,
-          },
+          initial: buildInitialFromCard(card, scales),
         });
       }
     }
@@ -107,7 +122,7 @@ export default function DimensionsCatalog({
 
         <div className="tax-grid" style={{ padding: 16 }}>
           {cards.map((c) => {
-            const valuesPreview = c.values.slice(0, 3).join(' · ');
+            const valuesPreview = c.values.slice(0, 3).map((v) => v.label).join(' · ');
             const valuesOverflow = c.values.length > 3 ? `+${c.values.length - 3}` : '';
             const tk = pickColor(c.slug);
             const kindLabel =
@@ -149,14 +164,7 @@ export default function DimensionsCatalog({
                       onClick={() =>
                         setTarget({
                           mode: 'edit',
-                          initial: {
-                            id: c.id,
-                            name: c.name,
-                            kind: c.kind,
-                            scaleId: c.scaleId ?? scales[0]?.id ?? '',
-                            shortDescription: c.shortDescription,
-                            longDescription: null,
-                          },
+                          initial: buildInitialFromCard(c, scales),
                         })
                       }
                     >

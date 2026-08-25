@@ -11,19 +11,42 @@ export default async function DimensionsCatalogPage() {
   const db = getDb();
 
   const dimRows = await db
-    .select({ d: dimensions, creator: users })
+    .select({
+      d: dimensions,
+      creator: users,
+      scaleName: intensityScales.name,
+    })
     .from(dimensions)
     .leftJoin(users, eq(users.id, dimensions.createdBy))
+    .leftJoin(intensityScales, eq(intensityScales.id, dimensions.scaleId))
     .orderBy(asc(dimensions.name));
 
   const allValues = await db
-    .select()
+    .select({
+      id: dimensionValues.id,
+      dimensionId: dimensionValues.dimensionId,
+      label: dimensionValues.label,
+      value: dimensionValues.value,
+      order: dimensionValues.order,
+      color: dimensionValues.color,
+    })
     .from(dimensionValues)
     .orderBy(asc(dimensionValues.dimensionId), asc(dimensionValues.order));
-  const valuesByDim = new Map<string, string[]>();
+  const valuesByDim = new Map<
+    string,
+    Array<{ label: string; value: string; order: number; color: string }>
+  >();
   for (const v of allValues) {
-    const arr = valuesByDim.get(v.dimensionId) ?? (valuesByDim.set(v.dimensionId, []).get(v.dimensionId)!);
-    arr.push(v.label);
+    const arr = valuesByDim.get(v.dimensionId) ?? valuesByDim.set(v.dimensionId, []).get(v.dimensionId)!;
+    arr.push({
+      label: v.label,
+      value: v.value,
+      order: v.order,
+      // Seeded rows have null color; use a neutral fallback so the form
+      // shows a real hex value in the swatch (matches the suggested palette
+      // first item).
+      color: v.color || '#5a7d8f',
+    });
   }
 
   // Per-dimension count of taxonomies that contain it.
@@ -73,8 +96,11 @@ export default async function DimensionsCatalogPage() {
     slug: r.d.slug,
     kind: r.d.kind as DimensionKind,
     scaleId: r.d.scaleId,
+    scaleName: r.scaleName ?? null,
     status: r.d.status === 'archived' ? 'archived' : 'active',
     shortDescription: r.d.shortDescription,
+    longDescription: r.d.longDescription,
+    color: null, // not yet a column (STATUS.md tech debt)
     creatorName: r.creator?.name ?? null,
     creatorEmail: r.creator?.email ?? null,
     values: valuesByDim.get(r.d.id) ?? [],
