@@ -340,3 +340,180 @@ a:hover { text-decoration: underline; }
   border: 1px dashed var(--line);
   border-radius: 10px;
 }
+
+/* ─── Dimensiones / taxonomía catalog (mockup-aligned) ───────────── */
+.tax-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.tax-toolbar input[type="search"] {
+  flex: 1;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13.5px;
+  background: var(--surface-2);
+}
+.tax-toolbar input[type="search"]:focus {
+  outline: 2px solid var(--primary-2);
+  outline-offset: -1px;
+  border-color: var(--primary-2);
+  background: #fff;
+}
+.tax-toolbar select {
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.tax-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+}
+.tax-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.15s;
+  position: relative;
+}
+.tax-card:hover {
+  border-color: var(--primary-2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+}
+.tax-card.is-archived {
+  opacity: 0.65;
+  background: var(--surface-2);
+}
+.tax-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tax-color {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--ink-1);
+}
+.tax-color.tk-emot  { background: #f6e7d6; color: #7a3b1c; }
+.tax-color.tk-stat  { background: #e3eef5; color: #1d4a72; }
+.tax-color.tk-gen   { background: #efe1ec; color: #5a3060; }
+.tax-color.tk-semi  { background: #f4ecd6; color: #5a4400; }
+.tax-color.tk-race  { background: #e6e1d6; color: #5a4400; }
+.tax-color.tk-odio  { background: #f0d8d3; color: #7a1a1c; }
+.tax-color.tk-rel   { background: #e0e8da; color: #2f5d2c; }
+.tax-color.tk-demo  { background: #e1e6ec; color: #1d4a72; }
+.tax-color.tk-tend  { background: #e9dfe6; color: #5a3060; }
+.tax-color.tk-toxic { background: #fde2d2; color: #8a3b1c; }
+.tax-color.tk-fact  { background: #dde6ec; color: #1d4a72; }
+.tax-color.tk-default { background: #efeee7; color: var(--ink-2); }
+
+.tax-card-head h4 {
+  margin: 0 0 2px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+.tax-card-head p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.tax-card-meta {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.scale-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 8px;
+  background: #f6f4ed;
+  color: var(--ink-2);
+  border-radius: 10px;
+}
+.scale-pill.values {
+  font-weight: 500;
+  color: var(--ink-1);
+  background: #efeee7;
+}
+.tax-used-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #e3eef5;
+  color: #1d4a72;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.tax-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  gap: 8px;
+}
+.tax-card-foot .actions-mini {
+  display: flex;
+  gap: 4px;
+}
+.btn-mini {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-mini:hover {
+  border-color: var(--ink-3);
+  background: var(--surface-2);
+}
+.btn-mini.primary-mini {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-mini.primary-mini:hover {
+  background: var(--primary-2);
+  border-color: var(--primary-2);
+}
+.btn-mini.danger-mini {
+  color: var(--danger);
+  border-color: #e6c4c4;
+}
+.btn-mini.danger-mini:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+

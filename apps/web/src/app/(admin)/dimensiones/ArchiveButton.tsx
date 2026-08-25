@@ -7,12 +7,15 @@ import { archiveDimension } from './actions/actions';
 export default function ArchiveButton({
   dimensionId,
   dimensionName,
+  variant,
 }: {
   dimensionId: string;
   dimensionName: string;
+  variant?: 'mini' | 'default';
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const isMini = variant === 'mini';
 
   function onClick() {
     if (!confirm(`¿Archivar "${dimensionName}"?\nDejará de aparecer en los selectores activos.`)) {
@@ -26,6 +29,19 @@ export default function ArchiveButton({
         alert(`No se pudo archivar: ${res.error}`);
       }
     });
+  }
+
+  if (isMini) {
+    return (
+      <button
+        className="btn-mini danger-mini"
+        onClick={onClick}
+        disabled={pending}
+        aria-busy={pending}
+      >
+        {pending ? '…' : 'Archivar'}
+      </button>
+    );
   }
 
   return (
