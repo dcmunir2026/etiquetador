@@ -1,50 +1,21 @@
 import { getDb } from '@/lib/db';
 import { dimensions, dimensionValues, intensityScales, intensityLevels, taxonomies, taxonomyDimensions, users, projectTaxonomies } from '@/lib/db';
-import { eq, count, asc, and } from 'drizzle-orm';
-import { DIMENSION_KIND_LABELS, type DimensionKind } from '@/lib/dimension-kinds';
-import ArchiveButton from './ArchiveButton';
+import { eq, count, asc } from 'drizzle-orm';
+import DimensionsCatalog from './_components/DimensionsCatalog';
+import type { DimensionCard, Scale } from './_components/types';
+import type { DimensionKind } from '@/lib/dimension-kinds';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * Maps a dimension slug to one of the 11 mockup colors. The schema
- * does not yet persist a `color` column (tracked as tech debt in
- * STATUS.md), so we pick a stable color from the slug. Editable in
- * the dimension form once the column is added.
- */
-const SLUG_TO_TK: Array<[RegExp, string]> = [
-  [/odio|toxic/i, 'tk-odio'],
-  [/emot/i, 'tk-emot'],
-  [/tend/i, 'tk-tend'],
-  [/semi/i, 'tk-semi'],
-  [/g[eé]nero|gen\b/i, 'tk-gen'],
-  [/raza|rac/i, 'tk-race'],
-  [/religion|relig/i, 'tk-rel'],
-  [/demogr/i, 'tk-demo'],
-  [/estad[ií]stic|stat/i, 'tk-stat'],
-  [/fact|incoheren/i, 'tk-fact'],
-];
-
-function pickColor(slug: string): string {
-  for (const [re, tk] of SLUG_TO_TK) {
-    if (re.test(slug)) return tk;
-  }
-  return 'tk-default';
-}
 
 export default async function DimensionsCatalogPage() {
   const db = getDb();
 
-  const rows = await db
-    .select({
-      d: dimensions,
-      creator: users,
-    })
+  const dimRows = await db
+    .select({ d: dimensions, creator: users })
     .from(dimensions)
     .leftJoin(users, eq(users.id, dimensions.createdBy))
     .orderBy(asc(dimensions.name));
 
-  // Per-dimension values (labels only — the mockup shows the first 3 joined).
   const allValues = await db
     .select()
     .from(dimensionValues)
@@ -63,8 +34,6 @@ export default async function DimensionsCatalogPage() {
   const txCountByDim = new Map(txCounts.map((r) => [r.dimensionId, Number(r.count)]));
 
   // Per-dimension count of projects that include it (via taxonomy assignment).
-  // A project includes a dimension if it has at least one taxonomy that
-  // contains it. Compute via project_taxonomies + taxonomy_dimensions.
   const projCounts = await db
     .select({
       dimensionId: taxonomyDimensions.dimensionId,
@@ -81,7 +50,37 @@ export default async function DimensionsCatalogPage() {
     set.add(r.projectId);
   }
 
-  // Counters for the KPIs.
+  const scaleRows = await db
+    .select()
+    .from(intensityScales)
+    .orderBy(asc(intensityScales.name));
+  const levelRows = await db
+    .select()
+    .from(intensityLevels)
+    .orderBy(asc(intensityLevels.scaleId), asc(intensityLevels.order));
+  const scales: Scale[] = scaleRows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    kind: s.kind,
+    levels: levelRows
+      .filter((lv) => lv.scaleId === s.id)
+      .map((lv) => ({ label: lv.label, value: lv.value, order: lv.order })),
+  }));
+
+  const cards: DimensionCard[] = dimRows.map((r) => ({
+    id: r.d.id,
+    name: r.d.name,
+    slug: r.d.slug,
+    kind: r.d.kind as DimensionKind,
+    status: r.d.status === 'archived' ? 'archived' : 'active',
+    shortDescription: r.d.shortDescription,
+    creatorName: r.creator?.name ?? null,
+    creatorEmail: r.creator?.email ?? null,
+    values: valuesByDim.get(r.d.id) ?? [],
+    taxonomyCount: txCountByDim.get(r.d.id) ?? 0,
+    projectCount: projCountByDim.get(r.d.id)?.size ?? 0,
+  }));
+
   const [activeRows] = await db.select({ c: count() }).from(dimensions).where(eq(dimensions.status, 'active'));
   const [archivedRows] = await db.select({ c: count() }).from(dimensions).where(eq(dimensions.status, 'archived'));
   const [totalAss] = await db.select({ c: count() }).from(taxonomyDimensions);
@@ -109,101 +108,7 @@ export default async function DimensionsCatalogPage() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 0 }}>
-        <div className="tax-toolbar" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', margin: 0 }}>
-          <input type="search" placeholder="Buscar dimensión..." />
-          <select>
-            <option>Todas las escalas</option>
-            <option>3 niveles</option>
-            <option>5 niveles</option>
-            <option>Likert</option>
-            <option>Binario</option>
-          </select>
-          <select>
-            <option>Estado: activas</option>
-            <option>Estado: archivadas</option>
-            <option>Estado: todas</option>
-          </select>
-          <a href="/dimensiones/nueva" className="btn primary" style={{ marginLeft: 'auto' }}>
-            + Nueva dimensión
-          </a>
-        </div>
-
-        <div className="tax-grid" style={{ padding: 16 }}>
-          {rows.map((r) => {
-            const values = valuesByDim.get(r.d.id) ?? [];
-            const tCount = txCountByDim.get(r.d.id) ?? 0;
-            const pCount = projCountByDim.get(r.d.id)?.size ?? 0;
-            const isArchived = r.d.status === 'archived';
-            const valuesPreview = values.slice(0, 3).join(' · ');
-            const valuesOverflow = values.length > 3 ? `+${values.length - 3}` : '';
-            const tk = pickColor(r.d.slug);
-            return (
-              <div
-                key={r.d.id}
-                className={`tax-card ${isArchived ? 'is-archived' : ''}`}
-              >
-                <div className="tax-card-head">
-                  <div className={`tax-color ${tk}`}>{r.d.name.charAt(0).toUpperCase()}</div>
-                  <div>
-                    <h4>{r.d.name}</h4>
-                    <p>{r.d.shortDescription || 'Sin descripción breve.'}</p>
-                  </div>
-                </div>
-                <div className="tax-card-meta">
-                  <span className="scale-pill">
-                    {r.d.kind && DIMENSION_KIND_LABELS[r.d.kind as DimensionKind]
-                      ? r.d.kind === 'category'
-                        ? 'Categoría'
-                        : r.d.kind === 'intensity'
-                          ? 'Intensidad'
-                          : r.d.kind === 'flag'
-                            ? 'Flag'
-                            : 'Texto libre'
-                      : '—'}
-                  </span>
-                  {valuesPreview ? (
-                    <span className="scale-pill values">{valuesPreview}{valuesOverflow}</span>
-                  ) : null}
-                  {pCount > 0 ? (
-                    <span className="tax-used-pill">
-                      {pCount} {pCount === 1 ? 'proyecto' : 'proyectos'}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="tax-card-foot">
-                  <small>
-                    Creada por{' '}
-                    <b style={{ color: 'var(--ink-2)' }}>
-                      {r.creator?.name || r.creator?.email || '—'}
-                    </b>
-                  </small>
-                  <div className="actions-mini">
-                    <a href={`/dimensiones/${r.d.id}`} className="btn-mini">
-                      Ver usos
-                    </a>
-                    <a href={`/dimensiones/${r.d.id}/editar`} className="btn-mini">
-                      Editar
-                    </a>
-                    {!isArchived ? (
-                      <ArchiveButton
-                        dimensionId={r.d.id}
-                        dimensionName={r.d.name}
-                        variant="mini"
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {rows.length === 0 && (
-            <div className="empty" style={{ gridColumn: '1 / -1' }}>
-              No hay dimensiones. Crea la primera con el botón "+ Nueva dimensión".
-            </div>
-          )}
-        </div>
-      </div>
+      <DimensionsCatalog cards={cards} scales={scales} />
     </main>
   );
 }

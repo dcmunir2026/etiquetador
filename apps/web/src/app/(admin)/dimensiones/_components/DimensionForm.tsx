@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createDimension, updateDimension, archiveDimension } from '../actions/actions';
 import { DIMENSION_KINDS, DIMENSION_KIND_LABELS, type DimensionKind } from '@/lib/dimension-kinds';
+import type { Scale } from './types';
 
 const TK_COLORS: Array<{ id: string; label: string; hex: string }> = [
   { id: 'tk-odio', label: 'Odio', hex: '#d97757' },
@@ -18,13 +19,6 @@ const TK_COLORS: Array<{ id: string; label: string; hex: string }> = [
   { id: 'tk-toxic', label: 'Toxicidad', hex: '#7a1a1c' },
   { id: 'tk-fact', label: 'Fact.', hex: '#1c6e3a' },
 ];
-
-type Scale = {
-  id: string;
-  name: string;
-  kind: string;
-  levels: { label: string; value: string; order: number }[];
-};
 
 export type DimensionInitial = {
   id: string;
@@ -48,10 +42,14 @@ export default function DimensionForm({
   initial,
   scales,
   isSuperAdmin,
+  onDone,
+  compact = false,
 }: {
   initial?: DimensionInitial;
   scales: Scale[];
   isSuperAdmin: boolean;
+  onDone?: () => void;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const isEdit = !!initial;
@@ -149,6 +147,10 @@ export default function DimensionForm({
       if (res.ok) {
         setSubmitOk(isEdit ? 'Cambios guardados.' : 'Dimensión creada.');
         router.refresh();
+        if (onDone) {
+          // small delay so the success message is visible before unmounting
+          setTimeout(() => onDone(), 350);
+        }
       } else {
         setSubmitErr(res.error);
       }
@@ -164,7 +166,8 @@ export default function DimensionForm({
     startTransition(async () => {
       const res = await archiveDimension({ id: initial.id });
       if (res.ok) {
-        router.push('/dimensiones');
+        router.refresh();
+        if (onDone) onDone();
       } else {
         setSubmitErr(res.error);
       }
@@ -385,9 +388,20 @@ export default function DimensionForm({
 
       {/* Footer with nav */}
       <div className="wizard-footer">
-        <a href="/dimensiones" className="btn">
-          Cancelar
-        </a>
+        {compact ? (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => onDone?.()}
+            disabled={pending}
+          >
+            Cancelar
+          </button>
+        ) : (
+          <a href="/dimensiones" className="btn">
+            Cancelar
+          </a>
+        )}
         <div style={{ flex: 1 }} />
         <button type="button" className="btn" onClick={goBack} disabled={step === 'nombre' || pending}>
           ← Atrás
