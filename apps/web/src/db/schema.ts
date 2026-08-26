@@ -13,6 +13,7 @@ import { relations } from 'drizzle-orm';
 import {
   pgTable,
   text,
+  uuid,
   integer,
   boolean,
   timestamp,
@@ -22,14 +23,12 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 
-// ─── Helpers ─────────────────────────────────────────────────────────
-
-/** Prefixed, sortable, URL-safe id. Format: t_<base36 ts>_<4 random chars>. */
-function newId(): string {
-  const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 6);
-  return `t_${ts}_${rand}`;
-}
+// ─── Notes ───────────────────────────────────────────────────────────
+//
+// All primary keys are `uuid` with `defaultRandom()`, which maps to
+// PostgreSQL's `gen_random_uuid()` (built-in since PG 13; no extension
+// required). The previous `t_<base36-ts>_<4rand>` format was abandoned
+// in favour of UUIDs for cross-system interop and library support.
 
 // ─── Enums (native pgEnum) ──────────────────────────────────────────
 
@@ -83,7 +82,7 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const users = pgTable(
   'users',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
+    id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
     name: text('name'),
     avatarColor: text('avatar_color'),
@@ -103,12 +102,12 @@ export const users = pgTable(
 export const projects = pgTable(
   'projects',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     description: text('description'),
     status: projectStatusEnum('status').notNull().default('active'),
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: uuid('created_by').notNull().references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
@@ -122,9 +121,9 @@ export const projects = pgTable(
 export const projectMembers = pgTable(
   'project_members',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
-    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     role: projectMemberRoleEnum('role').notNull().default('annotator'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
@@ -138,11 +137,11 @@ export const projectMembers = pgTable(
 export const intensityScales = pgTable(
   'intensity_scales',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     kind: scaleKindEnum('kind').notNull(),
     isCustom: boolean('is_custom').notNull().default(false),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
@@ -153,8 +152,8 @@ export const intensityScales = pgTable(
 export const intensityLevels = pgTable(
   'intensity_levels',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
-    scaleId: text('scale_id').notNull().references(() => intensityScales.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    scaleId: uuid('scale_id').notNull().references(() => intensityScales.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     value: text('value').notNull(),
     order: integer('order').notNull(),
@@ -170,16 +169,16 @@ export const intensityLevels = pgTable(
 export const dimensions = pgTable(
   'dimensions',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     description: text('description'),
     shortDescription: text('short_description'),
     longDescription: text('long_description'),
     kind: dimensionKindEnum('kind').notNull(),
-    scaleId: text('scale_id').references(() => intensityScales.id, { onDelete: 'set null' }),
+    scaleId: uuid('scale_id').references(() => intensityScales.id, { onDelete: 'set null' }),
     status: statusEnum('status').notNull().default('active'),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
@@ -191,8 +190,8 @@ export const dimensions = pgTable(
 export const dimensionValues = pgTable(
   'dimension_values',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
-    dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    dimensionId: uuid('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     value: text('value').notNull(),
     order: integer('order').notNull(),
@@ -208,14 +207,14 @@ export const dimensionValues = pgTable(
 export const taxonomies = pgTable(
   'taxonomies',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     shortDescription: text('short_description'),
     longDescription: text('long_description'),
     color: text('color'),
     status: statusEnum('status').notNull().default('active'),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
@@ -228,8 +227,8 @@ export const taxonomies = pgTable(
 export const taxonomyDimensions = pgTable(
   'taxonomy_dimensions',
   {
-    taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
-    dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    taxonomyId: uuid('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
+    dimensionId: uuid('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
     order: integer('order').notNull().default(0),
   },
   (t) => ({
@@ -242,9 +241,9 @@ export const taxonomyDimensions = pgTable(
 export const projectTaxonomies = pgTable(
   'project_taxonomies',
   {
-    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-    taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
-    assignedBy: text('assigned_by').references(() => users.id),
+    projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    taxonomyId: uuid('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
+    assignedBy: uuid('assigned_by').references(() => users.id),
     assignedAt: timestamp('assigned_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
@@ -258,8 +257,8 @@ export const projectTaxonomies = pgTable(
 export const segmentationConfigs = pgTable(
   'segmentation_configs',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
-    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     unit: segmentationUnitEnum('unit').notNull(),
     maxChunkSize: integer('max_chunk_size').notNull(),
@@ -278,12 +277,12 @@ export const segmentationConfigs = pgTable(
 export const auditLog = pgTable(
   'audit_log',
   {
-    id: text('id').primaryKey().$defaultFn(() => newId()),
-    actorId: text('actor_id').references(() => users.id),
-    projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    actorId: uuid('actor_id').references(() => users.id),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     action: text('action').notNull(),
     targetType: text('target_type'),
-    targetId: text('target_id'),
+    targetId: uuid('target_id'),
     metadata: text('metadata'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
