@@ -27,14 +27,10 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   if (_db) return _db;
 
   // Dynamic require via createRequire to dodge webpack bundling of native modules.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { createRequire } = require('node:module');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const nodeRequire = createRequire(__filename);
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Database = nodeRequire('better-sqlite3');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { drizzle } = nodeRequire('drizzle-orm/better-sqlite3');
 
   const path = getSqlitePath();
@@ -43,7 +39,7 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   sqlite.pragma('foreign_keys = ON');
 
   _db = drizzle(sqlite, { schema });
-  return _db;
+  return _db as BetterSQLite3Database<typeof schema>;
 }
 
 export function closeDb(): void {
