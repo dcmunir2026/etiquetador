@@ -544,6 +544,7 @@
     <nav class="nav" id="nav-tag">
       <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
       <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
+      <button data-view="quant-validation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="9" r="1.5" fill="currentColor"/></svg>Validación cuantitativa</button>
       <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
     </nav>
 
@@ -1506,6 +1507,78 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </section>
 
+    <!-- VALIDACIÓN CUANTITATIVA -->
+    <section class="view" id="view-quant-validation">
+      <div class="page">
+        <h1>Validación cuantitativa</h1>
+        <p class="lead">Supervisión por métricas de acuerdo por equipo. Cada equipo anota un paquete espejo y se compara contra el consenso. El botón de consolidar queda siempre habilitado — la decisión final es tuya.</p>
+
+        <div class="grid g-4" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos</div><div class="value">4</div><div class="delta">3 paquetes activos</div></div>
+          <div class="kpi"><div class="label">En progreso</div><div class="value" style="color:var(--warn)">2</div><div class="delta">avance medio: 38%</div></div>
+          <div class="kpi"><div class="label">OK</div><div class="value" style="color:var(--ok)">1</div><div class="delta up">error medio: 4%</div></div>
+          <div class="kpi"><div class="label">No OK</div><div class="value" style="color:var(--bad)">1</div><div class="delta down">error: 22%</div></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="tax-toolbar">
+            <input type="search" placeholder="Buscar equipo o paquete..." id="qv-search" oninput="renderQuantValidation()" />
+            <select onchange="renderQuantValidation()">
+              <option>Todos los estados</option>
+              <option>En progreso</option>
+              <option>OK</option>
+              <option>No OK</option>
+            </select>
+            <select>
+              <option>Proyecto: EpData 2026-Q3</option>
+              <option>EpData 2026-Q2</option>
+              <option>EpData Sintético v1</option>
+            </select>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Paquete</th>
+                <th>Fragmentos</th>
+                <th>Avance</th>
+                <th>Estado</th>
+                <th>Tasa de error</th>
+                <th>Última act.</th>
+              </tr>
+            </thead>
+            <tbody id="qv-table-body">
+              <!-- renderizado por renderQuantValidation() -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3 style="margin-top:0">Acuerdo global del proyecto</h3>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:center">
+            <div>
+              <div class="bar" style="height:10px">
+                <div style="width:78%;background:linear-gradient(90deg,var(--ok),#1e6a44)"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:4px">
+                <span>175 / 224 fragmentos con acuerdo</span>
+                <span>78%</span>
+              </div>
+            </div>
+            <button class="btn primary" style="white-space:nowrap" onclick="window.dispatchEvent(new CustomEvent('show-toast',{detail:'Consolidación iniciada. Se generará un snapshot v1 del dataset final.'}))">Consolidar dataset final →</button>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-3)">
+            <span><b style="color:var(--ink-1);font-size:13px">3</b> equipos con paquetes completados</span>
+            <span>·</span>
+            <span><b style="color:var(--ok);font-size:13px">1</b> OK</span>
+            <span><b style="color:var(--bad);font-size:13px">1</b> No OK</span>
+            <span><b style="color:var(--ink-3);font-size:13px">49</b> fragmentos con discrepancia pendientes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- VALIDACIÓN CUALITATIVA -->
     <section class="view" id="view-validacion">
       <div class="page">
@@ -1948,7 +2021,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
     paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
-    validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
+    validacion:'Validación cualitativa', 'quant-validation':'Validación cuantitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
     views.forEach(v => v.classList.remove('active'));
@@ -2040,6 +2113,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       if (content) content.style.display = 'block';
       // Re-render dinámico si es dimensions
       if (viewName === 'dimensions') renderProjectDimensions();
+      if (viewName === 'quant-validation') renderQuantValidation();
     }
   }
 
@@ -2187,7 +2261,56 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   // ─── Taxonomy creation wizard (4 pasos) ───
-  const WIZ_PALETTE = ['#d97757','#a85a35','#7d6c4f','#3d8268','#5b8fb8','#8b6db5','#c79d3c','#9c5b8b'];
+  // ─── QUANT VALIDATION ───
+  const QUANT_TEAMS = [
+    { id:'team-a', name:'Equipo A', members:['Marta','Luis','Ana'], package:'P-001 (espejo)', fragments:50, done:25, status:'progress', errorRate:null, lastUpdate:'hace 1h' },
+    { id:'team-b', name:'Equipo B', members:['Pedro','Sofía','Juan'], package:'P-002 (espejo)', fragments:50, done:50, status:'ok', errorRate:0.04, lastUpdate:'hace 3h' },
+    { id:'team-c', name:'Equipo C', members:['Lucía','Miguel'], package:'P-003', fragments:50, done:50, status:'fail', errorRate:0.22, lastUpdate:'hace 6h' },
+    { id:'team-d', name:'Equipo D', members:['Carla','Diego','Elena'], package:'P-004 (espejo)', fragments:50, done:13, status:'progress', errorRate:null, lastUpdate:'hace 30min' },
+  ];
+
+  function renderQuantValidation(){
+    const tbody = document.getElementById('qv-table-body');
+    if (!tbody) return;
+    const searchEl = document.getElementById('qv-search');
+    const filterEl = document.querySelector('#view-quant-validation select');
+    const q = (searchEl?.value || '').toLowerCase().trim();
+    const filter = filterEl?.value || 'Todos los estados';
+    const filtered = QUANT_TEAMS.filter(t => {
+      const matchSearch = !q || t.name.toLowerCase().includes(q) || t.package.toLowerCase().includes(q);
+      const matchFilter = filter === 'Todos los estados' || (
+        filter === 'En progreso' && t.status === 'progress' ||
+        filter === 'OK' && t.status === 'ok' ||
+        filter === 'No OK' && t.status === 'fail'
+      );
+      return matchSearch && matchFilter;
+    });
+    tbody.innerHTML = filtered.map(t => {
+      const statusMap = {
+        progress: { label:'En progreso', bg:'#fdf6e3', txt:'#7d6c4f', dot:'var(--warn)' },
+        ok:       { label:'OK',          bg:'#e6f4ec', txt:'#1c6e3a', dot:'var(--ok)' },
+        fail:     { label:'No OK',       bg:'#fbe6e6', txt:'#a13d3d', dot:'var(--bad)' },
+      };
+      const st = statusMap[t.status];
+      const errorText = t.errorRate !== null ? (t.errorRate * 100).toFixed(0) + '%' : '—';
+      const errorColor = t.errorRate === null ? 'var(--ink-3)' : t.errorRate < 0.10 ? 'var(--ok)' : 'var(--bad)';
+      const barColor = t.status==='ok' ? 'linear-gradient(90deg,var(--ok),#1e6a44)' : t.status==='fail' ? 'linear-gradient(90deg,var(--bad),#7a2222)' : 'linear-gradient(90deg,var(--warn),#b58300)';
+      return '<tr>'
+        + '<td><b>' + t.name + '</b><br><small style="color:var(--ink-3)">' + t.members.join(' · ') + '</small></td>'
+        + '<td><code style="font-size:11.5px;color:var(--ink-2);background:#f6f4ed;padding:1px 6px;border-radius:3">' + t.package + '</code></td>'
+        + '<td>' + t.done + ' / ' + t.fragments + '</td>'
+        + '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:90px;height:6px"><div style="width:' + Math.round((t.done/t.fragments)*100) + '%;background:' + barColor + '"></div></div><small style="color:var(--ink-3);font-size:11.5px">' + Math.round((t.done/t.fragments)*100) + '%</small></div></td>'
+        + '<td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + st.bg + ';color:' + st.txt + ';font-size:11.5px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:' + st.dot + '"></span>' + st.label + '</span></td>'
+        + '<td style="font-weight:600;color:' + errorColor + '">' + errorText + '</td>'
+        + '<td><small style="color:var(--ink-3)">' + t.lastUpdate + '</small></td>'
+        + '</tr>';
+    }).join('');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
+    }
+  }
+
+    const WIZ_PALETTE = ['#d97757','#a85a35','#7d6c4f','#3d8268','#5b8fb8','#8b6db5','#c79d3c','#9c5b8b'];
   const WIZ_SCALE_DEFAULTS = {
     'boolean':  [{name:'Sí', color:'#d97757'}, {name:'No', color:'#3d8268'}],
     'binary':   [{name:'Positivo', color:'#3d8268'}, {name:'Negativo', color:'#d97757'}],
@@ -3099,6 +3222,7 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
 
   // Init: render preview on load
   setTimeout(updateSegmentationPreview, 200);
+  setTimeout(renderQuantValidation, 250);
 
 
 
