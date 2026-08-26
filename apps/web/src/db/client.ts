@@ -1,53 +1,53 @@
 /**
- * DB client — singleton pattern.
- * Uses better-sqlite3 in dev. Production target: PostgreSQL.
+ * DB client — singleton pattern, PostgreSQL.
  *
- * The native binding is loaded via createRequire so webpack doesn't
- * try to bundle it.
+ * Uses `postgres` (postgres-js) + `drizzle-orm/postgres-js`.
+ * Dev: docker compose up -d (Postgres on :5432, creds in docker-compose.yml).
+ * Prod: real DATABASE_URL.
+ *
+ * In Next.js, import this ONLY from Server Actions, API routes, or RSC.
+ * Do NOT import in client components.
  */
 
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { join } from 'node:path';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { createRequire } from 'node:module';
 import * as schema from './schema';
 
-let _db: BetterSQLite3Database<typeof schema> | null = null;
+let _db: PostgresJsDatabase<typeof schema> | null = null;
 
-function getSqlitePath(): string {
-  if (process.env.DATABASE_URL) {
-    const u = process.env.DATABASE_URL;
-    if (u.startsWith('file:')) return u.slice(5);
-    if (u.startsWith('file://')) return u.slice(7);
-    return u;
-  }
-  // Default: project root
-  return join(process.cwd(), 'etiquetador.db');
+const DEFAULT_URL = 'postgres://etiquetador:etiquetador_dev@localhost:5432/etiquetador';
+
+function getDatabaseUrl(): string {
+  return process.env.DATABASE_URL || DEFAULT_URL;
 }
 
-export function getDb(): BetterSQLite3Database<typeof schema> {
+export function getDb(): PostgresJsDatabase<typeof schema> {
   if (_db) return _db;
 
-  // Dynamic require via createRequire to dodge webpack bundling of native modules.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { createRequire } = require('node:module');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const nodeRequire = createRequire(__filename);
+  // Dynamic require so the `postgres` driver is loaded lazily. Same
+  // pattern we used for better-sqlite3 — keeps the import out of any
+  // edge/runtime that might not handle the ESM-only `postgres` package.
+  const nodeRequire = createRequire(import.meta.url);
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const Database = nodeRequire('better-sqlite3');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { drizzle } = nodeRequire('drizzle-orm/better-sqlite3');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const postgres = nodeRequire('postgres');
 
-  const path = getSqlitePath();
-  const sqlite = new Database(path);
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
-
-  _db = drizzle(sqlite, { schema });
+  const url = getDatabaseUrl();
+  const client = postgres(url, { max: 10 });
+  _db = drizzle(client, { schema });
   return _db!;
 }
 
 export function closeDb(): void {
-  _db = null;
+  if (_db) {
+    // The PostgresJsDatabase does not expose a public close(); the
+    // underlying `postgres` client has `end()`. Reach for it through
+    // the driver like we did for better-sqlite3.
+    const driver = (_db as unknown as { _: { driver: { client: { end?: () => void } } } })._?.driver?.client;
+    if (driver && typeof driver.end === 'function') driver.end();
+    _db = null;
+  }
 }
 
 export * from './schema';
