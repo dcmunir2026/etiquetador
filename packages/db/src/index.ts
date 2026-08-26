@@ -1,4 +1,4 @@
-// Drizzle ORM schema for the Etiquetador platform.
+// Drizzle ORM schema for the Etiquetador platform — PostgreSQL.
 //
 // Model (refactored from mockup):
 //   - Dimensions are GLOBAL (atomic annotable attributes).
@@ -6,18 +6,21 @@
 //   - Projects get assigned TAXONOMIES (not dimensions).
 //   - Intensity scales are GLOBAL (binary, 3-level, 5-level, etc).
 //
-// Driver: SQLite (via better-sqlite3). Production target: PostgreSQL.
-// Drizzle abstracts most differences; we keep SQL portable.
+// Driver: PostgreSQL via `postgres` (postgres-js) + `drizzle-orm/postgres-js`.
+// Dev: docker compose up -d (Postgres on :5432). Prod: same driver, real DB URL.
 
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import {
-  sqliteTable,
+  pgTable,
   text,
   integer,
+  boolean,
+  timestamp,
+  pgEnum,
   uniqueIndex,
   index,
   primaryKey,
-} from 'drizzle-orm/sqlite-core';
+} from 'drizzle-orm/pg-core';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -28,12 +31,17 @@ function newId(): string {
   return `t_${ts}_${rand}`;
 }
 
-// ─── Enums (SQLite has no native enums; we use text + check at app layer) ─
+// ─── Enums (native pgEnum) ──────────────────────────────────────────
 
-export const PROJECT_STATUSES = ['active', 'archived'] as const;
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
-
-export const SCALE_KINDS = [
+export const projectStatusEnum = pgEnum('project_status', ['active', 'archived']);
+export const projectMemberRoleEnum = pgEnum('project_member_role', [
+  'superadmin',
+  'projectadmin',
+  'annotator',
+  'validator',
+  'viewer',
+]);
+export const scaleKindEnum = pgEnum('scale_kind', [
   'boolean',
   'binary',
   '3-level',
@@ -41,73 +49,84 @@ export const SCALE_KINDS = [
   'likert',
   'numerical',
   'free-text',
-] as const;
-export type ScaleKind = (typeof SCALE_KINDS)[number];
-
-export const SEGMENTATION_UNITS = [
+]);
+export const dimensionKindEnum = pgEnum('dimension_kind', [
+  'category',
+  'intensity',
+  'flag',
+  'free-text',
+]);
+export const statusEnum = pgEnum('status', ['active', 'archived']);
+export const segmentationUnitEnum = pgEnum('segmentation_unit', [
   'token',
   'word',
   'sentence',
   'paragraph',
   'character',
-] as const;
+]);
+
+// Plain string-array exports kept for callers that only need the literal
+// values (no Drizzle column). Mirrors the pgEnum arrays above.
+export const PROJECT_STATUSES = ['active', 'archived'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+export const SCALE_KINDS = scaleKindEnum.enumValues;
+export type ScaleKind = (typeof SCALE_KINDS)[number];
+export const SEGMENTATION_UNITS = segmentationUnitEnum.enumValues;
 export type SegmentationUnit = (typeof SEGMENTATION_UNITS)[number];
-
-export const DIMENSION_KINDS = ['category', 'intensity', 'flag', 'free-text'] as const;
+export const DIMENSION_KINDS = dimensionKindEnum.enumValues;
 export type DimensionKind = (typeof DIMENSION_KINDS)[number];
-
-export const USER_ROLES = ['superadmin', 'projectadmin', 'annotator', 'validator', 'viewer'] as const;
+export const USER_ROLES = projectMemberRoleEnum.enumValues;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // ─── USERS ───────────────────────────────────────────────────────────
 
-export const users = sqliteTable(
+export const users = pgTable(
   'users',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     email: text('email').notNull(),
     name: text('name'),
     avatarColor: text('avatar_color'),
-    isSuperAdmin: integer('is_super_admin', { mode: 'boolean' }).notNull().default(false),
+    isSuperAdmin: boolean('is_super_admin').notNull().default(false),
     passwordHash: text('password_hash'),
-    emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     emailUnique: uniqueIndex('users_email_unique').on(t.email),
   }),
 );
 
-// ─── PROJECTS ─────────────────────────────────────────────────────────
+// ─── PROJECTS ────────────────────────────────────────────────────────
 
-export const projects = sqliteTable(
+export const projects = pgTable(
   'projects',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     description: text('description'),
-    status: text('status', { enum: PROJECT_STATUSES }).notNull().default('active'),
+    status: projectStatusEnum('status').notNull().default('active'),
     createdBy: text('created_by').notNull().references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     slugUnique: uniqueIndex('projects_slug_unique').on(t.slug),
   }),
 );
 
-// ─── PROJECT MEMBERS ──────────────────────────────────────────────────
+// ─── PROJECT MEMBERS ────────────────────────────────────────────────
 
-export const projectMembers = sqliteTable(
+export const projectMembers = pgTable(
   'project_members',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    role: text('role', { enum: USER_ROLES }).notNull().default('annotator'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    role: projectMemberRoleEnum('role').notNull().default('annotator'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     uniqueMember: uniqueIndex('project_members_unique').on(t.projectId, t.userId),
@@ -116,22 +135,22 @@ export const projectMembers = sqliteTable(
 
 // ─── INTENSITY SCALES (GLOBAL) ──────────────────────────────────────
 
-export const intensityScales = sqliteTable(
+export const intensityScales = pgTable(
   'intensity_scales',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     name: text('name').notNull(),
-    kind: text('kind', { enum: SCALE_KINDS }).notNull(),
-    isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
+    kind: scaleKindEnum('kind').notNull(),
+    isCustom: boolean('is_custom').notNull().default(false),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     nameUnique: uniqueIndex('intensity_scales_name_unique').on(t.name),
   }),
 );
 
-export const intensityLevels = sqliteTable(
+export const intensityLevels = pgTable(
   'intensity_levels',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -148,7 +167,7 @@ export const intensityLevels = sqliteTable(
 
 // ─── DIMENSIONS (GLOBAL — atoms) ────────────────────────────────────
 
-export const dimensions = sqliteTable(
+export const dimensions = pgTable(
   'dimensions',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -157,19 +176,19 @@ export const dimensions = sqliteTable(
     description: text('description'),
     shortDescription: text('short_description'),
     longDescription: text('long_description'),
-    kind: text('kind', { enum: DIMENSION_KINDS }).notNull(),
+    kind: dimensionKindEnum('kind').notNull(),
     scaleId: text('scale_id').references(() => intensityScales.id, { onDelete: 'set null' }),
-    status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
+    status: statusEnum('status').notNull().default('active'),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     slugUnique: uniqueIndex('dimensions_slug_unique').on(t.slug),
   }),
 );
 
-export const dimensionValues = sqliteTable(
+export const dimensionValues = pgTable(
   'dimension_values',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -186,7 +205,7 @@ export const dimensionValues = sqliteTable(
 
 // ─── TAXONOMIES (GLOBAL — groups of dimensions) ─────────────────────
 
-export const taxonomies = sqliteTable(
+export const taxonomies = pgTable(
   'taxonomies',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -195,10 +214,10 @@ export const taxonomies = sqliteTable(
     shortDescription: text('short_description'),
     longDescription: text('long_description'),
     color: text('color'),
-    status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
+    status: statusEnum('status').notNull().default('active'),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     slugUnique: uniqueIndex('taxonomies_slug_unique').on(t.slug),
@@ -206,7 +225,7 @@ export const taxonomies = sqliteTable(
 );
 
 // N:M: which dimensions are in which taxonomy
-export const taxonomyDimensions = sqliteTable(
+export const taxonomyDimensions = pgTable(
   'taxonomy_dimensions',
   {
     taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
@@ -220,13 +239,13 @@ export const taxonomyDimensions = sqliteTable(
 );
 
 // N:M: which taxonomies are assigned to which project
-export const projectTaxonomies = sqliteTable(
+export const projectTaxonomies = pgTable(
   'project_taxonomies',
   {
     projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
     assignedBy: text('assigned_by').references(() => users.id),
-    assignedAt: integer('assigned_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    assignedAt: timestamp('assigned_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.projectId, t.taxonomyId] }),
@@ -236,18 +255,18 @@ export const projectTaxonomies = sqliteTable(
 
 // ─── SEGMENTATION CONFIGS (per project) ─────────────────────────────
 
-export const segmentationConfigs = sqliteTable(
+export const segmentationConfigs = pgTable(
   'segmentation_configs',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    unit: text('unit', { enum: SEGMENTATION_UNITS }).notNull(),
+    unit: segmentationUnitEnum('unit').notNull(),
     maxChunkSize: integer('max_chunk_size').notNull(),
     overlap: integer('overlap').notNull().default(0),
-    respectBoundaries: integer('respect_boundaries', { mode: 'boolean' }).notNull().default(true),
+    respectBoundaries: boolean('respect_boundaries').notNull().default(true),
     tolerance: integer('tolerance').notNull().default(15),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     nameProjectUnique: uniqueIndex('segmentation_configs_name_project_unique').on(t.projectId, t.name),
@@ -256,7 +275,7 @@ export const segmentationConfigs = sqliteTable(
 
 // ─── AUDIT LOG ───────────────────────────────────────────────────────
 
-export const auditLog = sqliteTable(
+export const auditLog = pgTable(
   'audit_log',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -266,7 +285,7 @@ export const auditLog = sqliteTable(
     targetType: text('target_type'),
     targetId: text('target_id'),
     metadata: text('metadata'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
     actorIdx: index('audit_log_actor_idx').on(t.actorId),
@@ -275,7 +294,7 @@ export const auditLog = sqliteTable(
   }),
 );
 
-// ─── RELATIONS ───────────────────────────────────────────────────────
+// ─── RELATIONS ──────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
   projectMemberships: many(projectMembers),

@@ -38,6 +38,9 @@ importers:
       next-auth:
         specifier: 5.0.0-beta.32
         version: 5.0.0-beta.32(next@14.2.35(@playwright/test@1.62.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       react:
         specifier: ^18.3.0
         version: 18.3.1
@@ -90,12 +93,6 @@ importers:
 
   packages/db:
     dependencies:
-      '@types/better-sqlite3':
-        specifier: ^9.6.0
-        version: 9.6.0
-      better-sqlite3:
-        specifier: ^13.0.3
-        version: 13.0.3
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(postgres@3.4.9)
@@ -106,12 +103,18 @@ importers:
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.43
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
@@ -3739,6 +3742,7 @@ snapshots:
   '@types/better-sqlite3@9.6.0':
     dependencies:
       '@types/node': 20.19.43
+    optional: true
 
   '@types/estree@1.0.9': {}
 
@@ -4124,6 +4128,7 @@ snapshots:
   better-sqlite3@13.0.3:
     dependencies:
       node-addon-api: 8.9.2
+    optional: true
 
   binary-extensions@2.3.0: {}
 
@@ -5292,7 +5297,8 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  node-addon-api@8.9.2: {}
+  node-addon-api@8.9.2:
+    optional: true
 
   node-exports-info@1.6.2:
     dependencies:
