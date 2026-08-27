@@ -1578,6 +1578,27 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           </div>
         </div>
       </div>
+
+      <!-- Modal: Discrepancias por dimensión -->
+      <div id="qv-disc-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+        <div style="background:var(--surface);width:100%;max-width:880px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
+          <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
+            <button class="btn ghost" onclick="closePackageDiscrepancies()" style="padding:6px 10px">&larr; Cerrar</button>
+            <div style="flex:1">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Validación cuantitativa</div>
+              <div style="font-size:15px;font-weight:600;color:var(--ink-1)" id="qv-disc-title">—</div>
+            </div>
+            <div style="font-size:12px;color:var(--ink-3)">
+              <span>Acuerdo global: <b id="qv-disc-overall" style="color:var(--ink-1)">—</b></span>
+            </div>
+          </div>
+          <div style="padding:24px;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
+            <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:var(--ink-1)">Discrepancias por dimensión</h3>
+            <div id="qv-disc-bars"></div>
+            <div id="qv-disc-summary" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:12.5px;color:var(--ink-3)"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- VALIDACIÓN CUALITATIVA -->
@@ -2341,12 +2362,120 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         + '<td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + st.bg + ';color:' + st.txt + ';font-size:11.5px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:' + st.dot + '"></span>' + st.label + '</span></td>'
         + '<td style="font-weight:600;color:' + errorColor + '">' + errorText + '</td>'
         + '<td><small style="color:var(--ink-3)">' + t.lastUpdate + '</small></td>'
-        + '<td>' + (t.status === 'fail' ? '<button class="btn-mini danger" onclick="returnWorkToTeam(\'' + t.id + '\', \'' + t.name + '\')">Devolver al equipo</button>' : '<span style="color:var(--ink-4);font-size:11px">—</span>') + '</td>'
+        + '<td style="display:flex;gap:5px;align-items:center">'
+        +   '<button class="btn-mini" onclick="openPackageDiscrepancies(\'' + t.id + '\', \'' + t.name + '\', \'' + t.package + '\')" title="Ver gráfica de discrepancias" style="padding:4px 9px">📊</button>'
+        +   (t.status === 'fail' ? '<button class="btn-mini danger" onclick="returnWorkToTeam(\'' + t.id + '\', \'' + t.name + '\')">Devolver al equipo</button>' : '<span style="color:var(--ink-4);font-size:11px">—</span>') + '</td>'
         + '</tr>';
     }).join('');
     if (filtered.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
     }
+  }
+
+    // ─── QUANT VALIDATION: discrepancias por paquete ───
+  // Por cada equipo, % de discrepancia por dimensión (mock coherente con QUANT_TEAMS)
+  const QV_DISCREPANCIES = {
+    'team-a': {  // P-001 espejo, en curso
+      dimensions: [
+        { n:4, name:'Carácter tendencioso', pct:0.31 },
+        { n:2, name:'Emotividad',           pct:0.19 },
+        { n:6, name:'Género',                pct:0.11 },
+        { n:5, name:'Semiótica',             pct:0.06 },
+        { n:1, name:'Sesgo estadístico',    pct:0.04 },
+        { n:3, name:'Odio',                  pct:0.02 },
+        { n:7, name:'Raza',                  pct:0.01 },
+        { n:8, name:'Religión',              pct:0.01 },
+        { n:9, name:'Demográfico',           pct:0.01 },
+      ],
+      overall: 0.78,
+      total: 50,
+    },
+    'team-b': {  // P-002 espejo, aprobado (4% error)
+      dimensions: [
+        { n:1, name:'Sesgo estadístico',    pct:0.04 },
+        { n:2, name:'Emotividad',           pct:0.04 },
+        { n:4, name:'Carácter tendencioso', pct:0.02 },
+        { n:5, name:'Semiótica',             pct:0.02 },
+        { n:6, name:'Género',                pct:0.02 },
+        { n:3, name:'Odio',                  pct:0.00 },
+        { n:7, name:'Raza',                  pct:0.00 },
+        { n:8, name:'Religión',              pct:0.00 },
+        { n:9, name:'Demográfico',           pct:0.00 },
+      ],
+      overall: 0.96,
+      total: 50,
+    },
+    'team-c': {  // P-003, con discrepancias (22% error)
+      dimensions: [
+        { n:4, name:'Carácter tendencioso', pct:0.45 },
+        { n:2, name:'Emotividad',           pct:0.38 },
+        { n:6, name:'Género',                pct:0.28 },
+        { n:1, name:'Sesgo estadístico',    pct:0.18 },
+        { n:5, name:'Semiótica',             pct:0.14 },
+        { n:9, name:'Demográfico',           pct:0.10 },
+        { n:3, name:'Odio',                  pct:0.08 },
+        { n:7, name:'Raza',                  pct:0.04 },
+        { n:8, name:'Religión',              pct:0.02 },
+      ],
+      overall: 0.62,
+      total: 50,
+    },
+    'team-d': {  // P-004 espejo, en curso
+      dimensions: [
+        { n:1, name:'Sesgo estadístico',    pct:0.18 },
+        { n:4, name:'Carácter tendencioso', pct:0.12 },
+        { n:2, name:'Emotividad',           pct:0.08 },
+        { n:5, name:'Semiótica',             pct:0.05 },
+        { n:9, name:'Demográfico',           pct:0.04 },
+        { n:3, name:'Odio',                  pct:0.02 },
+        { n:6, name:'Género',                pct:0.02 },
+        { n:7, name:'Raza',                  pct:0.01 },
+        { n:8, name:'Religión',              pct:0.01 },
+      ],
+      overall: 0.86,
+      total: 50,
+    },
+  };
+
+  function qvDiscColor(pct) {
+    if (pct >= 0.25) return 'linear-gradient(90deg,#a13d3d,#7a2222)';
+    if (pct >= 0.15) return 'linear-gradient(90deg,#b58300,#8a6300)';
+    if (pct >= 0.08) return 'linear-gradient(90deg,#c79d3c,#a08a2b)';
+    return 'linear-gradient(90deg,#1c8a4a,#1e6a44)';
+  }
+
+  function openPackageDiscrepancies(teamId, teamName, packageName) {
+    const data = QV_DISCREPANCIES[teamId];
+    if (!data) return;
+    const team = QUANT_TEAMS.find(t => t.id === teamId);
+    const title = (teamName || '?') + ' · ' + (packageName || '?') + ' — Discrepancias';
+    document.getElementById('qv-disc-title').textContent = title;
+    document.getElementById('qv-disc-overall').textContent = Math.round(data.overall * 100) + '%';
+    const bars = document.getElementById('qv-disc-bars');
+    bars.innerHTML = data.dimensions.map(d => {
+      const pctNum = Math.round(d.pct * 100);
+      const widthPct = Math.max(2, pctNum);
+      const color = qvDiscColor(d.pct);
+      return '<div style="display:grid;grid-template-columns:200px 1fr 50px;gap:12px;align-items:center;margin-bottom:8px;font-size:12.5px">'
+        + '<div><b style="color:var(--ink-1)">' + d.n + '.</b> ' + escapeHtml(d.name) + '</div>'
+        + '<div style="position:relative;height:18px;background:var(--line-soft);border-radius:4px;overflow:hidden">'
+        +   '<div style="position:absolute;left:0;top:0;bottom:0;width:' + widthPct + '%;background:' + color + '"></div>'
+        + '</div>'
+        + '<div style="text-align:right;font-weight:600;color:var(--ink-1)">' + pctNum + '%</div>'
+        + '</div>';
+    }).join('');
+    const highCount = data.dimensions.filter(d => d.pct >= 0.25).length;
+    const medCount  = data.dimensions.filter(d => d.pct >= 0.15 && d.pct < 0.25).length;
+    let summary = 'Total fragmentos del paquete: <b>' + data.total + '</b> · ';
+    summary += 'Acuerdo global: <b>' + Math.round(data.overall * 100) + '%</b> · ';
+    summary += 'Dimensiones con discrepancia alta (≥25%): <b style="color:' + (highCount > 0 ? 'var(--bad)' : 'var(--ink-1)') + '">' + highCount + '</b> · ';
+    summary += 'media (15–24%): <b>' + medCount + '</b>';
+    document.getElementById('qv-disc-summary').innerHTML = summary;
+    document.getElementById('qv-disc-overlay').style.display = 'block';
+  }
+
+  function closePackageDiscrepancies() {
+    document.getElementById('qv-disc-overlay').style.display = 'none';
   }
 
     // ─── VALIDACIÓN CUALITATIVA: equipos + muestra + decisiones ───
