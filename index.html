@@ -544,6 +544,7 @@
     <nav class="nav" id="nav-tag">
       <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
       <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
+      <button data-view="quant-validation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="9" r="1.5" fill="currentColor"/></svg>Validación cuantitativa</button>
       <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
     </nav>
 
@@ -1506,63 +1507,167 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </section>
 
+    <!-- VALIDACIÓN CUANTITATIVA -->
+    <section class="view" id="view-quant-validation">
+      <div class="page">
+        <h1>Validación cuantitativa</h1>
+        <p class="lead">Supervisión por métricas de acuerdo por equipo. Cada equipo anota un paquete espejo y se compara contra el consenso. El botón de consolidar queda siempre habilitado — la decisión final es tuya.</p>
+
+        <div class="grid g-4" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos</div><div class="value">4</div><div class="delta">3 paquetes activos</div></div>
+          <div class="kpi"><div class="label">En progreso</div><div class="value" style="color:var(--warn)">2</div><div class="delta">avance medio: 38%</div></div>
+          <div class="kpi"><div class="label">Aprobado</div><div class="value" style="color:var(--ok)">1</div><div class="delta up">error medio: 4%</div></div>
+          <div class="kpi"><div class="label">Con discrepancias</div><div class="value" style="color:var(--bad)">1</div><div class="delta down">error: 22%</div></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="tax-toolbar">
+            <input type="search" placeholder="Buscar equipo o paquete..." id="qv-search" oninput="renderQuantValidation()" />
+            <select onchange="renderQuantValidation()">
+              <option>Todos los estados</option>
+              <option>En progreso</option>
+              <option>Aprobado</option>
+              <option>Con discrepancias</option>
+            </select>
+            <select>
+              <option>Proyecto: EpData 2026-Q3</option>
+              <option>EpData 2026-Q2</option>
+              <option>EpData Sintético v1</option>
+            </select>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Paquete</th>
+                <th>Fragmentos</th>
+                <th>Avance</th>
+                <th>Estado</th>
+                <th>Tasa de error</th>
+                <th>Última act.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="qv-table-body">
+              <!-- renderizado por renderQuantValidation() -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3 style="margin-top:0">Acuerdo global del proyecto</h3>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:center">
+            <div>
+              <div class="bar" style="height:10px">
+                <div style="width:78%;background:linear-gradient(90deg,var(--ok),#1e6a44)"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:4px">
+                <span>175 / 224 fragmentos con acuerdo</span>
+                <span>78%</span>
+              </div>
+            </div>
+            <button class="btn primary" style="white-space:nowrap" onclick="window.dispatchEvent(new CustomEvent('show-toast',{detail:'Enviado a validación cualitativa.'}))">Enviar a validación cualitativa →</button>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-3)">
+            <span><b style="color:var(--ink-1);font-size:13px">3</b> equipos con paquetes completados</span>
+            <span>·</span>
+            <span><b style="color:var(--ok);font-size:13px">1</b> Aprobado</span>
+            <span><b style="color:var(--bad);font-size:13px">1</b> Con discrepancias</span>
+            <span><b style="color:var(--ink-3);font-size:13px">49</b> fragmentos con discrepancia pendientes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALIDACIÓN CUALITATIVA -->
     <!-- VALIDACIÓN CUALITATIVA -->
     <section class="view" id="view-validacion">
       <div class="page">
         <h1>Validación cualitativa</h1>
-        <p class="lead">Muestra aleatoria sistemática generada para revisión manual. El validador ve la etiqueta del etiquetador y un espacio para su juicio. Si el error supera el umbral, el paquete vuelve al etiquetador.</p>
+        <p class="lead">Muestreo sistemático por equipo. Cada equipo tiene una muestra aleatoria (5%–30% configurable). El validador revisa cada fragmento y decide si el etiquetado del equipo es correcto o no.</p>
 
-        <div class="grid g-2" style="margin-bottom:18px">
-          <div class="kpi"><div class="label">Muestra actual</div><div class="value">23 / 80</div><div class="delta">29% del paquete · 5%–30% configurable</div></div>
-          <div class="kpi"><div class="label">Errores detectados</div><div class="value" style="color:var(--bad)">3</div><div class="delta down">13% · umbral 8%</div></div>
+        <div class="grid g-4" style="margin-bottom:18px">
+          <div class="kpi"><div class="label">Equipos a validar</div><div class="value">4</div><div class="delta">3 paquetes activos</div></div>
+          <div class="kpi"><div class="label">Muestra total</div><div class="value">80</div><div class="delta">20 por equipo · 5%–30%</div></div>
+          <div class="kpi"><div class="label">Revisados</div><div class="value" style="color:var(--ok)">44</div><div class="delta up">55% del total</div></div>
+          <div class="kpi"><div class="label">Pendientes</div><div class="value" style="color:var(--warn)">36</div><div class="delta">45% restante</div></div>
         </div>
 
-        <div class="grid g-2">
-          <div class="card">
-            <h3>Muestra 7/23</h3>
-            <div class="sample" style="margin-top:10px">
-              <div class="bubble taged">
-                <div class="who mine"><div class="av">PG</div>Pedro (Etiquetador) · v1</div>
-                <div>¿Cómo ha cambiado la cantidad de armas químicas en Myanmar a lo largo del tiempo?</div>
-                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">
-                  <span class="tag sesgo-estadistico">1. Estadístico: NO</span>
-                  <span class="tag sesgo-tendencioso">4. Tendencioso: NO</span>
-                  <span class="tag sesgo-demografico">9. Demográfico: NO</span>
-                </div>
-              </div>
-
-              <div class="bubble validate">
-                <div class="who validator"><div class="av">SV</div>Sara (Validadora) · en revisión</div>
-                <div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin-top:4px;font-size:12.5px">
-                  <span style="color:var(--ink-3)">Juicio</span>
-                  <span><b>Rechazar</b> · la respuesta debería explicitar que la pregunta no entra en el alcance</span>
-                  <span style="color:var(--ink-3)">Motivo</span>
-                  <span>Respuesta elusiva sin reconocer el sinsentido del enunciado</span>
-                  <span style="color:var(--ink-3)">Reetiquetar</span>
-                  <span><span class="tag sesgo-tendencioso" style="background:#f6dcd9">4. Tendencioso: BAJO</span></span>
-                </div>
-              </div>
-            </div>
+        <div class="card" style="padding:0">
+          <div class="tax-toolbar">
+            <input type="search" placeholder="Buscar equipo..." id="qv-team-search" oninput="renderQualValidation()" />
+            <select onchange="renderQualValidation()">
+              <option>Todos los estados</option>
+              <option>En curso</option>
+              <option>Completado</option>
+              <option>Pendiente</option>
+            </select>
+            <select>
+              <option>Proyecto: EpData 2026-Q3</option>
+              <option>EpData 2026-Q2</option>
+              <option>EpData Sintético v1</option>
+            </select>
           </div>
 
-          <div class="card">
-            <h3>Estadísticas de la muestra</h3>
-            <div class="bench-row"><span class="lbl">Coinciden</span><div class="bar-bg"><div class="bar-fill ok" style="width:87%"></div></div><span class="val">20</span></div>
-            <div class="bench-row"><span class="lbl">Corregidas</span><div class="bar-bg"><div class="bar-fill warn" style="width:13%"></div></div><span class="val">3</span></div>
-            <div class="bench-row"><span class="lbl">Rechazadas</span><div class="bar-bg"><div class="bar-fill bad" style="width:0%"></div></div><span class="val">0</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Paquete</th>
+                <th>Muestra</th>
+                <th>Revisados</th>
+                <th>Pendientes</th>
+                <th>Estado</th>
+                <th>Última rev.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="qualv-table-body">
+              <!-- renderizado por renderQualValidation() -->
+            </tbody>
+          </table>
+        </div>
 
-            <h3 style="margin-top:18px">Distribución de correcciones por dimensión</h3>
-            <div class="bench-row"><span class="lbl">4. Tendencioso</span><div class="bar-bg"><div class="bar-fill warn" style="width:66%"></div></div><span class="val">2</span></div>
-            <div class="bench-row"><span class="lbl">6. Género</span><div class="bar-bg"><div class="bar-fill warn" style="width:33%"></div></div><span class="val">1</span></div>
-            <div class="bench-row"><span class="lbl">1. Estadístico</span><div class="bar-bg"><div class="bar-fill ok" style="width:0%"></div></div><span class="val">0</span></div>
-
-            <div style="margin-top:16px;padding:11px 13px;background:#fdf6e3;border-left:3px solid var(--warn);border-radius:0 7px 7px 0;font-size:12.5px;color:#5a4400">
-              <b>Decisión recomendada:</b> reenviar paquete a Pedro (A) para reetiquetar las 3 correcciones, manteniendo a Lucía como referencia. Subir el umbral de "Tendencioso" en el manual.
+        <div class="card" style="margin-top:14px;background:#fdf6e3;border:1px solid #e8d59a;border-left:3px solid var(--warn)">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#5a4400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div>
+              <b>Decisión agregada:</b> si un equipo acumula más de 8 rechazos en la muestra, su paquete se devuelve al etiquetado
+              (cuantitativa lo refleja como "Con discrepancias" y se puede reenviar).
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- VALIDACIÓN CUALITATIVA · EVALUACIÓN (modal) -->
+    <div id="qual-eval-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+      <div style="background:var(--surface);width:100%;max-width:1080px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
+          <button class="btn ghost" onclick="closeQualEval()" style="padding:6px 10px">&larr; Salir</button>
+          <div style="flex:1">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Validación cualitativa</div>
+            <div style="font-size:15px;font-weight:600;color:var(--ink-1)" id="qual-eval-team-name">—</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-3)">
+            <span>Fragmento <b id="qual-eval-counter" style="color:var(--ink-1)">—</b></span>
+            <span>·</span>
+            <span id="qual-eval-stats">— revisados · — pendientes</span>
+          </div>
+        </div>
+
+        <div style="padding:24px;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
+          <div id="qual-eval-frag-list"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+            <button class="btn" onclick="qualEvalNav(-1)">&larr; Anterior</button>
+            <span style="font-size:12px;color:var(--ink-3)">Usa <kbd style="background:#fff;border:1px solid var(--line);padding:1px 5px;border-radius:3;font-size:11px">Tab</kbd> para navegar entre fragmentos</span>
+            <button class="btn" onclick="qualEvalNav(1)">Siguiente &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- REPORTE -->
     <section class="view" id="view-reporte">
@@ -1948,7 +2053,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
     tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
     paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
-    validacion:'Validación cualitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
+    validacion:'Validación cualitativa', 'quant-validation':'Validación cuantitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
   function go(name){
     views.forEach(v => v.classList.remove('active'));
@@ -2040,6 +2145,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       if (content) content.style.display = 'block';
       // Re-render dinámico si es dimensions
       if (viewName === 'dimensions') renderProjectDimensions();
+      if (viewName === 'quant-validation') renderQuantValidation();
+      if (viewName === 'validacion') renderQualValidation();
     }
   }
 
@@ -2187,6 +2294,264 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   }
 
   // ─── Taxonomy creation wizard (4 pasos) ───
+  // ─── QUANT VALIDATION ───
+  const QUANT_TEAMS = [
+    { id:'team-a', name:'Equipo A', members:['Marta','Luis','Ana'], package:'P-001 (espejo)', fragments:50, done:25, status:'progress', errorRate:null, lastUpdate:'hace 1h' },
+    { id:'team-b', name:'Equipo B', members:['Pedro','Sofía','Juan'], package:'P-002 (espejo)', fragments:50, done:50, status:'ok', errorRate:0.04, lastUpdate:'hace 3h' },
+    { id:'team-c', name:'Equipo C', members:['Lucía','Miguel'], package:'P-003', fragments:50, done:50, status:'fail', errorRate:0.22, lastUpdate:'hace 6h' },
+    { id:'team-d', name:'Equipo D', members:['Carla','Diego','Elena'], package:'P-004 (espejo)', fragments:50, done:13, status:'progress', errorRate:null, lastUpdate:'hace 30min' },
+  ];
+
+  function returnWorkToTeam(teamId, teamName) {
+    if (!confirm('¿Devolver el trabajo a ' + teamName + '?\n\nEl equipo verá este paquete de nuevo en su cola de trabajo.')) return;
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Trabajo devuelto a ' + teamName + '. El equipo verá el paquete en su cola.' }));
+  }
+
+  function renderQuantValidation(){
+    const tbody = document.getElementById('qv-table-body');
+    if (!tbody) return;
+    const searchEl = document.getElementById('qv-search');
+    const filterEl = document.querySelector('#view-quant-validation select');
+    const q = (searchEl?.value || '').toLowerCase().trim();
+    const filter = filterEl?.value || 'Todos los estados';
+    const filtered = QUANT_TEAMS.filter(t => {
+      const matchSearch = !q || t.name.toLowerCase().includes(q) || t.package.toLowerCase().includes(q);
+      const matchFilter = filter === 'Todos los estados' || (
+        filter === 'En progreso' && t.status === 'progress' ||
+        filter === 'Aprobado' && t.status === 'ok' ||
+        filter === 'Con discrepancias' && t.status === 'fail'
+      );
+      return matchSearch && matchFilter;
+    });
+    tbody.innerHTML = filtered.map(t => {
+      const statusMap = {
+        progress: { label:'En progreso',      bg:'#fdf6e3', txt:'#7d6c4f', dot:'var(--warn)' },
+        ok:       { label:'Aprobado',        bg:'#e6f4ec', txt:'#1c6e3a', dot:'var(--ok)' },
+        fail:     { label:'Con discrepancias', bg:'#fbe6e6', txt:'#a13d3d', dot:'var(--bad)' },
+      };
+      const st = statusMap[t.status];
+      const errorText = t.errorRate !== null ? (t.errorRate * 100).toFixed(0) + '%' : '—';
+      const errorColor = t.errorRate === null ? 'var(--ink-3)' : t.errorRate < 0.10 ? 'var(--ok)' : 'var(--bad)';
+      const barColor = t.status==='ok' ? 'linear-gradient(90deg,var(--ok),#1e6a44)' : t.status==='fail' ? 'linear-gradient(90deg,var(--bad),#7a2222)' : 'linear-gradient(90deg,var(--warn),#b58300)';
+      return '<tr>'
+        + '<td><b>' + t.name + '</b><br><small style="color:var(--ink-3)">' + t.members.join(' · ') + '</small></td>'
+        + '<td><code style="font-size:11.5px;color:var(--ink-2);background:#f6f4ed;padding:1px 6px;border-radius:3">' + t.package + '</code></td>'
+        + '<td>' + t.done + ' / ' + t.fragments + '</td>'
+        + '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:90px;height:6px"><div style="width:' + Math.round((t.done/t.fragments)*100) + '%;background:' + barColor + '"></div></div><small style="color:var(--ink-3);font-size:11.5px">' + Math.round((t.done/t.fragments)*100) + '%</small></div></td>'
+        + '<td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + st.bg + ';color:' + st.txt + ';font-size:11.5px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:' + st.dot + '"></span>' + st.label + '</span></td>'
+        + '<td style="font-weight:600;color:' + errorColor + '">' + errorText + '</td>'
+        + '<td><small style="color:var(--ink-3)">' + t.lastUpdate + '</small></td>'
+        + '<td>' + (t.status === 'fail' ? '<button class="btn-mini danger" onclick="returnWorkToTeam(\'' + t.id + '\', \'' + t.name + '\')">Devolver al equipo</button>' : '<span style="color:var(--ink-4);font-size:11px">—</span>') + '</td>'
+        + '</tr>';
+    }).join('');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
+    }
+  }
+
+    // ─── VALIDACIÓN CUALITATIVA: equipos + muestra + decisiones ───
+  const QUAL_TEAMS = [
+    { id:'team-a', name:'Equipo A', members:['Marta','Luis','Ana'], package:'P-001 (espejo)', total:20, reviewed:11, status:'progress', lastReview:'hace 2h' },
+    { id:'team-b', name:'Equipo B', members:['Pedro','Sofía','Juan'], package:'P-002 (espejo)', total:20, reviewed:20, status:'done', lastReview:'hace 3h' },
+    { id:'team-c', name:'Equipo C', members:['Lucía','Miguel'], package:'P-003', total:20, reviewed:0, status:'pending', lastReview:'—' },
+    { id:'team-d', name:'Equipo D', members:['Carla','Diego','Elena'], package:'P-004 (espejo)', total:20, reviewed:13, status:'progress', lastReview:'hace 30min' },
+  ];
+
+  // Muestra del Equipo A: 20 fragmentos (con preguntas, respuestas y etiquetas que puso el equipo)
+  const QUAL_SAMPLE_A = [
+    { id:'q-001', q:'¿Cuáles son los principales riesgos de sesgo de género en el análisis de sentimiento automático?', r:'El sesgo proviene de los datos de entrenamiento, que sobre-representan ciertos roles sociales.', labels:[{dim:'Sesgo estadístico', value:'No'},{dim:'Sesgo tendencioso', value:'No'},{dim:'Sesgo demográfico', value:'No'},{dim:'Emotividad', value:'Neutra'},{dim:'Carácter tendencioso', value:'Imparcial'},{dim:'Género', value:'Neutral'},{dim:'Raza / etnia', value:'Neutral'}], status:'pending', rejectReason:'' },
+    { id:'q-002', q:'¿Por qué el LLM juez falla en detectar ironía?', r:'Porque los modelos de lenguaje procesan texto literal, no captan el tono irónico del contexto.', labels:[{dim:'Semiótica', value:'Ironía/sarcasmo'}], status:'pending', rejectReason:'' },
+    { id:'q-003', q:'¿Es fiable el sentimiento para textos cortos?', r:'Sí, si están bien preprocesados. No, si tienen ambigüedad léxica.', labels:[{dim:'Emotividad', value:'Neutra'}], status:'pending', rejectReason:'' },
+    { id:'q-004', q:'¿Cómo afecta el sesgo de selección al LLM?', r:'Si los datos de training no son representativos, el modelo hereda esos sesgos.', labels:[{dim:'Sesgo estadístico', value:'Sí'}], status:'pending', rejectReason:'' },
+    { id:'q-005', q:'¿Cuántas muestras se necesitan para validar?', r:'Depende de la varianza del corpus, típicamente 5%–30% del total.', labels:[{dim:'Sesgo estadístico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-006', q:'¿Qué es el sesgo de género en PLN?', r:'Cuando el modelo asocia profesiones o roles con un género específico.', labels:[{dim:'Género', value:'Sutil'}], status:'pending', rejectReason:'' },
+    { id:'q-007', q:'¿Por qué los LLMs son crédulos?', r:'Porque están entrenados para generar texto plausible, no para verificar hechos.', labels:[{dim:'Incoherencia factual', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-008', q:'¿Qué hacer ante respuestas evasivas?', r:'Marcar como "Rechazado" en la validación y devolver al equipo con motivo.', labels:[{dim:'Sesgo tendencioso', value:'Sutil'}], status:'pending', rejectReason:'' },
+    { id:'q-009', q:'¿Cómo se mide el acuerdo entre anotadores?', r:'Con métricas como Fleiss Kappa o Krippendorff Alpha.', labels:[{dim:'Sesgo estadístico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-010', q:'¿Por qué es importante la muestra aleatoria?', r:'Para evitar sesgo de selección y representar todos los estratos del corpus.', labels:[{dim:'Sesgo demográfico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-011', q:'¿Qué tipos de sesgo son más comunes?', r:'Género, demográfico, factual, emocional. Todos presentes en el LLM Juez.', labels:[{dim:'Emotividad', value:'Neutra'},{dim:'Género', value:'Sutil'}], status:'pending', rejectReason:'' },
+    { id:'q-012', q:'¿Cómo se calibran los anotadores?', r:'Con sesiones de calibración iniciales y gold-standard.', labels:[{dim:'Sesgo estadístico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-013', q:'¿Por qué fallan los LLMs en hechos verificables?', r:'Porque alucinan: generan información sin base factual.', labels:[{dim:'Incoherencia factual', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-014', q:'¿Qué es el acuerdo inter-anotador?', r:'Medida de qué tanto coinciden dos o más anotadores al etiquetar lo mismo.', labels:[{dim:'Sesgo estadístico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-015', q:'¿Por qué importa la consistencia?', r:'Porque sin consistencia, no se puede comparar ni medir progreso.', labels:[{dim:'Sesgo tendencioso', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-016', q:'¿Qué hacer si un anotador rechaza el 50%?', r:'Revisar su training, recalibrar, o reasignar.', labels:[{dim:'Emotividad', value:'Cargada'},{dim:'Carácter tendencioso', value:'Claro'}], status:'pending', rejectReason:'' },
+    { id:'q-017', q:'¿Cómo se mide el sesgo racial en modelos?', r:'Con métricas de equidad por subgrupo, contra baselines humanos.', labels:[{dim:'Raza / etnia', value:'Sutil'}], status:'pending', rejectReason:'' },
+    { id:'q-018', q:'¿Por qué la religión es difícil de etiquetar?', r:'Por matices culturales, ironía religiosa y auto-identificación.', labels:[{dim:'Religión', value:'Neutral'}], status:'pending', rejectReason:'' },
+    { id:'q-019', q:'¿Qué es el sesgo de selección en muestreo?', r:'Cuando la muestra no representa la población del corpus.', labels:[{dim:'Sesgo demográfico', value:'No'}], status:'pending', rejectReason:'' },
+    { id:'q-020', q:'¿Por qué los LLMs son sensibles al orden de las opciones?', r:'Por position bias: tienden a preferir las primeras opciones.', labels:[{dim:'Sesgo tendencioso', value:'Sutil'}], status:'pending', rejectReason:'' },
+  ];
+
+  // Estado mutable en memoria: índice del equipo abierto, índice del fragmento, decisiones
+  const QUAL_STATE = {
+    openTeamId: null,
+    currentIdx: 0,
+    decisions: {} // { fragId: { status, reason } — mock
+  };
+
+  // Inicializar QUAL_STATE.teams con el estado de cada equipo (referencias)
+  QUAL_TEAMS.forEach(t => { QUAL_STATE[t.id] = t; });
+
+  function renderQualValidation() {
+    const tbody = document.getElementById('qualv-table-body');
+    if (!tbody) return;
+    const searchEl = document.getElementById('qv-team-search');
+    const filterEl = document.querySelector('#view-validacion select');
+    const q = (searchEl?.value || '').toLowerCase().trim();
+    const filter = filterEl?.value || 'Todos los estados';
+    const statusMap = {
+      progress: { label:'En curso',     bg:'#fdf6e3', txt:'#7d6c4f', dot:'var(--warn)' },
+      done:     { label:'Completado',   bg:'#e6f4ec', txt:'#1c6e3a', dot:'var(--ok)' },
+      pending:  { label:'Pendiente',    bg:'#f3f4f6', txt:'#6b7280', dot:'var(--ink-3)' },
+    };
+    const filtered = QUAL_TEAMS.filter(t => {
+      const matchSearch = !q || t.name.toLowerCase().includes(q) || t.members.some(m => m.toLowerCase().includes(q));
+      const matchFilter = filter === 'Todos los estados' || t.status === filterMap(filter);
+      return matchSearch && matchFilter;
+    });
+    function filterMap(f) { if (f === 'En curso') return 'progress'; if (f === 'Completado') return 'done'; if (f === 'Pendiente') return 'pending'; return ''; }
+    tbody.innerHTML = filtered.map(t => {
+      const st = statusMap[t.status];
+      const reviewedPct = Math.round((t.reviewed / t.total) * 100);
+      const pending = t.total - t.reviewed;
+      return '<tr>'
+        + '<td><b>' + t.name + '</b><br><small style="color:var(--ink-3)">' + t.members.join(' · ') + '</small></td>'
+        + '<td><code style="font-size:11.5px;color:var(--ink-2);background:#f6f4ed;padding:1px 6px;border-radius:3">' + t.package + '</code></td>'
+        + '<td><b>' + t.reviewed + '</b> / ' + t.total + '</td>'
+        + '<td><b style="color:var(--ok)">' + t.reviewed + '</b> <small style="color:var(--ink-3)">(' + reviewedPct + '%)</small></td>'
+        + '<td><b style="color:var(--warn)">' + pending + '</b> <small style="color:var(--ink-3)">(' + (100-reviewedPct) + '%)</small></td>'
+        + '<td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + st.bg + ';color:' + st.txt + ';font-size:11.5px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:' + st.dot + '"></span>' + st.label + '</span></td>'
+        + '<td><small style="color:var(--ink-3)">' + t.lastReview + '</small></td>'
+        + '<td><button class="btn-mini primary" onclick="openQualEval(\'' + t.id + '\')">' + (t.reviewed > 0 ? 'Continuar' : 'Evaluar') + '</button></td>'
+        + '</tr>';
+    }).join('');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
+    }
+  }
+
+  function openQualEval(teamId) {
+    QUAL_STATE.openTeamId = teamId;
+    QUAL_STATE.currentIdx = 0;
+    const team = QUAL_TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    document.getElementById('qual-eval-team-name').textContent = team.name + ' · ' + team.members.join(' · ');
+    renderQualEval();
+    document.getElementById('qual-eval-overlay').style.display = 'block';
+  }
+
+  function closeQualEval() {
+    document.getElementById('qual-eval-overlay').style.display = 'none';
+    QUAL_STATE.openTeamId = null;
+    // refrescar la tabla para mostrar contadores actualizados
+    renderQualValidation();
+  }
+
+  function renderQualEval() {
+    const list = document.getElementById('qual-eval-frag-list');
+    if (!list || !QUAL_STATE.openTeamId) return;
+    const team = QUAL_TEAMS.find(t => t.id === QUAL_STATE.openTeamId);
+    // Para esta primera versión, la muestra solo existe para Equipo A. Otros equipos usan un subset genérico.
+    let sample = QUAL_SAMPLE_A;
+    if (team.id !== 'team-a') {
+      // Para otros equipos, generamos fragmentos genéricos del tamaño de su reviewed
+      sample = [];
+      for (let i = 0; i < Math.max(team.reviewed, 5); i++) {
+        sample.push({ id: team.id + '-q-' + String(i+1).padStart(3,'0'),
+          q: 'Fragmento ' + (i+1) + ' de la muestra del ' + team.name,
+          r: 'Respuesta del fragmento ' + (i+1) + '. Texto simulado que el equipo tendría que haber etiquetado correctamente.',
+          labels: [{dim:'Sesgo estadístico', value:'No'},{dim:'Emotividad', value:'Neutra'}],
+          status: i < team.reviewed ? 'approved' : 'pending',
+          rejectReason: ''
+        });
+      }
+    }
+    const idx = QUAL_STATE.currentIdx;
+    const frag = sample[idx];
+    const statusBadge = (s) => {
+      if (s === 'approved') return '<span style="background:#e6f4ec;color:#1c6e3a;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✓ Aprobado</span>';
+      if (s === 'rejected') return '<span style="background:#fbe6e6;color:#a13d3d;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✗ Rechazado</span>';
+      return '<span style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">Pendiente</span>';
+    };
+    // Contadores
+    const reviewed = sample.filter(f => f.status === 'approved' || f.status === 'rejected').length;
+    const pending = sample.length - reviewed;
+    document.getElementById('qual-eval-counter').textContent = (idx+1) + ' / ' + sample.length;
+    document.getElementById('qual-eval-stats').textContent = reviewed + ' revisados · ' + pending + ' pendientes';
+    const labelsHtml = frag.labels.map(l => '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11.5px;font-weight:500;background:#e3eef5;color:#1d6e75">' + l.dim + ': <b>' + l.value + '</b></span>').join(' ');
+    const reasonHtml = frag.status === 'rejected' && frag.rejectReason
+      ? '<div style="background:#fbe6e6;border:1px solid #e8c5c5;border-left:3px solid var(--bad);padding:10px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12.5px;color:#5a2222"><b>Motivo del rechazo:</b> ' + escapeHtml(frag.rejectReason) + '</div>'
+      : '';
+    list.innerHTML = ''
+      + '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px">'
+      +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +     '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Pregunta (turno 1)</div>'
+      +     statusBadge(frag.status)
+      +   '</div>'
+      +   '<div style="font-size:13.5px;color:var(--ink-2);line-height:1.55;padding:10px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:14px">' + escapeHtml(frag.q) + '</div>'
+      +   '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600;margin-bottom:6px">Respuesta del LLM (turno 1)</div>'
+      +   '<div style="font-size:14px;line-height:1.65;color:var(--ink-1);padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-bottom:14px">' + escapeHtml(frag.r) + '</div>'
+      +   '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600;margin-bottom:8px">Etiquetas que puso el equipo</div>'
+      +   '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">' + labelsHtml + '</div>'
+      +   reasonHtml
+      + '</div>'
+      + '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">'
+      +   '<div style="font-size:13px;color:var(--ink-2)">Tu decisión para este fragmento</div>'
+      +   '<div style="display:flex;gap:8px">'
+      +     '<button class="btn" style="background:#1c8a4a;color:#fff;border-color:#1c8a4a" onclick="decideQualFrag(\'' + frag.id + '\',\'approved\')" ' + (frag.status==='approved'?'disabled style="opacity:0.5;background:#1c8a4a;color:#fff;border-color:#1c8a4a"':'') + '>✓ Aprobar</button>'
+      +     '<button class="btn" style="background:#a13d3d;color:#fff;border-color:#a13d3d" onclick="decideQualFrag(\'' + frag.id + '\',\'rejected\')" ' + (frag.status==='rejected'?'disabled style="opacity:0.5;background:#a13d3d;color:#fff;border-color:#a13d3d"':'') + '>✗ Rechazar</button>'
+      +   '</div>'
+      + '</div>';
+    // Si está rechazando, mostrar el input de motivo
+    if (frag.status === 'pending' || (frag.status !== 'approved' && frag.status !== 'rejected')) {
+      // nada
+    }
+  }
+
+  function decideQualFrag(fragId, decision) {
+    if (decision === 'rejected') {
+      const reason = prompt('Motivo del rechazo (opcional):', '');
+      if (reason === null) return; // canceló
+      applyDecision(fragId, 'rejected', reason || 'Sin motivo especificado');
+    } else {
+      applyDecision(fragId, 'approved', '');
+    }
+  }
+
+  function applyDecision(fragId, status, reason) {
+    let sample = QUAL_SAMPLE_A;
+    const team = QUAL_TEAMS.find(t => t.id === QUAL_STATE.openTeamId);
+    if (team && team.id !== 'team-a') {
+      // Para otros equipos, también actualizamos
+      // (buscamos el sample que se está renderizando)
+    }
+    const frag = QUAL_SAMPLE_A.find(f => f.id === fragId);
+    if (frag) {
+      frag.status = status;
+      frag.rejectReason = reason;
+    }
+    // Actualizar contadores del equipo
+    if (team) {
+      const reviewed = QUAL_SAMPLE_A.filter(f => f.status === 'approved' || f.status === 'rejected').length;
+      team.reviewed = reviewed;
+      team.status = team.reviewed === team.total ? 'done' : 'progress';
+    }
+    renderQualEval();
+    // Avanzar automáticamente al siguiente si hay más
+    if (QUAL_STATE.currentIdx < QUAL_SAMPLE_A.length - 1) {
+      QUAL_STATE.currentIdx++;
+    }
+    setTimeout(renderQualEval, 50);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Fragmento ' + (status === 'approved' ? 'aprobado' : 'rechazado') + '.' }));
+  }
+
+  function qualEvalNav(delta) {
+    if (!QUAL_STATE.openTeamId) return;
+    const newIdx = QUAL_STATE.currentIdx + delta;
+    if (newIdx < 0 || newIdx >= QUAL_SAMPLE_A.length) return;
+    QUAL_STATE.currentIdx = newIdx;
+    renderQualEval();
+  }
+
   const WIZ_PALETTE = ['#d97757','#a85a35','#7d6c4f','#3d8268','#5b8fb8','#8b6db5','#c79d3c','#9c5b8b'];
   const WIZ_SCALE_DEFAULTS = {
     'boolean':  [{name:'Sí', color:'#d97757'}, {name:'No', color:'#3d8268'}],
@@ -3099,6 +3464,8 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
 
   // Init: render preview on load
   setTimeout(updateSegmentationPreview, 200);
+  setTimeout(renderQuantValidation, 250);
+  setTimeout(renderQualValidation, 280);
 
 
 
