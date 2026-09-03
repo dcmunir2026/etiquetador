@@ -1753,19 +1753,15 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
-      <div style="background:#fdf3da;border:1px solid #e8d49c;border-left:3px solid #b58300;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#5a3e00">
-        <b>Resaltado en rojo:</b> los valores que difieren del consenso mayoritario. El validador puede <b>forzar la decisión final</b> usando el dropdown de cada dimensión.
+      <div style="background:#e3eef5;border:1px solid #c2dde4;border-left:3px solid #1d6e75;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#1a3a3f">
+        <b>Vista de consulta:</b> se muestra el etiquetado de cada anotador del equipo. Los valores en <span style="background:#fbe6e6;padding:1px 6px;border-radius:3px;color:#a13d3d;font-weight:600">rojo</span> son los que difieren del consenso mayoritario. Esta vista es de solo lectura.
       </div>
       <table style="width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden">
         <thead id="de-desg-thead"></thead>
         <tbody id="de-desg-tbody"></tbody>
       </table>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
-        <small style="color:var(--ink-3)">Los cambios se registran como una nueva versión en la auditoría.</small>
-        <div style="display:flex;gap:8px">
-          <button class="btn ghost" onclick="closeDesgloseFragmento()">Cancelar</button>
-          <button class="btn primary" onclick="saveDesgloseDecisions()">✓ Guardar decisiones</button>
-        </div>
+      <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+        <small style="color:var(--ink-3)">Vista de solo lectura. Para forzar decisiones finales, use la vista de Validación cualitativa.</small>
       </div>
     </div>
   </div>
@@ -2644,9 +2640,8 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     const cols = team.annotators;
     const headHtml = '<tr style="background:var(--surface-2);border-bottom:1px solid var(--line)">'
       + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Dimensión</th>'
-      + cols.map(c => '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">' + c + '</th>').join('')
-      + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Consenso</th>'
-      + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Decisión del validador</th>'
+      + cols.map(c => '<th style="padding:10px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">' + c + '</th>').join('')
+      + '<th style="padding:10px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Consenso</th>'
       + '</tr>';
     const consensusVal = (c) => {
       if (c.agree === c.total) return { l:'Sí (' + c.agree + '/' + c.total + ')', bg:'#e6f4ec', tc:'#1c6e3a' };
@@ -2665,17 +2660,10 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           + '">' + escapeHtml(v) + '</td>';
       }).join('');
       const cons = consensusVal(d.consensus);
-      const uniqueVals = [...new Set(cols.map(c => d.values[c]))];
-      const dropdown = '<select style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:12px;background:var(--surface-2);cursor:pointer">'
-        + '<option value="">— pendiente —</option>'
-        + uniqueVals.map(v => '<option value="' + escapeHtml(v) + '" ' + (v === d.consensus.val ? 'selected' : '') + '>Forzar: ' + escapeHtml(v) + '</option>').join('')
-        + '<option value="__manual__">Manual...</option>'
-        + '</select>';
       return '<tr style="border-bottom:1px solid var(--line-soft)">'
         + '<td style="padding:10px 14px"><b style="color:var(--ink-1)">' + escapeHtml(d.dim) + '</b></td>'
         + cells
-        + '<td style="padding:10px 14px"><span style="display:inline-flex;padding:2px 9px;border-radius:10px;background:' + cons.bg + ';color:' + cons.tc + ';font-size:11px;font-weight:500">' + cons.l + '</span></td>'
-        + '<td style="padding:10px 14px">' + dropdown + '</td>'
+        + '<td style="padding:10px 14px;text-align:center"><span style="display:inline-flex;padding:2px 9px;border-radius:10px;background:' + cons.bg + ';color:' + cons.tc + ';font-size:11px;font-weight:500">' + cons.l + '</span></td>'
         + '</tr>';
     }).join('');
     document.getElementById('de-desg-thead').innerHTML = headHtml;
@@ -2687,14 +2675,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     document.getElementById('de-desg-overlay').style.display = 'none';
   }
 
-  function saveDesgloseDecisions() {
-    const selects = document.querySelectorAll('#de-desg-tbody select');
-    const decided = Array.from(selects).filter(s => s.value && s.value !== '').length;
-    closeDesgloseFragmento();
-    window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Decisiones guardadas: ' + decided + ' dimensiones actualizadas.' }));
-  }
-
-    function renderQuantValidation(){
+  function renderQuantValidation(){
     const tbody = document.getElementById('qv-table-body');
     if (!tbody) return;
     const searchEl = document.getElementById('qv-search');
