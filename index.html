@@ -159,6 +159,11 @@
   .kpi .delta{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:4px}
   .kpi .delta.up{color:var(--ok)}
   .kpi .delta.down{color:var(--bad)}
+  .kpi-row--compact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .kpi--sm{padding:10px 14px}
+  .kpi--sm .label{font-size:10.5px;letter-spacing:0.04em;margin-bottom:4px}
+  .kpi--sm .delta{font-size:10.5px;margin-top:3px}
+  .kpi--sm .value{margin-bottom:0;line-height:1.1}
 
   .bench-row{display:grid;grid-template-columns:160px 1fr 70px;gap:14px;align-items:center;padding:7px 0}
   .bench-row .lbl{font-size:13px;color:var(--ink-2)}
@@ -1516,11 +1521,11 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         <p class="muted">Fragmentos en los que los anotadores de un mismo equipo no llegaron a consenso en al menos una dimensión. Permite al validador forzar una decisión etiqueta por etiqueta.</p>
       </header>
 
-      <div class="kpi-row">
-        <div class="kpi"><div class="label">Equipos con discrepancias</div><div class="value" id="de-kpi-teams">4</div><div class="delta">de 4 totales</div></div>
-        <div class="kpi"><div class="label">Fragmentos discrepantes</div><div class="value" style="color:var(--warn)" id="de-kpi-frags">41</div><div class="delta">de 200 fragmentos etiquetados</div></div>
-        <div class="kpi"><div class="label">% promedio</div><div class="value" style="color:var(--bad)" id="de-kpi-avg">20.5%</div><div class="delta down">↑ respecto al 12% esperado</div></div>
-        <div class="kpi"><div class="label">Mayor %</div><div class="value" style="color:var(--bad)" id="de-kpi-max">36%</div><div class="delta">Equipo C · 18 frags</div></div>
+      <div class="kpi-row kpi-row--compact">
+        <div class="kpi kpi--sm"><div class="label">Equipos</div><div class="value" id="de-kpi-teams" style="font-size:22px">4</div><div class="delta">de 4 totales</div></div>
+        <div class="kpi kpi--sm"><div class="label">Frag. discrepantes</div><div class="value" style="color:var(--warn);font-size:22px" id="de-kpi-frags">41</div><div class="delta">de 200 etiquetados</div></div>
+        <div class="kpi kpi--sm"><div class="label">% promedio</div><div class="value" style="color:var(--bad);font-size:22px" id="de-kpi-avg">20.5%</div><div class="delta down">↑ vs 12% esperado</div></div>
+        <div class="kpi kpi--sm"><div class="label">Mayor %</div><div class="value" style="color:var(--bad);font-size:22px" id="de-kpi-max">36%</div><div class="delta">Equipo C · 18 frags</div></div>
       </div>
 
       <div class="card" style="padding:0;overflow:hidden">
