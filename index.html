@@ -544,6 +544,7 @@
     <nav class="nav" id="nav-tag">
       <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
       <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
+      <button data-view="discrepancias-equipos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M12 8L8 12l4 4" stroke="#b58300" stroke-width="2.5"/></svg>Discrepancias de equipos</button>
       <button data-view="quant-validation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="9" r="1.5" fill="currentColor"/></svg>Validación cuantitativa</button>
       <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
     </nav>
@@ -1507,6 +1508,48 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </section>
 
+
+    <!-- DISCREPANCIAS DE EQUIPOS (multi-asignee: fragmentos donde anotadores discreparon) -->
+    <section class="view" id="view-discrepancias-equipos">
+      <header>
+        <h1>Discrepancias de equipos</h1>
+        <p class="muted">Fragmentos en los que los anotadores de un mismo equipo no llegaron a consenso en al menos una dimensión. Permite al validador forzar una decisión etiqueta por etiqueta.</p>
+      </header>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Equipos con discrepancias</div><div class="value" id="de-kpi-teams">4</div><div class="delta">de 4 totales</div></div>
+        <div class="kpi"><div class="label">Fragmentos discrepantes</div><div class="value" style="color:var(--warn)" id="de-kpi-frags">41</div><div class="delta">de 200 fragmentos etiquetados</div></div>
+        <div class="kpi"><div class="label">% promedio</div><div class="value" style="color:var(--bad)" id="de-kpi-avg">20.5%</div><div class="delta down">↑ respecto al 12% esperado</div></div>
+        <div class="kpi"><div class="label">Mayor %</div><div class="value" style="color:var(--bad)" id="de-kpi-max">36%</div><div class="delta">Equipo C · 18 frags</div></div>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line-soft);background:var(--surface)">
+          <input type="text" id="de-search" placeholder="Buscar equipo o paquete..." style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2)" oninput="renderDiscrepanciasEquipos()">
+          <select id="de-level-filter" style="padding:8px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer" onchange="renderDiscrepanciasEquipos()">
+            <option>Todos los niveles</option>
+            <option>Alto (≥30%)</option>
+            <option>Medio (15-29%)</option>
+            <option>Bajo (&lt;15%)</option>
+          </select>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:var(--surface-2);border-bottom:1px solid var(--line)">
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Equipo</th>
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Paquete</th>
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Anotadores</th>
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Frag. discrepantes</th>
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">%</th>
+              <th style="padding:10px 18px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Nivel</th>
+              <th style="padding:10px 18px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="de-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- VALIDACIÓN CUANTITATIVA -->
     <section class="view" id="view-quant-validation">
       <div class="page">
@@ -1663,7 +1706,67 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     </section>
 
     <!-- VALIDACIÓN CUALITATIVA · EVALUACIÓN (modal) -->
-    <div id="qual-eval-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+    <!-- Modal: Discrepancias de equipos (lista de fragmentos) -->
+<div id="de-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:71;backdrop-filter:blur(2px);overflow-y:auto">
+  <div style="background:var(--surface);width:100%;max-width:1080px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
+    <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
+      <button class="btn ghost" onclick="closeDiscrepanciasEquipo()" style="padding:6px 10px">← Volver</button>
+      <div style="flex:1">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Discrepancias de equipos</div>
+        <div style="font-size:15px;font-weight:600;color:var(--ink-1)" id="de-modal-title">—</div>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink-3)" id="de-modal-subtitle">—</div>
+    </div>
+    <div style="padding:0;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
+      <div style="padding:18px 24px">
+        <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:var(--ink-1)">Fragmentos con discrepancia entre anotadores</h3>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#f6f4ed;border-bottom:1px solid var(--line)">
+              <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">#</th>
+              <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Pregunta</th>
+              <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Dimensiones discrepantes</th>
+              <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Nivel</th>
+              <th style="padding:10px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="de-frags-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Desglose por dimensión y anotador -->
+<div id="de-desg-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.6);z-index:72;backdrop-filter:blur(2px);overflow-y:auto">
+  <div style="background:var(--surface);width:100%;max-width:1100px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
+    <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
+      <button class="btn ghost" onclick="closeDesgloseFragmento()" style="padding:6px 10px">← Volver</button>
+      <div style="flex:1">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600" id="de-desg-team">—</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink-1);line-height:1.4" id="de-desg-frag-title">—</div>
+      </div>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
+      <div style="background:#fdf3da;border:1px solid #e8d49c;border-left:3px solid #b58300;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#5a3e00">
+        <b>Resaltado en rojo:</b> los valores que difieren del consenso mayoritario. El validador puede <b>forzar la decisión final</b> usando el dropdown de cada dimensión.
+      </div>
+      <table style="width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden">
+        <thead id="de-desg-thead"></thead>
+        <tbody id="de-desg-tbody"></tbody>
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)">
+        <small style="color:var(--ink-3)">Los cambios se registran como una nueva versión en la auditoría.</small>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" onclick="closeDesgloseFragmento()">Cancelar</button>
+          <button class="btn primary" onclick="saveDesgloseDecisions()">✓ Guardar decisiones</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="qual-eval-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
       <div style="background:var(--surface);width:100%;max-width:1080px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
         <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
           <button class="btn ghost" onclick="closeQualEval()" style="padding:6px 10px">&larr; Salir</button>
@@ -2072,7 +2175,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   const titles = {
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
-    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias',
+    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias', 'discrepancias-equipos':'Discrepancias de equipos',
     paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', 'quant-validation':'Validación cuantitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
@@ -2105,6 +2208,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     }
     if (name === 'taxonomies') {
       renderDimensionsCatalog();
+    }
+    if (name === 'discrepancias-equipos') {
+      renderDiscrepanciasEquipos();
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -2168,6 +2274,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       if (viewName === 'dimensions') renderProjectDimensions();
       if (viewName === 'quant-validation') renderQuantValidation();
       if (viewName === 'validacion') renderQualValidation();
+      if (viewName === 'discrepancias-equipos') renderDiscrepanciasEquipos();
     }
   }
 
@@ -2328,7 +2435,261 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Trabajo devuelto a ' + teamName + '. El equipo verá el paquete en su cola.' }));
   }
 
-  function renderQuantValidation(){
+  // ─── DISCREPANCIAS DE EQUIPOS ───
+  // Por cada equipo multi-asignee: total fragmentos, # discrepantes, % y desglose por anotador
+  const DE_TEAMS = [
+    {
+      id: 'team-a',
+      name: 'Equipo A',
+      pkg: 'P-001 (espejo)',
+      annotators: ['Marta', 'Luis', 'Ana'],
+      total: 50,
+      discrepant: 12,
+      pct: 0.24,
+      fragments: [
+        { idx: 1, q: '¿Cuáles son los principales riesgos de sesgo de género en el análisis de sentimiento automático?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Marta':'No', 'Luis':'No', 'Ana':'No' }, consensus: { agree:3, total:3, val:'No' } },
+            { dim: 'Sesgo tendencioso', values: { 'Marta':'No', 'Luis':'Sí', 'Ana':'No' }, consensus: { agree:2, total:3, val:'No' } },
+            { dim: 'Emotividad',        values: { 'Marta':'Neutra', 'Luis':'Cargada', 'Ana':'Neutra' }, consensus: { agree:2, total:3, val:'Neutra' } },
+            { dim: 'Carácter tendencioso', values: { 'Marta':'Imparcial', 'Luis':'Imparcial', 'Ana':'Claro' }, consensus: { agree:2, total:3, val:'Imparcial' } },
+            { dim: 'Género',            values: { 'Marta':'Neutral', 'Luis':'Sutil', 'Ana':'Neutral' }, consensus: { agree:2, total:3, val:'Neutral' } },
+          ] },
+        { idx: 4, q: '¿Cómo afecta el sesgo de selección al LLM?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Marta':'Sí', 'Luis':'No', 'Ana':'No' }, consensus: { agree:2, total:3, val:'No' } },
+            { dim: 'Incoherencia factual', values: { 'Marta':'No', 'Luis':'No', 'Ana':'Sutil' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+        { idx: 7, q: '¿Por qué los LLMs son crédulos?',
+          dims: [
+            { dim: 'Incoherencia factual', values: { 'Marta':'No', 'Luis':'Sutil', 'Ana':'No' }, consensus: { agree:2, total:3, val:'No' } },
+            { dim: 'Emotividad',        values: { 'Marta':'Cargada', 'Luis':'Neutra', 'Ana':'Neutra' }, consensus: { agree:2, total:3, val:'Neutra' } },
+          ] },
+        { idx: 11, q: '¿Qué tipos de sesgo son más comunes?',
+          dims: [
+            { dim: 'Género',            values: { 'Marta':'Sutil', 'Luis':'Claro', 'Ana':'Sutil' }, consensus: { agree:2, total:3, val:'Sutil' } },
+            { dim: 'Sesgo demográfico', values: { 'Marta':'No', 'Luis':'Sutil', 'Ana':'No' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+        { idx: 17, q: '¿Cómo se mide el sesgo racial en modelos?',
+          dims: [
+            { dim: 'Raza / etnia',      values: { 'Marta':'Sutil', 'Luis':'Claro', 'Ana':'Sutil' }, consensus: { agree:2, total:3, val:'Sutil' } },
+          ] },
+      ],
+    },
+    {
+      id: 'team-b',
+      name: 'Equipo B',
+      pkg: 'P-002 (espejo)',
+      annotators: ['Pedro', 'Sofía', 'Juan'],
+      total: 50,
+      discrepant: 3,
+      pct: 0.06,
+      fragments: [
+        { idx: 2, q: '¿Por qué el LLM juez falla en detectar ironía?',
+          dims: [
+            { dim: 'Semiótica', values: { 'Pedro':'Ironía/sarcasmo', 'Sofía':'Literal', 'Juan':'Ironía/sarcasmo' }, consensus: { agree:2, total:3, val:'Ironía/sarcasmo' } },
+          ] },
+        { idx: 9, q: '¿Cómo se mide el acuerdo entre anotadores?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Pedro':'No', 'Sofía':'Sí', 'Juan':'No' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+        { idx: 19, q: '¿Qué es el sesgo de selección en muestreo?',
+          dims: [
+            { dim: 'Sesgo demográfico', values: { 'Pedro':'No', 'Sofía':'No', 'Juan':'Sutil' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+      ],
+    },
+    {
+      id: 'team-c',
+      name: 'Equipo C',
+      pkg: 'P-003',
+      annotators: ['Lucía', 'Miguel'],
+      total: 50,
+      discrepant: 18,
+      pct: 0.36,
+      fragments: [
+        { idx: 3, q: '¿Es fiable el sentimiento para textos cortos?',
+          dims: [
+            { dim: 'Emotividad', values: { 'Lucía':'Neutra', 'Miguel':'Cargada' }, consensus: { agree:1, total:2, val:null } },
+          ] },
+        { idx: 6, q: '¿Qué es el sesgo de género en PLN?',
+          dims: [
+            { dim: 'Género', values: { 'Lucía':'Sutil', 'Miguel':'Claro' }, consensus: { agree:1, total:2, val:null } },
+            { dim: 'Carácter tendencioso', values: { 'Lucía':'Sutil', 'Miguel':'Imparcial' }, consensus: { agree:1, total:2, val:null } },
+          ] },
+        { idx: 8, q: '¿Qué hacer ante respuestas evasivas?',
+          dims: [
+            { dim: 'Sesgo tendencioso', values: { 'Lucía':'Sutil', 'Miguel':'No' }, consensus: { agree:1, total:2, val:null } },
+            { dim: 'Emotividad', values: { 'Lucía':'Cargada', 'Miguel':'Neutra' }, consensus: { agree:1, total:2, val:null } },
+          ] },
+        { idx: 16, q: '¿Qué hacer si un anotador rechaza el 50%?',
+          dims: [
+            { dim: 'Emotividad', values: { 'Lucía':'Cargada', 'Miguel':'Neutra' }, consensus: { agree:1, total:2, val:null } },
+            { dim: 'Carácter tendencioso', values: { 'Lucía':'Claro', 'Miguel':'Imparcial' }, consensus: { agree:1, total:2, val:null } },
+          ] },
+        { idx: 20, q: '¿Por qué los LLMs son sensibles al orden de las opciones?',
+          dims: [
+            { dim: 'Sesgo tendencioso', values: { 'Lucía':'Sutil', 'Miguel':'No' }, consensus: { agree:1, total:2, val:null } },
+          ] },
+      ],
+    },
+    {
+      id: 'team-d',
+      name: 'Equipo D',
+      pkg: 'P-004 (espejo)',
+      annotators: ['Carla', 'Diego', 'Elena'],
+      total: 50,
+      discrepant: 8,
+      pct: 0.16,
+      fragments: [
+        { idx: 5, q: '¿Cuántas muestras se necesitan para validar?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Carla':'No', 'Diego':'No', 'Elena':'Sutil' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+        { idx: 12, q: '¿Cómo se calibran los anotadores?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Carla':'No', 'Diego':'Sutil', 'Elena':'No' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+        { idx: 14, q: '¿Qué es el acuerdo inter-anotador?',
+          dims: [
+            { dim: 'Sesgo estadístico', values: { 'Carla':'No', 'Diego':'No', 'Elena':'Sutil' }, consensus: { agree:2, total:3, val:'No' } },
+            { dim: 'Incoherencia factual', values: { 'Carla':'No', 'Diego':'Sutil', 'Elena':'No' }, consensus: { agree:2, total:3, val:'No' } },
+          ] },
+      ],
+    },
+  ];
+
+  function renderDiscrepanciasEquipos() {
+    const tbody = document.getElementById('de-tbody');
+    if (!tbody) return;
+    const q = (document.getElementById('de-search')?.value || '').toLowerCase().trim();
+    const filter = document.getElementById('de-level-filter')?.value || 'Todos los niveles';
+    function levelFilter(pct) {
+      if (filter === 'Alto (>=30%)') return pct >= 0.30;
+      if (filter === 'Medio (15-29%)') return pct >= 0.15 && pct < 0.30;
+      if (filter === 'Bajo (<15%)') return pct < 0.15;
+      return true;
+    }
+    const filtered = DE_TEAMS.filter(t => {
+      const matchSearch = !q || t.name.toLowerCase().includes(q) || t.pkg.toLowerCase().includes(q);
+      return matchSearch && levelFilter(t.pct);
+    });
+    tbody.innerHTML = filtered.map(t => {
+      const level = t.pct >= 0.30 ? { l:'Alto', bg:'#fbe6e6', tc:'#a13d3d' }
+                  : t.pct >= 0.15 ? { l:'Medio', bg:'#fdf3da', tc:'#8a6300' }
+                  :                 { l:'Bajo', bg:'#e6f4ec', tc:'#1c6e3a' };
+      return '<tr style="border-bottom:1px solid var(--line-soft)">'
+        + '<td style="padding:12px 18px"><b style="color:var(--ink-1)">' + t.name + '</b></td>'
+        + '<td style="padding:12px 18px"><code style="font-size:11.5px;color:var(--ink-2);background:#f6f4ed;padding:1px 6px;border-radius:3">' + t.pkg + '</code></td>'
+        + '<td style="padding:12px 18px"><small style="color:var(--ink-2)">' + t.annotators.join(' · ') + '</small></td>'
+        + '<td style="padding:12px 18px"><b style="color:var(--ink-1)">' + t.discrepant + '</b> <small style="color:var(--ink-3)">/ ' + t.total + '</small></td>'
+        + '<td style="padding:12px 18px"><b style="color:var(--ink-1)">' + Math.round(t.pct*100) + '%</b></td>'
+        + '<td style="padding:12px 18px"><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + level.bg + ';color:' + level.tc + ';font-size:11.5px;font-weight:500">' + level.l + '</span></td>'
+        + '<td style="padding:12px 18px;text-align:right"><button class="btn-mini primary" onclick="openDiscrepanciasEquipo(\'' + t.id + '\')">Ver detalle →</button></td>'
+        + '</tr>';
+    }).join('');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
+    }
+  }
+
+  function openDiscrepanciasEquipo(teamId) {
+    const team = DE_TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    const level = team.pct >= 0.30 ? 'Alto' : team.pct >= 0.15 ? 'Medio' : 'Bajo';
+    const levelBg = team.pct >= 0.30 ? '#fbe6e6' : team.pct >= 0.15 ? '#fdf3da' : '#e6f4ec';
+    const levelTc = team.pct >= 0.30 ? '#a13d3d' : team.pct >= 0.15 ? '#8a6300' : '#1c6e3a';
+    document.getElementById('de-modal-title').textContent = team.name + ' · ' + team.pkg;
+    document.getElementById('de-modal-subtitle').innerHTML =
+      '<b>' + team.discrepant + '</b> fragmentos con discrepancia · '
+      + Math.round(team.pct*100) + '% del paquete · '
+      + '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9px;background:' + levelBg + ';color:' + levelTc + ';font-size:11px;font-weight:500">Nivel ' + level + '</span>';
+    const tbody = document.getElementById('de-frags-tbody');
+    tbody.innerHTML = team.fragments.map(f => {
+      const nDims = f.dims.length;
+      const nLevel = nDims >= 3 ? { l:'Alto', bg:'#fbe6e6', tc:'#a13d3d' }
+                   : nDims === 2 ? { l:'Medio', bg:'#fdf3da', tc:'#8a6300' }
+                   :                { l:'Bajo', bg:'#e6f4ec', tc:'#1c6e3a' };
+      const dimPills = f.dims.map(d =>
+        '<span style="background:#fdf3da;color:#8a6300;padding:2px 8px;border-radius:9px;font-size:11px;font-weight:500;margin-right:4px">' + d.dim + '</span>'
+      ).join('');
+      const qShort = f.q.length > 70 ? f.q.slice(0, 70) + '…' : f.q;
+      return '<tr style="border-bottom:1px solid var(--line-soft)">'
+        + '<td style="padding:10px 14px"><b style="color:var(--ink-1)">#' + f.idx + '</b></td>'
+        + '<td style="padding:10px 14px;font-size:12.5px;color:var(--ink-2);max-width:340px">' + escapeHtml(qShort) + '</td>'
+        + '<td style="padding:10px 14px">' + dimPills + '</td>'
+        + '<td style="padding:10px 14px"><span style="display:inline-flex;padding:2px 9px;border-radius:10px;background:' + nLevel.bg + ';color:' + nLevel.tc + ';font-size:11px;font-weight:600">' + nLevel.l + '</span></td>'
+        + '<td style="padding:10px 14px;text-align:right"><button class="btn-mini" onclick="openDesgloseFragmento(\'' + teamId + '\',' + f.idx + ')">Ver desglose</button></td>'
+        + '</tr>';
+    }).join('');
+    document.getElementById('de-overlay').style.display = 'block';
+  }
+
+  function closeDiscrepanciasEquipo() {
+    document.getElementById('de-overlay').style.display = 'none';
+  }
+
+  function openDesgloseFragmento(teamId, fragIdx) {
+    const team = DE_TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    const frag = team.fragments.find(f => f.idx === fragIdx);
+    if (!frag) return;
+    document.getElementById('de-desg-team').textContent = team.name + ' · ' + team.pkg;
+    document.getElementById('de-desg-frag-title').textContent = '#' + frag.idx + ' · ' + frag.q;
+    const cols = team.annotators;
+    const headHtml = '<tr style="background:var(--surface-2);border-bottom:1px solid var(--line)">'
+      + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Dimensión</th>'
+      + cols.map(c => '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">' + c + '</th>').join('')
+      + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Consenso</th>'
+      + '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Decisión del validador</th>'
+      + '</tr>';
+    const consensusVal = (c) => {
+      if (c.agree === c.total) return { l:'Sí (' + c.agree + '/' + c.total + ')', bg:'#e6f4ec', tc:'#1c6e3a' };
+      if (c.val && c.agree >= Math.ceil(c.total/2)) return { l:'Parcial (' + c.agree + '/' + c.total + ')', bg:'#fdf3da', tc:'#8a6300' };
+      return { l:'No (' + c.agree + '/' + c.total + ')', bg:'#fbe6e6', tc:'#a13d3d' };
+    };
+    const rowHtml = frag.dims.map((d, i) => {
+      const counts = {};
+      cols.forEach(c => { counts[d.values[c]] = (counts[d.values[c]] || 0) + 1; });
+      const majorityVal = Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0];
+      const cells = cols.map(c => {
+        const v = d.values[c];
+        const isDiffer = (v !== majorityVal);
+        return '<td style="padding:10px 14px;font-size:12.5px;'
+          + (isDiffer ? 'background:#fbe6e6;color:#a13d3d;font-weight:600' : 'color:var(--ink-1)')
+          + '">' + escapeHtml(v) + '</td>';
+      }).join('');
+      const cons = consensusVal(d.consensus);
+      const uniqueVals = [...new Set(cols.map(c => d.values[c]))];
+      const dropdown = '<select style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:12px;background:var(--surface-2);cursor:pointer">'
+        + '<option value="">— pendiente —</option>'
+        + uniqueVals.map(v => '<option value="' + escapeHtml(v) + '" ' + (v === d.consensus.val ? 'selected' : '') + '>Forzar: ' + escapeHtml(v) + '</option>').join('')
+        + '<option value="__manual__">Manual...</option>'
+        + '</select>';
+      return '<tr style="border-bottom:1px solid var(--line-soft)">'
+        + '<td style="padding:10px 14px"><b style="color:var(--ink-1)">' + escapeHtml(d.dim) + '</b></td>'
+        + cells
+        + '<td style="padding:10px 14px"><span style="display:inline-flex;padding:2px 9px;border-radius:10px;background:' + cons.bg + ';color:' + cons.tc + ';font-size:11px;font-weight:500">' + cons.l + '</span></td>'
+        + '<td style="padding:10px 14px">' + dropdown + '</td>'
+        + '</tr>';
+    }).join('');
+    document.getElementById('de-desg-thead').innerHTML = headHtml;
+    document.getElementById('de-desg-tbody').innerHTML = rowHtml;
+    document.getElementById('de-desg-overlay').style.display = 'block';
+  }
+
+  function closeDesgloseFragmento() {
+    document.getElementById('de-desg-overlay').style.display = 'none';
+  }
+
+  function saveDesgloseDecisions() {
+    const selects = document.querySelectorAll('#de-desg-tbody select');
+    const decided = Array.from(selects).filter(s => s.value && s.value !== '').length;
+    closeDesgloseFragmento();
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Decisiones guardadas: ' + decided + ' dimensiones actualizadas.' }));
+  }
+
+    function renderQuantValidation(){
     const tbody = document.getElementById('qv-table-body');
     if (!tbody) return;
     const searchEl = document.getElementById('qv-search');
