@@ -1578,6 +1578,27 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
           </div>
         </div>
       </div>
+
+      <!-- Modal: Discrepancias por dimensión -->
+      <div id="qv-disc-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,23,30,0.55);z-index:70;backdrop-filter:blur(2px);overflow-y:auto">
+        <div style="background:var(--surface);width:100%;max-width:880px;margin:24px auto;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden;border:1px solid var(--line)">
+          <div style="padding:18px 24px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;background:var(--surface)">
+            <button class="btn ghost" onclick="closePackageDiscrepancies()" style="padding:6px 10px">&larr; Cerrar</button>
+            <div style="flex:1">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-3);font-weight:600">Validación cuantitativa</div>
+              <div style="font-size:15px;font-weight:600;color:var(--ink-1)" id="qv-disc-title">—</div>
+            </div>
+            <div style="font-size:12px;color:var(--ink-3)">
+              <span>Acuerdo global: <b id="qv-disc-overall" style="color:var(--ink-1)">—</b></span>
+            </div>
+          </div>
+          <div style="padding:24px;overflow-y:auto;flex:1 1 auto;min-height:0;background:#fafaf7">
+            <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:var(--ink-1)">Discrepancias por dimensión</h3>
+            <div id="qv-disc-bars"></div>
+            <div id="qv-disc-summary" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:12.5px;color:var(--ink-3)"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- VALIDACIÓN CUALITATIVA -->
@@ -2341,12 +2362,120 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         + '<td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:' + st.bg + ';color:' + st.txt + ';font-size:11.5px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:' + st.dot + '"></span>' + st.label + '</span></td>'
         + '<td style="font-weight:600;color:' + errorColor + '">' + errorText + '</td>'
         + '<td><small style="color:var(--ink-3)">' + t.lastUpdate + '</small></td>'
-        + '<td>' + (t.status === 'fail' ? '<button class="btn-mini danger" onclick="returnWorkToTeam(\'' + t.id + '\', \'' + t.name + '\')">Devolver al equipo</button>' : '<span style="color:var(--ink-4);font-size:11px">—</span>') + '</td>'
+        + '<td style="display:flex;gap:5px;align-items:center">'
+        +   '<button class="btn-mini" onclick="openPackageDiscrepancies(\'' + t.id + '\', \'' + t.name + '\', \'' + t.package + '\')" title="Ver gráfica de discrepancias" style="padding:4px 9px">📊</button>'
+        +   (t.status === 'fail' ? '<button class="btn-mini danger" onclick="returnWorkToTeam(\'' + t.id + '\', \'' + t.name + '\')">Devolver al equipo</button>' : '<span style="color:var(--ink-4);font-size:11px">—</span>') + '</td>'
         + '</tr>';
     }).join('');
     if (filtered.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--ink-3)">No hay equipos que coincidan con el filtro.</td></tr>';
     }
+  }
+
+    // ─── QUANT VALIDATION: discrepancias por paquete ───
+  // Por cada equipo, % de discrepancia por dimensión (mock coherente con QUANT_TEAMS)
+  const QV_DISCREPANCIES = {
+    'team-a': {  // P-001 espejo, en curso
+      dimensions: [
+        { n:4, name:'Carácter tendencioso', pct:0.31 },
+        { n:2, name:'Emotividad',           pct:0.19 },
+        { n:6, name:'Género',                pct:0.11 },
+        { n:5, name:'Semiótica',             pct:0.06 },
+        { n:1, name:'Sesgo estadístico',    pct:0.04 },
+        { n:3, name:'Odio',                  pct:0.02 },
+        { n:7, name:'Raza',                  pct:0.01 },
+        { n:8, name:'Religión',              pct:0.01 },
+        { n:9, name:'Demográfico',           pct:0.01 },
+      ],
+      overall: 0.78,
+      total: 50,
+    },
+    'team-b': {  // P-002 espejo, aprobado (4% error)
+      dimensions: [
+        { n:1, name:'Sesgo estadístico',    pct:0.04 },
+        { n:2, name:'Emotividad',           pct:0.04 },
+        { n:4, name:'Carácter tendencioso', pct:0.02 },
+        { n:5, name:'Semiótica',             pct:0.02 },
+        { n:6, name:'Género',                pct:0.02 },
+        { n:3, name:'Odio',                  pct:0.00 },
+        { n:7, name:'Raza',                  pct:0.00 },
+        { n:8, name:'Religión',              pct:0.00 },
+        { n:9, name:'Demográfico',           pct:0.00 },
+      ],
+      overall: 0.96,
+      total: 50,
+    },
+    'team-c': {  // P-003, con discrepancias (22% error)
+      dimensions: [
+        { n:4, name:'Carácter tendencioso', pct:0.45 },
+        { n:2, name:'Emotividad',           pct:0.38 },
+        { n:6, name:'Género',                pct:0.28 },
+        { n:1, name:'Sesgo estadístico',    pct:0.18 },
+        { n:5, name:'Semiótica',             pct:0.14 },
+        { n:9, name:'Demográfico',           pct:0.10 },
+        { n:3, name:'Odio',                  pct:0.08 },
+        { n:7, name:'Raza',                  pct:0.04 },
+        { n:8, name:'Religión',              pct:0.02 },
+      ],
+      overall: 0.62,
+      total: 50,
+    },
+    'team-d': {  // P-004 espejo, en curso
+      dimensions: [
+        { n:1, name:'Sesgo estadístico',    pct:0.18 },
+        { n:4, name:'Carácter tendencioso', pct:0.12 },
+        { n:2, name:'Emotividad',           pct:0.08 },
+        { n:5, name:'Semiótica',             pct:0.05 },
+        { n:9, name:'Demográfico',           pct:0.04 },
+        { n:3, name:'Odio',                  pct:0.02 },
+        { n:6, name:'Género',                pct:0.02 },
+        { n:7, name:'Raza',                  pct:0.01 },
+        { n:8, name:'Religión',              pct:0.01 },
+      ],
+      overall: 0.86,
+      total: 50,
+    },
+  };
+
+  function qvDiscColor(pct) {
+    if (pct >= 0.25) return 'linear-gradient(90deg,#a13d3d,#7a2222)';
+    if (pct >= 0.15) return 'linear-gradient(90deg,#b58300,#8a6300)';
+    if (pct >= 0.08) return 'linear-gradient(90deg,#c79d3c,#a08a2b)';
+    return 'linear-gradient(90deg,#1c8a4a,#1e6a44)';
+  }
+
+  function openPackageDiscrepancies(teamId, teamName, packageName) {
+    const data = QV_DISCREPANCIES[teamId];
+    if (!data) return;
+    const team = QUANT_TEAMS.find(t => t.id === teamId);
+    const title = (teamName || '?') + ' · ' + (packageName || '?') + ' — Discrepancias';
+    document.getElementById('qv-disc-title').textContent = title;
+    document.getElementById('qv-disc-overall').textContent = Math.round(data.overall * 100) + '%';
+    const bars = document.getElementById('qv-disc-bars');
+    bars.innerHTML = data.dimensions.map(d => {
+      const pctNum = Math.round(d.pct * 100);
+      const widthPct = Math.max(2, pctNum);
+      const color = qvDiscColor(d.pct);
+      return '<div style="display:grid;grid-template-columns:200px 1fr 50px;gap:12px;align-items:center;margin-bottom:8px;font-size:12.5px">'
+        + '<div><b style="color:var(--ink-1)">' + d.n + '.</b> ' + escapeHtml(d.name) + '</div>'
+        + '<div style="position:relative;height:18px;background:var(--line-soft);border-radius:4px;overflow:hidden">'
+        +   '<div style="position:absolute;left:0;top:0;bottom:0;width:' + widthPct + '%;background:' + color + '"></div>'
+        + '</div>'
+        + '<div style="text-align:right;font-weight:600;color:var(--ink-1)">' + pctNum + '%</div>'
+        + '</div>';
+    }).join('');
+    const highCount = data.dimensions.filter(d => d.pct >= 0.25).length;
+    const medCount  = data.dimensions.filter(d => d.pct >= 0.15 && d.pct < 0.25).length;
+    let summary = 'Total fragmentos del paquete: <b>' + data.total + '</b> · ';
+    summary += 'Acuerdo global: <b>' + Math.round(data.overall * 100) + '%</b> · ';
+    summary += 'Dimensiones con discrepancia alta (≥25%): <b style="color:' + (highCount > 0 ? 'var(--bad)' : 'var(--ink-1)') + '">' + highCount + '</b> · ';
+    summary += 'media (15–24%): <b>' + medCount + '</b>';
+    document.getElementById('qv-disc-summary').innerHTML = summary;
+    document.getElementById('qv-disc-overlay').style.display = 'block';
+  }
+
+  function closePackageDiscrepancies() {
+    document.getElementById('qv-disc-overlay').style.display = 'none';
   }
 
     // ─── VALIDACIÓN CUALITATIVA: equipos + muestra + decisiones ───
@@ -2468,18 +2597,18 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     const idx = QUAL_STATE.currentIdx;
     const frag = sample[idx];
     const statusBadge = (s) => {
-      if (s === 'approved') return '<span style="background:#e6f4ec;color:#1c6e3a;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✓ Aprobado</span>';
-      if (s === 'rejected') return '<span style="background:#fbe6e6;color:#a13d3d;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✗ Rechazado</span>';
+      if (s === 'approved')  return '<span style="background:#e6f4ec;color:#1c6e3a;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✓ Aprobado</span>';
+      if (s === 'corrected') return '<span style="background:#fdf3da;color:#8a6300;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">✎ Corregido</span>';
       return '<span style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">Pendiente</span>';
     };
     // Contadores
-    const reviewed = sample.filter(f => f.status === 'approved' || f.status === 'rejected').length;
+    const reviewed = sample.filter(f => f.status === 'approved' || f.status === 'corrected').length;
     const pending = sample.length - reviewed;
     document.getElementById('qual-eval-counter').textContent = (idx+1) + ' / ' + sample.length;
     document.getElementById('qual-eval-stats').textContent = reviewed + ' revisados · ' + pending + ' pendientes';
     const labelsHtml = frag.labels.map(l => '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11.5px;font-weight:500;background:#e3eef5;color:#1d6e75">' + l.dim + ': <b>' + l.value + '</b></span>').join(' ');
-    const reasonHtml = frag.status === 'rejected' && frag.rejectReason
-      ? '<div style="background:#fbe6e6;border:1px solid #e8c5c5;border-left:3px solid var(--bad);padding:10px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12.5px;color:#5a2222"><b>Motivo del rechazo:</b> ' + escapeHtml(frag.rejectReason) + '</div>'
+    const reasonHtml = (frag.status === 'corrected' && frag.corrections)
+      ? '<div style="background:#fdf3da;border:1px solid #e8d49c;border-left:3px solid #b58300;padding:10px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12.5px;color:#5a3e00"><b>Cambios aplicados:</b> ' + escapeHtml(frag.corrections) + '</div>'
       : '';
     list.innerHTML = ''
       + '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px">'
@@ -2498,20 +2627,153 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       +   '<div style="font-size:13px;color:var(--ink-2)">Tu decisión para este fragmento</div>'
       +   '<div style="display:flex;gap:8px">'
       +     '<button class="btn" style="background:#1c8a4a;color:#fff;border-color:#1c8a4a" onclick="decideQualFrag(\'' + frag.id + '\',\'approved\')" ' + (frag.status==='approved'?'disabled style="opacity:0.5;background:#1c8a4a;color:#fff;border-color:#1c8a4a"':'') + '>✓ Aprobar</button>'
-      +     '<button class="btn" style="background:#a13d3d;color:#fff;border-color:#a13d3d" onclick="decideQualFrag(\'' + frag.id + '\',\'rejected\')" ' + (frag.status==='rejected'?'disabled style="opacity:0.5;background:#a13d3d;color:#fff;border-color:#a13d3d"':'') + '>✗ Rechazar</button>'
+      +     '<button class="btn" style="background:#b58300;color:#fff;border-color:#b58300" onclick="decideQualFrag(\'' + frag.id + '\',\'correct\')" ' + (frag.status==='corrected'?'disabled style="opacity:0.5;background:#b58300;color:#fff;border-color:#b58300"':'') + '>✎ Corregir</button>'
       +   '</div>'
       + '</div>';
-    // Si está rechazando, mostrar el input de motivo
-    if (frag.status === 'pending' || (frag.status !== 'approved' && frag.status !== 'rejected')) {
-      // nada
+
+    // Si el fragmento está en modo 'correcting' (panel abierto), mostrar la matriz de re-etiquetado
+    if (frag._correcting) {
+      const corrPanel = renderCorrectionPanel(frag);
+      list.innerHTML += corrPanel;
     }
   }
 
+  // ─── Matriz de corrección (re-etiquetado) ───
+  function renderCorrectionPanel(frag) {
+    // Construir lista de inputs por cada label existente
+    const inputsHtml = frag.labels.map((l, i) => {
+      const origId = 'corr-' + frag.id + '-' + i;
+      const currentVal = (frag._corrected && frag._corrected[i] !== undefined) ? frag._corrected[i] : l.value;
+      const changed = (frag._corrected && frag._corrected[i] !== undefined && frag._corrected[i] !== l.value);
+      // Determinar tipo de input según el valor: dropdown para categóricas conocidas, text input para el resto
+      const isLong = l.value && l.value.length > 30;
+      const origValEsc = escapeHtml(l.value).replace(/'/g, "&#39;");
+      const onChange = 'onchange="markCorrChanged(this,' + i + ',\'' + origValEsc + '\')" oninput="markCorrChanged(this,' + i + ',\'' + origValEsc + '\')"';
+      let inputHtml;
+      if (isLong) {
+        inputHtml = '<textarea data-corr-idx="' + i + '" ' + onChange + ' rows="2" style="width:100%;padding:6px 9px;border:1px solid ' + (changed?'#b58300':'var(--line)') + ';border-radius:6px;font-size:13px;background:' + (changed?'#fdf8e8':'var(--surface-2)') + ';font-family:inherit;resize:vertical">' + escapeHtml(currentVal) + '</textarea>';
+      } else {
+        // Intentar detectar opciones categóricas: si el valor está en el estándar, dropdown; si no, input
+        const KNOWN_VALUES = ['No','Sí','Neutra','Neutral','Imparcial','Cargada','Sutil','Claro','Fuerte','Bajo','Medio','Alto','Muy bajo','Muy alto','Positivo','Negativo','Ironía/sarcasmo','Literal'];
+        if (KNOWN_VALUES.includes(l.value)) {
+          const opts = ['Sí','No','Neutra','Neutral','Imparcial','Cargada','Sutil','Claro','Fuerte','Bajo','Medio','Alto','Muy bajo','Muy alto','Positivo','Negativo','Ironía/sarcasmo','Literal']
+            .map(v => '<option value="' + v + '" ' + (v===currentVal?'selected':'') + '>' + v + '</option>').join('');
+          inputHtml = '<select data-corr-idx="' + i + '" ' + onChange + ' style="width:100%;padding:6px 9px;border:1px solid ' + (changed?'#b58300':'var(--line)') + ';border-radius:6px;font-size:13px;background:' + (changed?'#fdf8e8':'var(--surface-2)') + ';cursor:pointer">' + opts + '</select>';
+        } else {
+          inputHtml = '<input type="text" data-corr-idx="' + i + '" ' + onChange + ' value="' + escapeHtml(currentVal) + '" style="width:100%;padding:6px 9px;border:1px solid ' + (changed?'#b58300':'var(--line)') + ';border-radius:6px;font-size:13px;background:' + (changed?'#fdf8e8':'var(--surface-2)') + '">';
+        }
+      }
+      return '<tr style="border-bottom:1px solid var(--line-soft)">'
+        + '<td style="padding:8px 10px;font-size:12.5px;color:var(--ink-2);width:35%;vertical-align:top"><b style="color:var(--ink-1)">' + escapeHtml(l.dim) + '</b></td>'
+        + '<td style="padding:6px 8px;width:50%;vertical-align:top">' + inputHtml + '</td>'
+        + '<td style="padding:8px 6px;font-size:11px;width:15%;text-align:right;vertical-align:top">'
+        +   (changed
+              ? '<span style="background:#fdf3da;color:#8a6300;padding:2px 8px;border-radius:9px;font-weight:600">↻ cambiado</span><br><small style="color:var(--ink-3);text-decoration:line-through">' + escapeHtml(l.value) + '</small>'
+              : '<span style="background:#e6f4ec;color:#1c6e3a;padding:2px 8px;border-radius:9px;font-weight:500">igual</span>')
+        + '</td>'
+        + '</tr>';
+    }).join('');
+    return ''
+      + '<div id="correction-panel-' + frag.id + '" style="background:var(--surface);border:1px solid #e8d49c;border-left:3px solid #b58300;border-radius:10px;padding:14px 16px;margin-bottom:14px">'
+      +   '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      +     '<div style="font-size:14px;font-weight:600;color:var(--ink-1)">↻ Corregir etiquetas</div>'
+      +     '<span style="background:#fdf3da;color:#8a6300;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500">Modo edición</span>'
+      +   '</div>'
+      +   '<div style="font-size:12px;color:var(--ink-3);margin-bottom:10px">Revisa cada etiqueta. Las filas con valor distinto al original se marcan en naranja.</div>'
+      +   '<table style="width:100%;border-collapse:collapse">'
+      +     '<thead><tr style="background:#fafaf7;border-bottom:1px solid var(--line)">'
+      +       '<th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-3);font-weight:600">Dimensión</th>'
+      +       '<th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-3);font-weight:600">Valor</th>'
+      +       '<th style="padding:7px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-3);font-weight:600">Estado</th>'
+      +     '</tr></thead>'
+      +     '<tbody>' + inputsHtml + '</tbody>'
+      +   '</table>'
+      +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)">'
+      +     '<button class="btn ghost" onclick="cancelCorrection(\'' + frag.id + '\')">✕ Cancelar</button>'
+      +     '<button class="btn primary" onclick="saveCorrection(\'' + frag.id + '\')">✓ Guardar corrección</button>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  function markCorrChanged(el, idx, origValEscaped) {
+    // origValEscaped viene con HTML entities ya aplicados
+    const val = el.value;
+    // Decode básico para comparar
+    const origVal = origValEscaped.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "\'").replace(/&quot;/g, '\"');
+    const changed = val !== origVal;
+    // Actualizar el background del input
+    el.style.background = changed ? '#fdf8e8' : 'var(--surface-2)';
+    el.style.borderColor = changed ? '#b58300' : 'var(--line)';
+    // Actualizar la celda Estado (tercera columna del tr)
+    const tr = el.closest('tr');
+    if (!tr) return;
+    const statusCell = tr.children[2];
+    if (!statusCell) return;
+    if (changed) {
+      statusCell.innerHTML = '<span style="background:#fdf3da;color:#8a6300;padding:2px 8px;border-radius:9px;font-weight:600">↻ cambiado</span><br><small style="color:var(--ink-3);text-decoration:line-through">' + origValEscaped + '</small>';
+    } else {
+      statusCell.innerHTML = '<span style="background:#e6f4ec;color:#1c6e3a;padding:2px 8px;border-radius:9px;font-weight:500">igual</span>';
+    }
+  }
+
+  function cancelCorrection(fragId) {
+    const frag = QUAL_SAMPLE_A.find(f => f.id === fragId);
+    if (frag) {
+      frag._correcting = false;
+      frag._corrected = null;
+    }
+    renderQualEval();
+  }
+
+  function saveCorrection(fragId) {
+    const frag = QUAL_SAMPLE_A.find(f => f.id === fragId);
+    if (!frag) return;
+    // Leer valores del DOM
+    const panel = document.getElementById('correction-panel-' + fragId);
+    if (!panel) return;
+    const inputs = panel.querySelectorAll('[data-corr-idx]');
+    const newValues = {};
+    inputs.forEach(el => {
+      const idx = parseInt(el.getAttribute('data-corr-idx'), 10);
+      newValues[idx] = el.value;
+    });
+    // Aplicar cambios al label del fragmento
+    const changed = [];
+    frag.labels.forEach((l, i) => {
+      const newVal = newValues[i];
+      if (newVal !== undefined && newVal !== l.value) {
+        changed.push(l.dim + ': ' + l.value + ' → ' + newVal);
+        l.value = newVal;
+      }
+    });
+    frag.status = 'corrected';
+    frag.corrections = changed.length > 0 ? changed.join(' · ') : 'Sin cambios sustantivos';
+    frag._correcting = false;
+    frag._corrected = null;
+    // Actualizar contador del equipo
+    const team = QUAL_TEAMS.find(t => t.id === QUAL_STATE.openTeamId);
+    if (team) {
+      const reviewed = QUAL_SAMPLE_A.filter(f => f.status === 'approved' || f.status === 'corrected').length;
+      team.reviewed = reviewed;
+      team.status = team.reviewed === team.total ? 'done' : 'progress';
+    }
+    renderQualEval();
+    // Avanzar al siguiente si hay más
+    if (QUAL_STATE.currentIdx < QUAL_SAMPLE_A.length - 1) {
+      QUAL_STATE.currentIdx++;
+    }
+    setTimeout(renderQualEval, 50);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: 'Fragmento ' + (QUAL_STATE.currentIdx) + ' corregido — ' + changed.length + ' dimensiones actualizadas.' }));
+  }
+
   function decideQualFrag(fragId, decision) {
-    if (decision === 'rejected') {
-      const reason = prompt('Motivo del rechazo (opcional):', '');
-      if (reason === null) return; // canceló
-      applyDecision(fragId, 'rejected', reason || 'Sin motivo especificado');
+    if (decision === 'correct') {
+      // Abrir la matriz de re-etiquetado (no rechaza el fragmento, solo abre el panel)
+      const frag = QUAL_SAMPLE_A.find(f => f.id === fragId);
+      if (!frag) return;
+      frag._correcting = true;
+      frag._corrected = null;
+      renderQualEval();
     } else {
       applyDecision(fragId, 'approved', '');
     }
@@ -2531,7 +2793,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     }
     // Actualizar contadores del equipo
     if (team) {
-      const reviewed = QUAL_SAMPLE_A.filter(f => f.status === 'approved' || f.status === 'rejected').length;
+      const reviewed = QUAL_SAMPLE_A.filter(f => f.status === 'approved' || f.status === 'corrected').length;
       team.reviewed = reviewed;
       team.status = team.reviewed === team.total ? 'done' : 'progress';
     }
