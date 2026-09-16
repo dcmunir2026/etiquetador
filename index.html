@@ -1317,120 +1317,10 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 ¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?
             </div>
 
-            <div class="dims" style="margin-top:16px">
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-estadistico"><span class="dot" style="background:#1d4a72"></span>1. Sesgo estadístico</span><span class="help" title="¿La respuesta presenta datos cuantitativos o cualitativos correctos, o falta información factual?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-                <div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…"></div>
-              </div>
+            <div id="dims-cascade" class="dims" style="margin-top:16px"></div>
+            <!-- renderizado por renderTaggingDims() según dependencias -->
 
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-emotividad"><span class="dot" style="background:#7a3b1c"></span>2. Emotividad</span><span class="help" title="¿El tono es neutro, valorativo o cargado?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-odio"><span class="dot" style="background:#7a1a1c"></span>3. Odio / discurso de odio</span><span class="help" title="¿Contiene insinuaciones o discurso explícito de odio?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-tendencioso"><span class="dot" style="background:#5a3060"></span>4. Carácter tendencioso</span><span class="help" title="¿Imparcial o con sesgo (sutil o claro)?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-semiotica"><span class="dot" style="background:#5a4400"></span>5. Semiótica</span><span class="help" title="¿Literal, figurado o sarcástico?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">Literal</div>
-                  <div class="opt">Figurado</div>
-                  <div class="opt">Sarcástico</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-genero"><span class="dot" style="background:#5a3060"></span>6. Género</span><span class="help" title="¿Tratamiento neutral o con sesgo de género?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-raza"><span class="dot" style="background:#5a4400"></span>7. Raza / etnia</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-religion"><span class="dot" style="background:#2f5d2c"></span>8. Religión</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-demografico"><span class="dot" style="background:#1d4a72"></span>9. Sesgo demográfico</span><span class="help" title="¿Ausente, o relacionado con edad/origen/clase?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="actions">
-              <div class="hint"><kbd>←</kbd> Anterior · <kbd>→</kbd> Siguiente · <kbd>S</kbd> Saltar · <kbd>Enter</kbd> Guardar y enviar</div>
-              <div class="spacer"></div>
-              <button class="btn">Borrador</button>
-              <button class="btn primary">Guardar y siguiente →</button>
-            </div>
-          </div>
-
-          <div>
-            <div class="card" style="padding:14px">
-              <h3>Paquete PK-A-001 <span class="count">12/80</span></h3>
-              <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px" id="fraggrid"></div>
-              <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11.5px;color:var(--ink-3)">
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--ok);border-radius:2px;vertical-align:middle"></span> Listo</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:2px;vertical-align:middle"></span> Actual</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:#e6e3dc;border-radius:2px;vertical-align:middle"></span> Pendiente</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--warn);border-radius:2px;vertical-align:middle"></span> Saltado</span>
-              </div>
-            </div>
-
-            <div class="card" style="padding:14px;margin-top:14px">
-              <h3>Borrador local</h3>
-              <div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">
-                <p style="margin:0 0 6px"><b>SQLite</b> en este dispositivo</p>
-                <p style="margin:0 0 6px"><span class="tag status-done">Sincronizado</span> <small style="color:var(--ink-3)">hace 14 s</small></p>
-                <p style="margin:0;font-size:11.5px;color:var(--ink-3)">Si pierdes conexión, los cambios se conservan en local y se sincronizan al volver.</p>
-              </div>
-            </div>
-
-            <div class="card" style="padding:14px;margin-top:14px">
+          <div class="card" style="padding:14px;margin-top:14px">
               <h3>Evidencias <span class="count">0</span></h3>
               <div style="font-size:12.5px;color:var(--ink-3);text-align:center;padding:14px;background:#fafaf2;border-radius:7px;border:1px dashed var(--line)">
                 Arrastra aquí citas textuales o pegue un [REP:…]<br>para justificar la decisión.
@@ -2244,6 +2134,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     if (name === 'graph-deps') {
       renderGraphDeps('global');
     }
+    if (name === 'tagging') {
+      renderTaggingDims();
+    }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 
@@ -2840,6 +2733,125 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
         + '</div>';
     }
     return header + roots.map(r => renderNode(r, 0)).join('');
+  }
+
+  // Sample fragment compartido para "resuelto"
+  window.__currentTaggingFragment = sampleFragForDemo();
+
+  // ─── TAGGING: renderizado en cascada ───
+  // Estado de las respuestas del anotador en el fragmento actual
+  window.__taggingAnswers = {
+    'tx-hay-odio': '',     // todavía sin responder
+    'tx-odio': '',
+    'tx-religion': '',
+    'tx-intensidad': '',
+    'tx-metafora': '',
+    'tx-sarcasmo': '',
+    'tx-modificador': '',
+    'tx-emotividad': '',
+    'tx-tendencioso': '',
+    'tx-semiotica': '',
+    'tx-genero': '',
+    'tx-raza': '',
+    'tx-religion-cat': '',
+  };
+
+  // Evaluación de la visibilidad: ¿el padre permite ver al hijo?
+  function isDepSatisfied(dim, answers) {
+    if (!dim.dependencies || dim.dependencies.length === 0) return true;
+    const dep = dim.dependencies[0];
+    const parentAnswer = answers[dep.dependsOn];
+    if (parentAnswer === undefined || parentAnswer === '') return null; // pendiente padre
+    return dep.showWhen.values.includes(parentAnswer);
+  }
+
+  function renderTaggingDims() {
+    const container = document.getElementById('dims-cascade');
+    if (!container) return;
+    const answers = window.__taggingAnswers || {};
+    // Filtrar dimensiones asignadas al proyecto activo
+    const dims = DIMENSIONS.filter(d => (d.assignedTo || []).includes('epdata-2026q3'));
+    // Renderizar en orden topológico: primero dimensiones sin padre, luego sus hijos
+    const renderOne = (d, depth) => {
+      const satisfied = isDepSatisfied(d, answers);
+      const visibility = (satisfied === null) ? 'pending-parent'
+                       : (satisfied ? 'visible' : 'skipped');
+      const fade = (visibility === 'skipped') ? 'opacity:0.5' : '';
+      const dimCardBg = (visibility === 'pending-parent') ? 'repeating-linear-gradient(45deg, #fafaf7, #fafaf7 8px, #f6f4ed 8px, #f6f4ed 16px)' : '';
+      // Construir las opciones (Sí/No siempre; los demás arrays de values)
+      let opts;
+      if (d.scale === 'booleano') {
+        opts = ['Sí', 'No'];
+      } else if (Array.isArray(d.values)) {
+        opts = d.values;
+      } else {
+        opts = [];
+      }
+      const optsHtml = opts.map(opt => {
+        const selected = (answers[d.id] === opt);
+        return '<div class="opt ' + (selected ? 'selected' : '') + '" data-dim="' + d.id + '" data-val="' + escapeHtml(opt) + '" onclick="pickTaggingValue(this)">' + escapeHtml(opt) + '</div>';
+      }).join('');
+      const skipBadge = (visibility === 'skipped')
+        ? '<span style="margin-left:8px;background:#f3f4f6;color:#6b7280;font-size:10.5px;padding:2px 8px;border-radius:9px;font-weight:500">SKIPPED</span>'
+        : (visibility === 'pending-parent'
+            ? '<span style="margin-left:8px;background:#fdf3da;color:#8a6300;font-size:10.5px;padding:2px 8px;border-radius:9px;font-weight:500">⏳ espera respuesta del padre</span>'
+            : '');
+      const header = ''
+        + '<div class="label">'
+        +   '<span style="display:inline-flex;align-items:center;gap:8px">'
+        +     '<b style="color:var(--ink-1)">' + escapeHtml(d.name) + '</b>'
+        + (function(){
+          const m = {'tk-odio':'#7a1a1c','tk-rel':'#2f5d2c','tk-int':'#a85a35','tk-meta':'#3d8268','tk-sarca':'#5b8fb8','tk-mod':'#7d6c4f','tk-emot':'#7a3b1c','tk-tend':'#5a3060','tk-semi':'#5a4400','tk-gen':'#5a3060','tk-odio2':'#a13d3d'};
+          const bg = m[d.color || ''] || '#5a4400';
+          return '<span style="background:' + bg + ';color:#fff;font-size:10.5px;padding:1px 7px;border-radius:8px;text-transform:capitalize">' + escapeHtml(d.scale) + '</span>';
+        })()
+        +     skipBadge
+        +   '</span>'
+        +   '<span class="help" title="' + escapeHtml(d.shortDesc || d.name) + '">?</span>'
+        + '</div>';
+      const body = (d.scale === 'libre')
+        ? '<textarea class="notes" data-dim="' + d.id + '" oninput="taggingFreeChanged(this)" rows="3" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;background:' + (visibility === 'skipped' ? '#fafaf7' : 'var(--surface-2)') + '" placeholder="Texto libre (opcional)…">' + escapeHtml(answers[d.id] || '') + '</textarea>'
+        : '<div class="opts">' + optsHtml + '</div>';
+      const notesHtml = (d.scale !== 'libre') ? '<div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…" disabled value="' + escapeHtml(answers[d.id + '_notes'] || '') + '"></div>' : '';
+      // Determinar la indentación
+      const marginLeft = depth * 26;
+      const borderColor = (visibility === 'skipped') ? '#d1d5db'
+                        : (visibility === 'pending-parent') ? '#e8d49c'
+                        : (d.dependencies && d.dependencies.length) ? '#a13d3d' : '#1c8a4a';
+      return '<div class="dim" style="' + fade + ';margin-bottom:14px;margin-left:' + marginLeft + 'px;background:' + dimCardBg + ';border-left:3px solid ' + borderColor + ';border-radius:6px;padding:12px 14px">'
+        + header
+        + body
+        + notesHtml
+        + '</div>';
+    };
+    // Construir jerarquía
+    const childrenOf = {};
+    dims.forEach(d => {
+      if (d.dependencies && d.dependencies[0]) {
+        const p = d.dependencies[0].dependsOn;
+        if (!childrenOf[p]) childrenOf[p] = [];
+        childrenOf[p].push(d);
+      }
+    });
+    const renderTree = (d, depth) => renderOne(d, depth) + (childrenOf[d.id] || []).map(c => renderTree(c, depth+1)).join('');
+    const roots = dims.filter(d => !d.dependencies || d.dependencies.length === 0);
+    container.innerHTML = roots.map(r => renderTree(r, 0)).join('');
+  }
+
+  function pickTaggingValue(el) {
+    const dimId = el.getAttribute('data-dim');
+    const val = el.getAttribute('data-val');
+    if (!window.__taggingAnswers) window.__taggingAnswers = {};
+    window.__taggingAnswers[dimId] = val;
+    renderTaggingDims(); // recalcular visibilidad de hijos
+  }
+
+  function taggingFreeChanged(el) {
+    const dimId = el.getAttribute('data-dim');
+    if (!window.__taggingAnswers) window.__taggingAnswers = {};
+    window.__taggingAnswers[dimId] = el.value;
+    // No re-render completo, sólo actualiza el contador — pero el re-render
+    // podría romper el foco. Dejamos sin re-render.
   }
 
   // Sample fragment compartido para "resuelto"
