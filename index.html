@@ -3879,18 +3879,16 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
       +   '<label style="display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px">Mostrar solo cuando el padre sea:</label>'
       +   '<div style="display:flex;gap:8px;align-items:center">'
       +     '<select id="wiz-dep-value" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer"></select>'
-      +     '<select id="wiz-dep-behavior" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer">'
-      +       '<option value="skip">Saltar (ocultar)</option>'
-      +       '<option value="required">Requerida (bloquea)</option>'
-      +       '<option value="optional">Opcional</option>'
-      +     '</select>'
+      +     '<div style="padding:7px 12px;background:#fdf3da;border:1px solid #e8d49c;border-radius:6px;font-size:12.5px;color:#8a6300;font-weight:600;display:inline-flex;align-items:center;gap:6px">'
+      +       '<span style="font-size:14px">⊘</span> Saltar (ocultar)'
+      +     '</div>'
       +   '</div>'
       +   '<div id="wiz-dep-cycle-warn" style="margin-top:10px;padding:8px 12px;background:#fbe6e6;border:1px solid #e8c5c5;border-left:3px solid var(--bad);border-radius:0 6px 6px 0;font-size:12px;color:#5a2222;display:none"><b>Ciclo detectado:</b> no se puede depender de una dimensión que ya depende de esta (loop infinito).</div>'
       + '</div>';
     if (wizState.dep && wizState.dep.parentId) {
       document.getElementById('wiz-dep-parent').value = wizState.dep.parentId;
       updateWizDepLabel();
-      document.getElementById('wiz-dep-behavior').value = wizState.dep.behavior || 'skip';
+  
     }
   }
 
