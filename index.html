@@ -159,6 +159,8 @@
   .kpi .delta{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:4px}
   .kpi .delta.up{color:var(--ok)}
   .kpi .delta.down{color:var(--bad)}
+  .graph-tab-panel{display:block}
+  .graph-tab-panel>div+div{margin-top:6px}
   .kpi-row--compact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
   .kpi--sm{padding:10px 14px}
   .kpi--sm .label{font-size:10.5px;letter-spacing:0.04em;margin-bottom:4px}
@@ -550,6 +552,7 @@
       <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
       <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
       <button data-view="discrepancias-equipos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M12 8L8 12l4 4" stroke="#b58300" stroke-width="2.5"/></svg>Discrepancias de equipos</button>
+      <button data-view="graph-deps"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 7.5L11 16"/><path d="M16.5 7.5L13 16"/><path d="M8.5 6h7"/></svg>Grafo de dependencias</button>
       <button data-view="quant-validation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="9" r="1.5" fill="currentColor"/></svg>Validación cuantitativa</button>
       <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
     </nav>
@@ -1514,6 +1517,31 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     </section>
 
 
+
+    <!-- GRAFO DE DEPENDENCIAS -->
+    <section class="view" id="view-graph-deps">
+      <header>
+        <h1>Grafo de dependencias</h1>
+        <p class="muted">Visualización de cómo se conectan las dimensiones entre sí. La pestaña <b>Global</b> muestra el grafo del catálogo de dimensiones del proyecto. La pestaña <b>Resuelto</b> muestra cómo se aplicaría la cascada al fragmento de la muestra que se está etiquetando.</p>
+      </header>
+
+      <div class="tabs" style="display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:18px">
+        <button class="tab active" data-graph-tab="global" onclick="switchGraphTab('global')" style="padding:9px 18px;border:none;background:none;border-bottom:2px solid var(--bad,#a13d3d);font-weight:600;font-size:13px;color:var(--ink-1);cursor:pointer">Global (catálogo)</button>
+        <button class="tab" data-graph-tab="resolved" onclick="switchGraphTab('resolved')" style="padding:9px 18px;border:none;background:none;border-bottom:2px solid transparent;font-weight:500;font-size:13px;color:var(--ink-3);cursor:pointer">Resuelto (fragmento)</button>
+      </div>
+
+      <div id="graph-tab-global" class="graph-tab-panel" style="display:block;overflow-x:auto"></div>
+      <div id="graph-tab-resolved" class="graph-tab-panel" style="display:none;display:block;overflow-x:auto"></div>
+
+      <div style="margin-top:14px;padding:12px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink-3)">
+        <b style="color:var(--ink-2)">Leyenda:</b>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#a13d3d"></span>skip obligatorio</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#b58300"></span>skip opcional</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#1c8a4a"></span>siempre visible</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:14px;color:var(--ink-3)"><span style="border-bottom:1px dashed var(--ink-4);width:18px"></span> dependencia condicional</span>
+      </div>
+    </section>
+
     <!-- DISCREPANCIAS DE EQUIPOS (multi-asignee: fragmentos donde anotadores discreparon) -->
     <section class="view" id="view-discrepancias-equipos">
       <header>
@@ -2176,7 +2204,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   const titles = {
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
-    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias', 'discrepancias-equipos':'Discrepancias de equipos',
+    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias', 'graph-deps':'Grafo de dependencias', 'discrepancias-equipos':'Discrepancias de equipos',
     paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', 'quant-validation':'Validación cuantitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
@@ -2212,6 +2240,9 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     }
     if (name === 'discrepancias-equipos') {
       renderDiscrepanciasEquipos();
+    }
+    if (name === 'graph-deps') {
+      renderGraphDeps('global');
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -2287,11 +2318,21 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
   // y POST /api/projects/[id]/taxonomies.
   const DIMENSIONS = [
-    { id:'tx-odio',          name:'Sesgo de odio',         color:'tk-odio',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Detecta insinuaciones o discurso explícito de odio en el contenido.' },
-    { id:'tx-emotividad',    name:'Emotividad',            color:'tk-emot',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.' },
-    { id:'tx-tendencioso',   name:'Carácter tendencioso',  color:'tk-tend',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?' },
-    { id:'tx-semiotica',     name:'Semiótica',             color:'tk-semi',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.' },
-    { id:'tx-genero',        name:'Género',                color:'tk-gen',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?' },
+    { id:'tx-hay-odio',     name:'¿Hay odio?',                     color:'tk-odio',  scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:2, status:'active', shortDesc:'Pregunta gate. Detecta presencia de discurso de odio en el contenido.', dependencies:[] },
+    { id:'tx-odio',         name:'Tipo de odio',                   color:'tk-odio2', scale:'categórico',   values:['Político','General','Religioso','Xenófobo','Misógino','Sexual'], assignedTo:['epdata-2026q3'], usedInAnnotations:2, status:'active', shortDesc:'Tipo de odio detectado. Solo se muestra cuando ¿Hay odio? = Sí.',
+      dependencies:[{ dependsOn:'tx-hay-odio', showWhen:{operator:'=', values:['Sí']}, behavior:'skip', label:'¿Hay odio? = Sí' }] },
+    { id:'tx-religion',     name:'Tipo de religión',               color:'tk-rel',   scale:'categórico',   values:['Anticatólico','Antisemita','Antimusulmán','Antievangélico'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Subtipo cuando el odio es Religioso.',
+      dependencies:[{ dependsOn:'tx-odio', showWhen:{operator:'=', values:['Religioso']}, behavior:'skip', label:'Tipo de odio = Religioso' }] },
+    { id:'tx-intensidad',   name:'Intensidad',                     color:'tk-int',   scale:'4 niveles',    values:['Incívicos','Malintencionado','Insulto','Amenaza'], assignedTo:['epdata-2026q3'], usedInAnnotations:1, status:'active', shortDesc:'Nivel de intensidad del odio.',
+      dependencies:[{ dependsOn:'tx-hay-odio', showWhen:{operator:'=', values:['Sí']}, behavior:'skip', label:'¿Hay odio? = Sí' }] },
+    { id:'tx-metafora',     name:'Metáfora',                       color:'tk-meta',  scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿El contenido usa metáforas para vehicular el odio? Visible siempre.', dependencies:[] },
+    { id:'tx-sarcasmo',     name:'Sarcasmo',                       color:'tk-sarca', scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿El contenido usa sarcasmo? Visible siempre.', dependencies:[] },
+    { id:'tx-modificador',  name:'Modificador',                    color:'tk-mod',   scale:'libre',        values:null, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Campo libre para matizar la etiqueta. Visible siempre.', dependencies:[] },
+    { id:'tx-emotividad',   name:'Emotividad',                     color:'tk-emot',  scale:'3 niveles',    values:['Neutra','Cargada','Neutra'], assignedTo:['epdata-2026q3'], usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.', dependencies:[] },
+    { id:'tx-tendencioso',  name:'Carácter tendencioso',           color:'tk-tend',  scale:'3 niveles',    values:3, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?', dependencies:[] },
+    { id:'tx-semiotica',    name:'Semiótica',                      color:'tk-semi',  scale:'3 niveles',    values:3, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.', dependencies:[] },
+    { id:'tx-genero',       name:'Género',                         color:'tk-gen',   scale:'3 niveles',    values:['Neutral','Sutil','Claro'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?', dependencies:[] },
+    { id:'tx-orig-odio',    name:'Sesgo de odio (legado)',        color:'tk-odio',  scale:'3 niveles',    values:['Bajo','Medio','Alto'], assignedTo:['epdata-2026q2'], usedInAnnotations:0, status:'active', shortDesc:'Sesgo de odio versión anterior. NO usar en proyectos nuevos.', dependencies:[] },
     { id:'tx-raza',          name:'Raza / etnia',          color:'tk-race',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido racista o con sesgo étnico.' },
     { id:'tx-religion',      name:'Religión',              color:'tk-rel',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido con sesgo religioso.' },
     { id:'tx-demografico',   name:'Sesgo demográfico',     color:'tk-demo',  scale:'3 niveles', values:4, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta sesgo por edad, origen o clase social.' },
@@ -2675,7 +2716,136 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     document.getElementById('de-desg-overlay').style.display = 'none';
   }
 
-  function renderQuantValidation(){
+  // ─── GRAFO DE DEPENDENCIAS ───
+  function switchGraphTab(tab) {
+    document.querySelectorAll('[data-graph-tab]').forEach(t => {
+      if (t.dataset.graphTab === tab) {
+        t.style.borderBottomColor = 'var(--bad,#a13d3d)';
+        t.style.fontWeight = '600';
+        t.style.color = 'var(--ink-1)';
+      } else {
+        t.style.borderBottomColor = 'transparent';
+        t.style.fontWeight = '500';
+        t.style.color = 'var(--ink-3)';
+      }
+    });
+    document.getElementById('graph-tab-global').style.display = (tab === 'global' ? 'block' : 'none');
+    document.getElementById('graph-tab-resolved').style.display = (tab === 'resolved' ? 'block' : 'none');
+    renderGraphDeps(tab);
+  }
+
+  function renderGraphDeps(tab) {
+    if (tab === 'global') {
+      document.getElementById('graph-tab-global').innerHTML = buildGraphTree(null, 'global');
+    } else {
+      // Resolved: usa el fragmento de muestra que se está etiquetando
+      const frag = window.__currentTaggingFragment || sampleFragForDemo();
+      document.getElementById('graph-tab-resolved').innerHTML = buildGraphTree(frag, 'resolved');
+    }
+  }
+
+  function sampleFragForDemo() {
+    return {
+      text: 'Esta gentuza no debería existir.',
+      annotations: { 'tx-hay-odio':'Sí', 'tx-odio':'General', 'tx-intensidad':'Insulto', 'tx-metafora':'No', 'tx-sarcasmo':'No' }
+    };
+  }
+
+  function buildGraphTree(frag, mode) {
+    // Devuelve HTML del árbol/grafo
+    const dimsWithDeps = DIMENSIONS
+      .filter(d => (d.assignedTo || []).includes('epdata-2026q3'))
+      .map(d => {
+      const dep = (d.dependencies && d.dependencies[0]) ? d.dependencies[0] : null;
+      const parent = dep ? DIMENSIONS.find(p => p.id === dep.dependsOn) : null;
+      return { dim: d, parent };
+    });
+    // Construir árbol por niveles desde las raíces (dimensiones sin padre)
+    const childrenOf = {};
+    dimsWithDeps.forEach(x => {
+      if (x.parent) {
+        if (!childrenOf[x.parent.id]) childrenOf[x.parent.id] = [];
+        childrenOf[x.parent.id].push(x);
+      }
+    });
+    const renderNode = (d, depth) => {
+      let color = '#1c8a4a'; // verde por defecto
+      let annotations = null;
+      let visibility = 'visible';
+      if (mode === 'resolved' && frag && frag.annotations) {
+        annotations = frag.annotations[d.id];
+        if (d.dependencies && d.dependencies[0]) {
+          const dep = d.dependencies[0];
+          const parentAnn = frag.annotations[dep.dependsOn];
+          if (parentAnn === undefined) {
+            visibility = 'pending-parent';
+          } else {
+            const matches = dep.showWhen.values.includes(parentAnn);
+            if (!matches) {
+              visibility = 'skipped';
+              color = '#9ca3af'; // gris
+            } else {
+              // Si es skip obligatorio u opcional
+              color = dep.behavior === 'skip' ? '#a13d3d' : '#b58300';
+            }
+          }
+        }
+      }
+      // Para demo global: marcar las que tienen dependencias
+      if (mode === 'global' && d.dependencies && d.dependencies[0]) {
+        color = d.dependencies[0].behavior === 'skip' ? '#a13d3d' : '#b58300';
+      }
+      const children = childrenOf[d.id] || [];
+      const annPill = (mode === 'resolved' && annotations !== undefined)
+        ? (annotations === null ? '<span style="margin-left:6px;background:#f3f4f6;color:#6b7280;font-size:10px;padding:1px 6px;border-radius:8px">skipped</span>'
+          : '<span style="margin-left:6px;background:#e3eef5;color:#1d6e75;font-size:10px;padding:1px 6px;border-radius:8px">→ ' + escapeHtml(annotations) + '</span>')
+        : '';
+      const skipTag = (visibility === 'skipped')
+        ? '<span style="margin-left:6px;background:#f3f4f6;color:#6b7280;font-size:10px;padding:1px 6px;border-radius:8px">SKIPPED</span>' : '';
+      const fadeStyle = (visibility === 'skipped') ? 'opacity:0.45' : '';
+      const depInfo = (mode === 'global' && d.dependencies && d.dependencies[0])
+        ? '<div style="font-size:11px;color:var(--ink-3);margin-top:3px"><i>Mostrar solo cuando:</i> ' + escapeHtml(d.dependencies[0].label) + '</div>' : '';
+      const annInfo = (mode === 'resolved' && annotations !== undefined && annotations !== null)
+        ? '<div style="font-size:11px;color:var(--ink-3);margin-top:3px"><i>Respuesta del anotador:</i> <b>' + escapeHtml(annotations) + '</b></div>' : '';
+      let valuesList = '';
+      if (Array.isArray(d.values) && d.values.length) valuesList = d.values.join(' / ');
+      else if (d.scale === 'libre') valuesList = 'texto libre';
+      else if (d.scale === 'booleano') valuesList = 'Sí / No';
+      const html = ''
+        + '<div style="' + fadeStyle + 'margin-bottom:8px;margin-left:' + (depth*22) + 'px">'
+        +   '<div style="box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-left:3px solid ' + color + ';border-radius:6px">'
+        +     '<div style="width:11px;height:11px;border-radius:50%;background:' + color + ';flex-shrink:0;margin-top:5px"></div>'
+        +     '<div style="flex:1;min-width:0">'
+        +       '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><b style="color:var(--ink-1);font-size:13.5px">' + escapeHtml(d.name) + '</b>'
+        +         '<span style="font-size:10.5px;color:var(--ink-3);background:var(--surface-2);padding:1px 7px;border-radius:8px">' + escapeHtml(d.scale) + '</span>'
+        +       '</div>'
+        +       (valuesList ? '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px">Valores: <b style="color:var(--ink-2)">' + escapeHtml(valuesList) + '</b></div>' : '')
+        +       depInfo + annInfo
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+      return html + children.map(c => renderNode(c.dim, depth+1)).join('');
+    };
+    const roots = dimsWithDeps.filter(x => !x.parent).map(x => x.dim);
+    // Cabecera: si es resolved muestra meta del fragmento
+    let header = '';
+    if (mode === 'resolved' && frag) {
+      header = '<div style="background:#e3eef5;border:1px solid #c2dde4;border-left:3px solid #1d6e75;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#1a3a3f">'
+        + '<b style="color:#1d6e75">Fragmento de muestra:</b> <i>"' + escapeHtml(frag.text) + '"</i><br>'
+        + '<span style="color:var(--ink-3);font-size:11.5px">Las dimensiones se renderizan en cascada según las respuestas anotadas. Las dimensiones saltadas aparecen en gris (no se pidió etiquetar).</span>'
+        + '</div>';
+    } else {
+      header = '<div style="background:var(--surface-2);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:var(--ink-2)">'
+        + 'Vista global del catálogo de dimensiones del proyecto activo. Las dimensiones conectadas por líneas punteadas indican que la hija solo se muestra bajo una condición del padre.'
+        + '</div>';
+    }
+    return header + roots.map(r => renderNode(r, 0)).join('');
+  }
+
+  // Sample fragment compartido para "resuelto"
+  window.__currentTaggingFragment = sampleFragForDemo();
+
+    function renderQuantValidation(){
     const tbody = document.getElementById('qv-table-body');
     if (!tbody) return;
     const searchEl = document.getElementById('qv-search');
