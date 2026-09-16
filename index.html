@@ -1882,6 +1882,10 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
             <div class="wiz-num"><span>4</span></div>
             <div class="wiz-label">Descripción</div>
           </div>
+          <div class="wiz-step" data-step="5">
+            <div class="wiz-num"><span>5</span></div>
+            <div class="wiz-label">Dependencias</div>
+          </div>
         </div>
 
         <div class="wiz-body">
@@ -1976,7 +1980,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
               <label>Resumen</label>
               <div class="wiz-summary" id="wiz-summary"></div>
             </div>
-            <div class="wiz-row">
+                    <div class="wiz-row">
               <label>Descripción completa</label>
               <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
               <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
@@ -1999,6 +2003,15 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
                 <button class="btn-mini" onclick="fillWizTemplate('emotion')">Plantilla: Tono emocional</button>
               </div>
             </div>
+          </div>
+
+          <!-- STEP 5: Dependencias (skip logic) -->
+          <div class="wiz-step-panel" data-panel="5">
+            <div style="margin-bottom:14px">
+              <h3 style="margin:0 0 6px">Dependencias (skip logic)</h3>
+              <p class="lead" style="font-size:12.5px;color:var(--ink-3);margin:0">Configure si esta dimensión debe mostrarse solo cuando otra dimensión tenga un valor específico.</p>
+            </div>
+            <div id="wiz-deps-content"></div>
           </div>
         </div>
 
@@ -3770,10 +3783,11 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
   function wizNext() {
     // validate current step
     if (!validateWizStep(wizState.step)) return;
-    if (wizState.step < 4) {
+    if (wizState.step < 5) {
       wizState.step++;
       if (wizState.step === 3) renderWizValues();
       if (wizState.step === 4) renderWizSummary();
+      if (wizState.step === 5) renderWizDependencies();
       updateWizUI();
     }
   }
@@ -3837,10 +3851,70 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
     });
     // Buttons
     document.getElementById('wiz-btn-prev').style.display = wizState.step > 1 ? '' : 'none';
-    document.getElementById('wiz-btn-next').style.display = wizState.step < 4 ? '' : 'none';
-    document.getElementById('wiz-btn-create').style.display = wizState.step === 4 ? '' : 'none';
+    document.getElementById('wiz-btn-next').style.display = wizState.step < 5 ? '' : 'none';
+    document.getElementById('wiz-btn-create').style.display = wizState.step === 5 ? '' : 'none';
     // Cancel
     document.getElementById('wiz-btn-cancel').textContent = wizState.step === 1 ? 'Cancelar' : '×';
+  }
+
+  function renderWizDependencies() {
+    const p = document.getElementById('wiz-deps-content');
+    if (!p) return;
+    // Opciones de dimensiones padre: todas las dimensiones ya creadas (no la que se está editando)
+    const opts = DIMENSIONS.map(d => '<option value="' + d.id + '">' + escapeHtml(d.name) + '</option>').join('');
+    const currentDep = (wizState.dep && wizState.dep.parentId)
+      ? '<b>' + escapeHtml(wizState.dep.label) + '</b>'
+      : '<i style="color:var(--ink-3)">ninguna (dimensión raíz)</i>';
+    p.innerHTML = ''
+      + '<div style="background:#fdf3da;border:1px solid #e8d49c;border-left:3px solid #b58300;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#5a3e00">'
+      +   '<b>Skip logic / dependencia:</b> defina cuándo esta dimensión debe mostrarse al anotador. Si no define dependencia, la dimensión siempre será visible.'
+      + '</div>'
+      + '<div id="wiz-deps-current" style="padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:14px;font-size:13px">Dependencia actual: ' + currentDep + '</div>'
+      + '<label style="display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px">Dimensión padre</label>'
+      + '<select id="wiz-dep-parent" style="width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer" onchange="updateWizDepLabel()">'
+      +   '<option value="">— sin dependencia (siempre visible) —</option>'
+      +   opts
+      + '</select>'
+      + '<div id="wiz-dep-controls" style="margin-top:14px;display:none">'
+      +   '<label style="display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px">Mostrar solo cuando el padre sea:</label>'
+      +   '<div style="display:flex;gap:8px;align-items:center">'
+      +     '<select id="wiz-dep-value" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer"></select>'
+      +     '<select id="wiz-dep-behavior" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer">'
+      +       '<option value="skip">Saltar (ocultar)</option>'
+      +       '<option value="required">Requerida (bloquea)</option>'
+      +       '<option value="optional">Opcional</option>'
+      +     '</select>'
+      +   '</div>'
+      +   '<div id="wiz-dep-cycle-warn" style="margin-top:10px;padding:8px 12px;background:#fbe6e6;border:1px solid #e8c5c5;border-left:3px solid var(--bad);border-radius:0 6px 6px 0;font-size:12px;color:#5a2222;display:none"><b>Ciclo detectado:</b> no se puede depender de una dimensión que ya depende de esta (loop infinito).</div>'
+      + '</div>';
+    if (wizState.dep && wizState.dep.parentId) {
+      document.getElementById('wiz-dep-parent').value = wizState.dep.parentId;
+      updateWizDepLabel();
+      document.getElementById('wiz-dep-behavior').value = wizState.dep.behavior || 'skip';
+    }
+  }
+
+  function updateWizDepLabel() {
+    const parentId = document.getElementById('wiz-dep-parent').value;
+    const controls = document.getElementById('wiz-dep-controls');
+    const currentPanel = document.getElementById('wiz-deps-current');
+    if (!parentId) {
+      controls.style.display = 'none';
+      currentPanel.innerHTML = 'Dependencia actual: <i style="color:var(--ink-3)">ninguna (dimensión raíz)</i>';
+      return;
+    }
+    controls.style.display = 'block';
+    const parent = DIMENSIONS.find(d => d.id === parentId);
+    // Cycle detection
+    // (en este mockup no aplica porque wizState es para CREAR, no para editar)
+    // Cargar los valores del padre
+    const valSelect = document.getElementById('wiz-dep-value');
+    const opts = (Array.isArray(parent.values) ? parent.values : [])
+      .map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
+    valSelect.innerHTML = opts || '<option value="">—</option>';
+    // Actualizar el banner
+    const previewVal = valSelect.value;
+    currentPanel.innerHTML = 'Dependencia actual: <b>' + escapeHtml(parent.name) + ' = ' + escapeHtml(previewVal) + '</b>';
   }
 
   function renderWizSummary() {
@@ -3864,12 +3938,19 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
 
     // Build new taxonomy object
     const id = 'tx-' + wizState.slug + '-' + Date.now().toString(36);
+    const dep = (wizState.dep && wizState.dep.parentId) ? [{
+      dependsOn: wizState.dep.parentId,
+      showWhen: { operator: '=', values: [wizState.dep.showWhenValue] },
+      behavior: wizState.dep.behavior || 'skip',
+      label: wizState.dep.label
+    }] : [];
     const newTax = {
       id, name: wizState.name, slug: wizState.slug,
       color: wizState.values[0]?.color || '#7d6c4f',
       scale: wizState.scale, values: wizState.values.length,
       assignedTo: [], usedInAnnotations: 0, status: 'active',
       shortDesc: wizState.shortDesc, longDesc: wizState.longDesc,
+      dependencies: dep,
       createdAt: new Date().toISOString().slice(0,10),
       createdBy: 'Marta R. (superadmin)'
     };
