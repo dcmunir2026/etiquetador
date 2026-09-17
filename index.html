@@ -159,6 +159,8 @@
   .kpi .delta{font-size:12px;color:var(--ink-3);margin-top:2px;display:flex;align-items:center;gap:4px}
   .kpi .delta.up{color:var(--ok)}
   .kpi .delta.down{color:var(--bad)}
+  .graph-tab-panel{display:block}
+  .graph-tab-panel>div+div{margin-top:6px}
   .kpi-row--compact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
   .kpi--sm{padding:10px 14px}
   .kpi--sm .label{font-size:10.5px;letter-spacing:0.04em;margin-bottom:4px}
@@ -550,6 +552,7 @@
       <button data-view="tagging"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Etiquetar fragmento<span class="badge">3/50</span></button>
       <button data-view="discrepancias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M3 21l8-8"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/></svg>Discrepancias</button>
       <button data-view="discrepancias-equipos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M12 8L8 12l4 4" stroke="#b58300" stroke-width="2.5"/></svg>Discrepancias de equipos</button>
+      <button data-view="graph-deps"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 7.5L11 16"/><path d="M16.5 7.5L13 16"/><path d="M8.5 6h7"/></svg>Grafo de dependencias</button>
       <button data-view="quant-validation"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="9" r="1.5" fill="currentColor"/></svg>Validación cuantitativa</button>
       <button data-view="validacion"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Validación cualitativa</button>
     </nav>
@@ -1314,120 +1317,10 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
 ¿Deseas que analice los datos de España, o hay otra región o magnitud sanitaria que pueda ayudarte a consultar?
             </div>
 
-            <div class="dims" style="margin-top:16px">
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-estadistico"><span class="dot" style="background:#1d4a72"></span>1. Sesgo estadístico</span><span class="help" title="¿La respuesta presenta datos cuantitativos o cualitativos correctos, o falta información factual?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-                <div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…"></div>
-              </div>
+            <div id="dims-cascade" class="dims" style="margin-top:16px"></div>
+            <!-- renderizado por renderTaggingDims() según dependencias -->
 
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-emotividad"><span class="dot" style="background:#7a3b1c"></span>2. Emotividad</span><span class="help" title="¿El tono es neutro, valorativo o cargado?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-odio"><span class="dot" style="background:#7a1a1c"></span>3. Odio / discurso de odio</span><span class="help" title="¿Contiene insinuaciones o discurso explícito de odio?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-tendencioso"><span class="dot" style="background:#5a3060"></span>4. Carácter tendencioso</span><span class="help" title="¿Imparcial o con sesgo (sutil o claro)?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-semiotica"><span class="dot" style="background:#5a4400"></span>5. Semiótica</span><span class="help" title="¿Literal, figurado o sarcástico?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">Literal</div>
-                  <div class="opt">Figurado</div>
-                  <div class="opt">Sarcástico</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-genero"><span class="dot" style="background:#5a3060"></span>6. Género</span><span class="help" title="¿Tratamiento neutral o con sesgo de género?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-raza"><span class="dot" style="background:#5a4400"></span>7. Raza / etnia</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-religion"><span class="dot" style="background:#2f5d2c"></span>8. Religión</span><span class="help" title="¿Ausente, insinuación, explícito?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-
-              <div class="dim">
-                <div class="label"><span class="tag sesgo-demografico"><span class="dot" style="background:#1d4a72"></span>9. Sesgo demográfico</span><span class="help" title="¿Ausente, o relacionado con edad/origen/clase?">?</span></div>
-                <div class="opts">
-                  <div class="opt selected no">No</div>
-                  <div class="opt">Bajo</div>
-                  <div class="opt">Alto</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="actions">
-              <div class="hint"><kbd>←</kbd> Anterior · <kbd>→</kbd> Siguiente · <kbd>S</kbd> Saltar · <kbd>Enter</kbd> Guardar y enviar</div>
-              <div class="spacer"></div>
-              <button class="btn">Borrador</button>
-              <button class="btn primary">Guardar y siguiente →</button>
-            </div>
-          </div>
-
-          <div>
-            <div class="card" style="padding:14px">
-              <h3>Paquete PK-A-001 <span class="count">12/80</span></h3>
-              <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px" id="fraggrid"></div>
-              <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11.5px;color:var(--ink-3)">
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--ok);border-radius:2px;vertical-align:middle"></span> Listo</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:2px;vertical-align:middle"></span> Actual</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:#e6e3dc;border-radius:2px;vertical-align:middle"></span> Pendiente</span>
-                <span><span style="display:inline-block;width:9px;height:9px;background:var(--warn);border-radius:2px;vertical-align:middle"></span> Saltado</span>
-              </div>
-            </div>
-
-            <div class="card" style="padding:14px;margin-top:14px">
-              <h3>Borrador local</h3>
-              <div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">
-                <p style="margin:0 0 6px"><b>SQLite</b> en este dispositivo</p>
-                <p style="margin:0 0 6px"><span class="tag status-done">Sincronizado</span> <small style="color:var(--ink-3)">hace 14 s</small></p>
-                <p style="margin:0;font-size:11.5px;color:var(--ink-3)">Si pierdes conexión, los cambios se conservan en local y se sincronizan al volver.</p>
-              </div>
-            </div>
-
-            <div class="card" style="padding:14px;margin-top:14px">
+          <div class="card" style="padding:14px;margin-top:14px">
               <h3>Evidencias <span class="count">0</span></h3>
               <div style="font-size:12.5px;color:var(--ink-3);text-align:center;padding:14px;background:#fafaf2;border-radius:7px;border:1px dashed var(--line)">
                 Arrastra aquí citas textuales o pegue un [REP:…]<br>para justificar la decisión.
@@ -1513,6 +1406,31 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
       </div>
     </section>
 
+
+
+    <!-- GRAFO DE DEPENDENCIAS -->
+    <section class="view" id="view-graph-deps">
+      <header>
+        <h1>Grafo de dependencias</h1>
+        <p class="muted">Visualización de cómo se conectan las dimensiones entre sí. La pestaña <b>Global</b> muestra el grafo del catálogo de dimensiones del proyecto. La pestaña <b>Resuelto</b> muestra cómo se aplicaría la cascada al fragmento de la muestra que se está etiquetando.</p>
+      </header>
+
+      <div class="tabs" style="display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:18px">
+        <button class="tab active" data-graph-tab="global" onclick="switchGraphTab('global')" style="padding:9px 18px;border:none;background:none;border-bottom:2px solid var(--bad,#a13d3d);font-weight:600;font-size:13px;color:var(--ink-1);cursor:pointer">Global (catálogo)</button>
+        <button class="tab" data-graph-tab="resolved" onclick="switchGraphTab('resolved')" style="padding:9px 18px;border:none;background:none;border-bottom:2px solid transparent;font-weight:500;font-size:13px;color:var(--ink-3);cursor:pointer">Resuelto (fragmento)</button>
+      </div>
+
+      <div id="graph-tab-global" class="graph-tab-panel" style="display:block;overflow-x:auto"></div>
+      <div id="graph-tab-resolved" class="graph-tab-panel" style="display:none;display:block;overflow-x:auto"></div>
+
+      <div style="margin-top:14px;padding:12px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink-3)">
+        <b style="color:var(--ink-2)">Leyenda:</b>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#a13d3d"></span>skip obligatorio</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#b58300"></span>skip opcional</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:10px"><span style="width:11px;height:11px;border-radius:50%;background:#1c8a4a"></span>siempre visible</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:14px;color:var(--ink-3)"><span style="border-bottom:1px dashed var(--ink-4);width:18px"></span> dependencia condicional</span>
+      </div>
+    </section>
 
     <!-- DISCREPANCIAS DE EQUIPOS (multi-asignee: fragmentos donde anotadores discreparon) -->
     <section class="view" id="view-discrepancias-equipos">
@@ -1964,6 +1882,10 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
             <div class="wiz-num"><span>4</span></div>
             <div class="wiz-label">Descripción</div>
           </div>
+          <div class="wiz-step" data-step="5">
+            <div class="wiz-num"><span>5</span></div>
+            <div class="wiz-label">Dependencias</div>
+          </div>
         </div>
 
         <div class="wiz-body">
@@ -2058,7 +1980,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
               <label>Resumen</label>
               <div class="wiz-summary" id="wiz-summary"></div>
             </div>
-            <div class="wiz-row">
+                    <div class="wiz-row">
               <label>Descripción completa</label>
               <textarea id="wiz-dim-long" placeholder="Define el criterio editorial, ejemplos, casos límite, lo que NO se considera..." style="min-height:120px"></textarea>
               <div class="wiz-hint">Aparece al lado del anotador cuando está etiquetando. Sé específico.</div>
@@ -2081,6 +2003,15 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
                 <button class="btn-mini" onclick="fillWizTemplate('emotion')">Plantilla: Tono emocional</button>
               </div>
             </div>
+          </div>
+
+          <!-- STEP 5: Dependencias (skip logic) -->
+          <div class="wiz-step-panel" data-panel="5">
+            <div style="margin-bottom:14px">
+              <h3 style="margin:0 0 6px">Dependencias (skip logic)</h3>
+              <p class="lead" style="font-size:12.5px;color:var(--ink-3);margin:0">Configure si esta dimensión debe mostrarse solo cuando otra dimensión tenga un valor específico.</p>
+            </div>
+            <div id="wiz-deps-content"></div>
           </div>
         </div>
 
@@ -2176,7 +2107,7 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   const titles = {
     login:'Acceso', dashboard:'Proyectos', upload:'Cargar Excel maestro',
     dimensions:'Dimensiones y categorías', roles:'Roles y equipos', paquetes:'Paquetes espejo',
-    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias', 'discrepancias-equipos':'Discrepancias de equipos',
+    tagging:'Etiquetar fragmento', discrepancias:'Discrepancias', 'graph-deps':'Grafo de dependencias', 'discrepancias-equipos':'Discrepancias de equipos',
     paquetes:'Paquetes', taxonomies:'Dimensiones', 'taxonomy-groups':'Taxonomías', dimensions:'Taxonomías del proyecto', segmentation:'Configuración de segmentación',
     validacion:'Validación cualitativa', 'quant-validation':'Validación cuantitativa', reporte:'Reporte', kappa:'Kappa de Fleiss'
   };
@@ -2212,6 +2143,12 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     }
     if (name === 'discrepancias-equipos') {
       renderDiscrepanciasEquipos();
+    }
+    if (name === 'graph-deps') {
+      renderGraphDeps('global');
+    }
+    if (name === 'tagging') {
+      renderTaggingDims();
     }
   }
   navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
@@ -2287,11 +2224,21 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
   // Para el mockup asumimos estado en memoria; en real, va por GET /api/taxonomies
   // y POST /api/projects/[id]/taxonomies.
   const DIMENSIONS = [
-    { id:'tx-odio',          name:'Sesgo de odio',         color:'tk-odio',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3','epdata-2026q2'], usedInAnnotations:2, status:'active', shortDesc:'Detecta insinuaciones o discurso explícito de odio en el contenido.' },
-    { id:'tx-emotividad',    name:'Emotividad',            color:'tk-emot',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.' },
-    { id:'tx-tendencioso',   name:'Carácter tendencioso',  color:'tk-tend',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?' },
-    { id:'tx-semiotica',     name:'Semiótica',             color:'tk-semi',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.' },
-    { id:'tx-genero',        name:'Género',                color:'tk-gen',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?' },
+    { id:'tx-hay-odio',     name:'¿Hay odio?',                     color:'tk-odio',  scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:2, status:'active', shortDesc:'Pregunta gate. Detecta presencia de discurso de odio en el contenido.', dependencies:[] },
+    { id:'tx-odio',         name:'Tipo de odio',                   color:'tk-odio2', scale:'categórico',   values:['Político','General','Religioso','Xenófobo','Misógino','Sexual'], assignedTo:['epdata-2026q3'], usedInAnnotations:2, status:'active', shortDesc:'Tipo de odio detectado. Solo se muestra cuando ¿Hay odio? = Sí.',
+      dependencies:[{ dependsOn:'tx-hay-odio', showWhen:{operator:'=', values:['Sí']}, behavior:'skip', label:'¿Hay odio? = Sí' }] },
+    { id:'tx-religion',     name:'Tipo de religión',               color:'tk-rel',   scale:'categórico',   values:['Anticatólico','Antisemita','Antimusulmán','Antievangélico'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Subtipo cuando el odio es Religioso.',
+      dependencies:[{ dependsOn:'tx-odio', showWhen:{operator:'=', values:['Religioso']}, behavior:'skip', label:'Tipo de odio = Religioso' }] },
+    { id:'tx-intensidad',   name:'Intensidad',                     color:'tk-int',   scale:'4 niveles',    values:['Incívicos','Malintencionado','Insulto','Amenaza'], assignedTo:['epdata-2026q3'], usedInAnnotations:1, status:'active', shortDesc:'Nivel de intensidad del odio.',
+      dependencies:[{ dependsOn:'tx-hay-odio', showWhen:{operator:'=', values:['Sí']}, behavior:'skip', label:'¿Hay odio? = Sí' }] },
+    { id:'tx-metafora',     name:'Metáfora',                       color:'tk-meta',  scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿El contenido usa metáforas para vehicular el odio? Visible siempre.', dependencies:[] },
+    { id:'tx-sarcasmo',     name:'Sarcasmo',                       color:'tk-sarca', scale:'booleano',     values:['Sí','No'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿El contenido usa sarcasmo? Visible siempre.', dependencies:[] },
+    { id:'tx-modificador',  name:'Modificador',                    color:'tk-mod',   scale:'libre',        values:null, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Campo libre para matizar la etiqueta. Visible siempre.', dependencies:[] },
+    { id:'tx-emotividad',   name:'Emotividad',                     color:'tk-emot',  scale:'3 niveles',    values:['Neutra','Cargada','Neutra'], assignedTo:['epdata-2026q3'], usedInAnnotations:1, status:'active', shortDesc:'Detecta si el tono es neutro, valorativo o cargado emocionalmente.', dependencies:[] },
+    { id:'tx-tendencioso',  name:'Carácter tendencioso',           color:'tk-tend',  scale:'3 niveles',    values:3, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿Imparcial o con sesgo (sutil o claro)?', dependencies:[] },
+    { id:'tx-semiotica',    name:'Semiótica',                      color:'tk-semi',  scale:'3 niveles',    values:3, assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'Detecta uso de lenguaje figurado, irónico o sarcástico.', dependencies:[] },
+    { id:'tx-genero',       name:'Género',                         color:'tk-gen',   scale:'3 niveles',    values:['Neutral','Sutil','Claro'], assignedTo:['epdata-2026q3'], usedInAnnotations:0, status:'active', shortDesc:'¿Tratamiento neutral o con sesgo de género?', dependencies:[] },
+    { id:'tx-orig-odio',    name:'Sesgo de odio (legado)',        color:'tk-odio',  scale:'3 niveles',    values:['Bajo','Medio','Alto'], assignedTo:['epdata-2026q2'], usedInAnnotations:0, status:'active', shortDesc:'Sesgo de odio versión anterior. NO usar en proyectos nuevos.', dependencies:[] },
     { id:'tx-raza',          name:'Raza / etnia',          color:'tk-race',  scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido racista o con sesgo étnico.' },
     { id:'tx-religion',      name:'Religión',              color:'tk-rel',   scale:'3 niveles', values:3, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta contenido con sesgo religioso.' },
     { id:'tx-demografico',   name:'Sesgo demográfico',     color:'tk-demo',  scale:'3 niveles', values:4, assignedTo:['epdata-2026q3'],                 usedInAnnotations:0, status:'active', shortDesc:'Detecta sesgo por edad, origen o clase social.' },
@@ -2675,7 +2622,255 @@ Si te interesa conocer la evolución de la gonorrea en España, puedo proporcion
     document.getElementById('de-desg-overlay').style.display = 'none';
   }
 
-  function renderQuantValidation(){
+  // ─── GRAFO DE DEPENDENCIAS ───
+  function switchGraphTab(tab) {
+    document.querySelectorAll('[data-graph-tab]').forEach(t => {
+      if (t.dataset.graphTab === tab) {
+        t.style.borderBottomColor = 'var(--bad,#a13d3d)';
+        t.style.fontWeight = '600';
+        t.style.color = 'var(--ink-1)';
+      } else {
+        t.style.borderBottomColor = 'transparent';
+        t.style.fontWeight = '500';
+        t.style.color = 'var(--ink-3)';
+      }
+    });
+    document.getElementById('graph-tab-global').style.display = (tab === 'global' ? 'block' : 'none');
+    document.getElementById('graph-tab-resolved').style.display = (tab === 'resolved' ? 'block' : 'none');
+    renderGraphDeps(tab);
+  }
+
+  function renderGraphDeps(tab) {
+    if (tab === 'global') {
+      document.getElementById('graph-tab-global').innerHTML = buildGraphTree(null, 'global');
+    } else {
+      // Resolved: usa el fragmento de muestra que se está etiquetando
+      const frag = window.__currentTaggingFragment || sampleFragForDemo();
+      document.getElementById('graph-tab-resolved').innerHTML = buildGraphTree(frag, 'resolved');
+    }
+  }
+
+  function sampleFragForDemo() {
+    return {
+      text: 'Esta gentuza no debería existir.',
+      annotations: { 'tx-hay-odio':'Sí', 'tx-odio':'General', 'tx-intensidad':'Insulto', 'tx-metafora':'No', 'tx-sarcasmo':'No' }
+    };
+  }
+
+  function buildGraphTree(frag, mode) {
+    // Devuelve HTML del árbol/grafo
+    const dimsWithDeps = DIMENSIONS
+      .filter(d => (d.assignedTo || []).includes('epdata-2026q3'))
+      .map(d => {
+      const dep = (d.dependencies && d.dependencies[0]) ? d.dependencies[0] : null;
+      const parent = dep ? DIMENSIONS.find(p => p.id === dep.dependsOn) : null;
+      return { dim: d, parent };
+    });
+    // Construir árbol por niveles desde las raíces (dimensiones sin padre)
+    const childrenOf = {};
+    dimsWithDeps.forEach(x => {
+      if (x.parent) {
+        if (!childrenOf[x.parent.id]) childrenOf[x.parent.id] = [];
+        childrenOf[x.parent.id].push(x);
+      }
+    });
+    const renderNode = (d, depth) => {
+      let color = '#1c8a4a'; // verde por defecto
+      let annotations = null;
+      let visibility = 'visible';
+      if (mode === 'resolved' && frag && frag.annotations) {
+        annotations = frag.annotations[d.id];
+        if (d.dependencies && d.dependencies[0]) {
+          const dep = d.dependencies[0];
+          const parentAnn = frag.annotations[dep.dependsOn];
+          if (parentAnn === undefined) {
+            visibility = 'pending-parent';
+          } else {
+            const matches = dep.showWhen.values.includes(parentAnn);
+            if (!matches) {
+              visibility = 'skipped';
+              color = '#9ca3af'; // gris
+            } else {
+              // Si es skip obligatorio u opcional
+              color = dep.behavior === 'skip' ? '#a13d3d' : '#b58300';
+            }
+          }
+        }
+      }
+      // Para demo global: marcar las que tienen dependencias
+      if (mode === 'global' && d.dependencies && d.dependencies[0]) {
+        color = d.dependencies[0].behavior === 'skip' ? '#a13d3d' : '#b58300';
+      }
+      const children = childrenOf[d.id] || [];
+      const annPill = (mode === 'resolved' && annotations !== undefined)
+        ? (annotations === null ? '<span style="margin-left:6px;background:#f3f4f6;color:#6b7280;font-size:10px;padding:1px 6px;border-radius:8px">skipped</span>'
+          : '<span style="margin-left:6px;background:#e3eef5;color:#1d6e75;font-size:10px;padding:1px 6px;border-radius:8px">→ ' + escapeHtml(annotations) + '</span>')
+        : '';
+      const skipTag = (visibility === 'skipped')
+        ? '<span style="margin-left:6px;background:#f3f4f6;color:#6b7280;font-size:10px;padding:1px 6px;border-radius:8px">SKIPPED</span>' : '';
+      const fadeStyle = (visibility === 'skipped') ? 'opacity:0.45' : '';
+      const depInfo = (mode === 'global' && d.dependencies && d.dependencies[0])
+        ? '<div style="font-size:11px;color:var(--ink-3);margin-top:3px"><i>Mostrar solo cuando:</i> ' + escapeHtml(d.dependencies[0].label) + '</div>' : '';
+      const annInfo = (mode === 'resolved' && annotations !== undefined && annotations !== null)
+        ? '<div style="font-size:11px;color:var(--ink-3);margin-top:3px"><i>Respuesta del anotador:</i> <b>' + escapeHtml(annotations) + '</b></div>' : '';
+      let valuesList = '';
+      if (Array.isArray(d.values) && d.values.length) valuesList = d.values.join(' / ');
+      else if (d.scale === 'libre') valuesList = 'texto libre';
+      else if (d.scale === 'booleano') valuesList = 'Sí / No';
+      const html = ''
+        + '<div style="' + fadeStyle + 'margin-bottom:8px;margin-left:' + (depth*22) + 'px">'
+        +   '<div style="box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-left:3px solid ' + color + ';border-radius:6px">'
+        +     '<div style="width:11px;height:11px;border-radius:50%;background:' + color + ';flex-shrink:0;margin-top:5px"></div>'
+        +     '<div style="flex:1;min-width:0">'
+        +       '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><b style="color:var(--ink-1);font-size:13.5px">' + escapeHtml(d.name) + '</b>'
+        +         '<span style="font-size:10.5px;color:var(--ink-3);background:var(--surface-2);padding:1px 7px;border-radius:8px">' + escapeHtml(d.scale) + '</span>'
+        +       '</div>'
+        +       (valuesList ? '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px">Valores: <b style="color:var(--ink-2)">' + escapeHtml(valuesList) + '</b></div>' : '')
+        +       depInfo + annInfo
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+      return html + children.map(c => renderNode(c.dim, depth+1)).join('');
+    };
+    const roots = dimsWithDeps.filter(x => !x.parent).map(x => x.dim);
+    // Cabecera: si es resolved muestra meta del fragmento
+    let header = '';
+    if (mode === 'resolved' && frag) {
+      header = '<div style="background:#e3eef5;border:1px solid #c2dde4;border-left:3px solid #1d6e75;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#1a3a3f">'
+        + '<b style="color:#1d6e75">Fragmento de muestra:</b> <i>"' + escapeHtml(frag.text) + '"</i><br>'
+        + '<span style="color:var(--ink-3);font-size:11.5px">Las dimensiones se renderizan en cascada según las respuestas anotadas. Las dimensiones saltadas aparecen en gris (no se pidió etiquetar).</span>'
+        + '</div>';
+    } else {
+      header = '<div style="background:var(--surface-2);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:var(--ink-2)">'
+        + 'Vista global del catálogo de dimensiones del proyecto activo. Las dimensiones conectadas por líneas punteadas indican que la hija solo se muestra bajo una condición del padre.'
+        + '</div>';
+    }
+    return header + roots.map(r => renderNode(r, 0)).join('');
+  }
+
+  // Sample fragment compartido para "resuelto"
+  window.__currentTaggingFragment = sampleFragForDemo();
+
+  // ─── TAGGING: renderizado en cascada ───
+  // Estado de las respuestas del anotador en el fragmento actual
+  window.__taggingAnswers = {
+    'tx-hay-odio': '',     // todavía sin responder
+    'tx-odio': '',
+    'tx-religion': '',
+    'tx-intensidad': '',
+    'tx-metafora': '',
+    'tx-sarcasmo': '',
+    'tx-modificador': '',
+    'tx-emotividad': '',
+    'tx-tendencioso': '',
+    'tx-semiotica': '',
+    'tx-genero': '',
+    'tx-raza': '',
+    'tx-religion-cat': '',
+  };
+
+  // Evaluación de la visibilidad: ¿el padre permite ver al hijo?
+  function isDepSatisfied(dim, answers) {
+    if (!dim.dependencies || dim.dependencies.length === 0) return true;
+    const dep = dim.dependencies[0];
+    const parentAnswer = answers[dep.dependsOn];
+    if (parentAnswer === undefined || parentAnswer === '') return null; // pendiente padre
+    return dep.showWhen.values.includes(parentAnswer);
+  }
+
+  function renderTaggingDims() {
+    const container = document.getElementById('dims-cascade');
+    if (!container) return;
+    const answers = window.__taggingAnswers || {};
+    // Filtrar dimensiones asignadas al proyecto activo
+    const dims = DIMENSIONS.filter(d => (d.assignedTo || []).includes('epdata-2026q3'));
+    // Renderizar en orden topológico: primero dimensiones sin padre, luego sus hijos
+    const renderOne = (d, depth) => {
+      const satisfied = isDepSatisfied(d, answers);
+      const visibility = (satisfied === null) ? 'pending-parent'
+                       : (satisfied ? 'visible' : 'skipped');
+      const fade = (visibility === 'skipped') ? 'opacity:0.5' : '';
+      const dimCardBg = (visibility === 'pending-parent') ? 'repeating-linear-gradient(45deg, #fafaf7, #fafaf7 8px, #f6f4ed 8px, #f6f4ed 16px)' : '';
+      // Construir las opciones (Sí/No siempre; los demás arrays de values)
+      let opts;
+      if (d.scale === 'booleano') {
+        opts = ['Sí', 'No'];
+      } else if (Array.isArray(d.values)) {
+        opts = d.values;
+      } else {
+        opts = [];
+      }
+      const optsHtml = opts.map(opt => {
+        const selected = (answers[d.id] === opt);
+        return '<div class="opt ' + (selected ? 'selected' : '') + '" data-dim="' + d.id + '" data-val="' + escapeHtml(opt) + '" onclick="pickTaggingValue(this)">' + escapeHtml(opt) + '</div>';
+      }).join('');
+      const skipBadge = (visibility === 'skipped')
+        ? '<span style="margin-left:8px;background:#f3f4f6;color:#6b7280;font-size:10.5px;padding:2px 8px;border-radius:9px;font-weight:500">SKIPPED</span>'
+        : (visibility === 'pending-parent'
+            ? '<span style="margin-left:8px;background:#fdf3da;color:#8a6300;font-size:10.5px;padding:2px 8px;border-radius:9px;font-weight:500">⏳ espera respuesta del padre</span>'
+            : '');
+      const header = ''
+        + '<div class="label">'
+        +   '<span style="display:inline-flex;align-items:center;gap:8px">'
+        +     '<b style="color:var(--ink-1)">' + escapeHtml(d.name) + '</b>'
+        + (function(){
+          const m = {'tk-odio':'#7a1a1c','tk-rel':'#2f5d2c','tk-int':'#a85a35','tk-meta':'#3d8268','tk-sarca':'#5b8fb8','tk-mod':'#7d6c4f','tk-emot':'#7a3b1c','tk-tend':'#5a3060','tk-semi':'#5a4400','tk-gen':'#5a3060','tk-odio2':'#a13d3d'};
+          const bg = m[d.color || ''] || '#5a4400';
+          return '<span style="background:' + bg + ';color:#fff;font-size:10.5px;padding:1px 7px;border-radius:8px;text-transform:capitalize">' + escapeHtml(d.scale) + '</span>';
+        })()
+        +     skipBadge
+        +   '</span>'
+        +   '<span class="help" title="' + escapeHtml(d.shortDesc || d.name) + '">?</span>'
+        + '</div>';
+      const body = (d.scale === 'libre')
+        ? '<textarea class="notes" data-dim="' + d.id + '" oninput="taggingFreeChanged(this)" rows="3" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;background:' + (visibility === 'skipped' ? '#fafaf7' : 'var(--surface-2)') + '" placeholder="Texto libre (opcional)…">' + escapeHtml(answers[d.id] || '') + '</textarea>'
+        : '<div class="opts">' + optsHtml + '</div>';
+      const notesHtml = (d.scale !== 'libre') ? '<div style="margin-top:8px"><input class="notes" placeholder="Notas (opcional)…" disabled value="' + escapeHtml(answers[d.id + '_notes'] || '') + '"></div>' : '';
+      // Determinar la indentación
+      const marginLeft = depth * 26;
+      const borderColor = (visibility === 'skipped') ? '#d1d5db'
+                        : (visibility === 'pending-parent') ? '#e8d49c'
+                        : (d.dependencies && d.dependencies.length) ? '#a13d3d' : '#1c8a4a';
+      return '<div class="dim" style="' + fade + ';margin-bottom:14px;margin-left:' + marginLeft + 'px;background:' + dimCardBg + ';border-left:3px solid ' + borderColor + ';border-radius:6px;padding:12px 14px">'
+        + header
+        + body
+        + notesHtml
+        + '</div>';
+    };
+    // Construir jerarquía
+    const childrenOf = {};
+    dims.forEach(d => {
+      if (d.dependencies && d.dependencies[0]) {
+        const p = d.dependencies[0].dependsOn;
+        if (!childrenOf[p]) childrenOf[p] = [];
+        childrenOf[p].push(d);
+      }
+    });
+    const renderTree = (d, depth) => renderOne(d, depth) + (childrenOf[d.id] || []).map(c => renderTree(c, depth+1)).join('');
+    const roots = dims.filter(d => !d.dependencies || d.dependencies.length === 0);
+    container.innerHTML = roots.map(r => renderTree(r, 0)).join('');
+  }
+
+  function pickTaggingValue(el) {
+    const dimId = el.getAttribute('data-dim');
+    const val = el.getAttribute('data-val');
+    if (!window.__taggingAnswers) window.__taggingAnswers = {};
+    window.__taggingAnswers[dimId] = val;
+    renderTaggingDims(); // recalcular visibilidad de hijos
+  }
+
+  function taggingFreeChanged(el) {
+    const dimId = el.getAttribute('data-dim');
+    if (!window.__taggingAnswers) window.__taggingAnswers = {};
+    window.__taggingAnswers[dimId] = el.value;
+    // No re-render completo, sólo actualiza el contador — pero el re-render
+    // podría romper el foco. Dejamos sin re-render.
+  }
+
+  // Sample fragment compartido para "resuelto"
+  window.__currentTaggingFragment = sampleFragForDemo();
+
+    function renderQuantValidation(){
     const tbody = document.getElementById('qv-table-body');
     if (!tbody) return;
     const searchEl = document.getElementById('qv-search');
@@ -3588,10 +3783,11 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
   function wizNext() {
     // validate current step
     if (!validateWizStep(wizState.step)) return;
-    if (wizState.step < 4) {
+    if (wizState.step < 5) {
       wizState.step++;
       if (wizState.step === 3) renderWizValues();
       if (wizState.step === 4) renderWizSummary();
+      if (wizState.step === 5) renderWizDependencies();
       updateWizUI();
     }
   }
@@ -3655,10 +3851,68 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
     });
     // Buttons
     document.getElementById('wiz-btn-prev').style.display = wizState.step > 1 ? '' : 'none';
-    document.getElementById('wiz-btn-next').style.display = wizState.step < 4 ? '' : 'none';
-    document.getElementById('wiz-btn-create').style.display = wizState.step === 4 ? '' : 'none';
+    document.getElementById('wiz-btn-next').style.display = wizState.step < 5 ? '' : 'none';
+    document.getElementById('wiz-btn-create').style.display = wizState.step === 5 ? '' : 'none';
     // Cancel
     document.getElementById('wiz-btn-cancel').textContent = wizState.step === 1 ? 'Cancelar' : '×';
+  }
+
+  function renderWizDependencies() {
+    const p = document.getElementById('wiz-deps-content');
+    if (!p) return;
+    // Opciones de dimensiones padre: todas las dimensiones ya creadas (no la que se está editando)
+    const opts = DIMENSIONS.map(d => '<option value="' + d.id + '">' + escapeHtml(d.name) + '</option>').join('');
+    const currentDep = (wizState.dep && wizState.dep.parentId)
+      ? '<b>' + escapeHtml(wizState.dep.label) + '</b>'
+      : '<i style="color:var(--ink-3)">ninguna (dimensión raíz)</i>';
+    p.innerHTML = ''
+      + '<div style="background:#fdf3da;border:1px solid #e8d49c;border-left:3px solid #b58300;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:12.5px;color:#5a3e00">'
+      +   '<b>Skip logic / dependencia:</b> defina cuándo esta dimensión debe mostrarse al anotador. Si no define dependencia, la dimensión siempre será visible.'
+      + '</div>'
+      + '<div id="wiz-deps-current" style="padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:14px;font-size:13px">Dependencia actual: ' + currentDep + '</div>'
+      + '<label style="display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px">Dimensión padre</label>'
+      + '<select id="wiz-dep-parent" style="width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer" onchange="updateWizDepLabel()">'
+      +   '<option value="">— sin dependencia (siempre visible) —</option>'
+      +   opts
+      + '</select>'
+      + '<div id="wiz-dep-controls" style="margin-top:14px;display:none">'
+      +   '<label style="display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px">Mostrar solo cuando el padre sea:</label>'
+      +   '<div style="display:flex;gap:8px;align-items:center">'
+      +     '<select id="wiz-dep-value" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--surface-2);cursor:pointer"></select>'
+      +     '<div style="padding:7px 12px;background:#fdf3da;border:1px solid #e8d49c;border-radius:6px;font-size:12.5px;color:#8a6300;font-weight:600;display:inline-flex;align-items:center;gap:6px">'
+      +       '<span style="font-size:14px">⊘</span> Saltar (ocultar)'
+      +     '</div>'
+      +   '</div>'
+      +   '<div id="wiz-dep-cycle-warn" style="margin-top:10px;padding:8px 12px;background:#fbe6e6;border:1px solid #e8c5c5;border-left:3px solid var(--bad);border-radius:0 6px 6px 0;font-size:12px;color:#5a2222;display:none"><b>Ciclo detectado:</b> no se puede depender de una dimensión que ya depende de esta (loop infinito).</div>'
+      + '</div>';
+    if (wizState.dep && wizState.dep.parentId) {
+      document.getElementById('wiz-dep-parent').value = wizState.dep.parentId;
+      updateWizDepLabel();
+  
+    }
+  }
+
+  function updateWizDepLabel() {
+    const parentId = document.getElementById('wiz-dep-parent').value;
+    const controls = document.getElementById('wiz-dep-controls');
+    const currentPanel = document.getElementById('wiz-deps-current');
+    if (!parentId) {
+      controls.style.display = 'none';
+      currentPanel.innerHTML = 'Dependencia actual: <i style="color:var(--ink-3)">ninguna (dimensión raíz)</i>';
+      return;
+    }
+    controls.style.display = 'block';
+    const parent = DIMENSIONS.find(d => d.id === parentId);
+    // Cycle detection
+    // (en este mockup no aplica porque wizState es para CREAR, no para editar)
+    // Cargar los valores del padre
+    const valSelect = document.getElementById('wiz-dep-value');
+    const opts = (Array.isArray(parent.values) ? parent.values : [])
+      .map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
+    valSelect.innerHTML = opts || '<option value="">—</option>';
+    // Actualizar el banner
+    const previewVal = valSelect.value;
+    currentPanel.innerHTML = 'Dependencia actual: <b>' + escapeHtml(parent.name) + ' = ' + escapeHtml(previewVal) + '</b>';
   }
 
   function renderWizSummary() {
@@ -3682,12 +3936,19 @@ Escribe el id del proyecto (o deja vacío para cancelar):`);
 
     // Build new taxonomy object
     const id = 'tx-' + wizState.slug + '-' + Date.now().toString(36);
+    const dep = (wizState.dep && wizState.dep.parentId) ? [{
+      dependsOn: wizState.dep.parentId,
+      showWhen: { operator: '=', values: [wizState.dep.showWhenValue] },
+      behavior: wizState.dep.behavior || 'skip',
+      label: wizState.dep.label
+    }] : [];
     const newTax = {
       id, name: wizState.name, slug: wizState.slug,
       color: wizState.values[0]?.color || '#7d6c4f',
       scale: wizState.scale, values: wizState.values.length,
       assignedTo: [], usedInAnnotations: 0, status: 'active',
       shortDesc: wizState.shortDesc, longDesc: wizState.longDesc,
+      dependencies: dep,
       createdAt: new Date().toISOString().slice(0,10),
       createdBy: 'Marta R. (superadmin)'
     };
