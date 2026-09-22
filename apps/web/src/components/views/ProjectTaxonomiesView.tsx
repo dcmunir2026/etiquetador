@@ -1,102 +1,150 @@
 'use client';
+
 import { useState } from 'react';
-import type { ViewData } from './ViewRouter';
+import { useRouter } from 'next/navigation';
+import type { DimensionRow, TaxonomyRow } from '@/lib/queries';
+import { assignTaxonomyToProject, unassignTaxonomyFromProject } from '@/app/actions/catalog';
+import { dimColor } from './shared';
 
-const TK_COLOR: Record<string, string> = {
-  'tk-odio':'#d97757','tk-emot':'#a85a35','tk-tend':'#7d6c4f','tk-semi':'#3d8268',
-  'tk-gen':'#5b8fb8','tk-race':'#8b6db5','tk-rel':'#c79d3c','tk-demo':'#9c5b8b',
-  'tk-stat':'#5a7d8f','tk-toxic':'#7a1a1c','tk-fact':'#1c6e3a',
-};
-
-export function ProjectTaxonomiesView({ data }: { data: ViewData }) {
+/** Which taxonomies this project uses — the tabbed assignment screen. */
+export function ProjectTaxonomiesView({
+  projectId, projectName, taxonomies, dimensions, readOnly = false,
+}: {
+  projectId: string; projectName: string; taxonomies: TaxonomyRow[];
+  dimensions: DimensionRow[]; readOnly?: boolean;
+}) {
+  const router = useRouter();
   const [tab, setTab] = useState<'all' | 'assigned'>('all');
-  // Simulación: en producción esto viene del server
-  const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set(['tx-sociodemo', 'tx-calidad', 'tx-formal']));
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const allTaxonomies = data.taxonomies;
-  const dimsByTx = data.dimsByTx;
-  const assignedTaxonomies = allTaxonomies.filter(t => assignedIds.has(t.id));
+  const active = taxonomies.filter((t) => t.status === 'active');
+  const assigned = active.filter((t) => t.projectIds.includes(projectId));
+  const dimById = new Map(dimensions.map((d) => [d.id, d]));
 
-  function toggle(id: string) {
-    setAssignedIds(prev => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
+  async function toggle(t: TaxonomyRow, on: boolean) {
+    setBusy(t.id);
+    setError(null);
+    const res = on
+      ? await assignTaxonomyToProject(projectId, t.id)
+      : await unassignTaxonomyFromProject(projectId, t.id);
+    setBusy(null);
+    if (!res.ok) { setError(res.error); return; }
+    router.refresh();
   }
 
-  const list = tab === 'all' ? allTaxonomies : assignedTaxonomies;
+  const list = tab === 'all' ? active : assigned;
 
   return (
     <div className="page">
       <h1>Taxonomías del proyecto</h1>
-      <p className="lead">Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en este proyecto. Cada taxonomía carga sus dimensiones automáticamente. Las taxonomías se gestionan en el <a href="/?view=taxonomy-groups" style={{ color: 'var(--primary-2)', fontWeight: 500 }}>catálogo de taxonomías</a>.</p>
+      <p className="lead">
+        Elige qué <b>taxonomías</b> (grupos de dimensiones) quieres usar en <b>{projectName}</b>.
+        Cada taxonomía carga sus dimensiones automáticamente. Se gestionan en el{' '}
+        <a href="/taxonomias" style={{ color: 'var(--primary-2)', fontWeight: 500 }}>
+          catálogo de taxonomías
+        </a>.
+      </p>
+
+      {readOnly && (
+        <div style={{ marginBottom: 14, padding: '9px 13px', background: 'var(--surface-2)',
+                      border: '1px solid var(--line)', borderLeft: '3px solid var(--ink-3)',
+                      borderRadius: '0 7px 7px 0', fontSize: 12.5, color: 'var(--ink-3)' }}>
+          Solo lectura: tu rol puede consultar esta pantalla, pero no modificarla.
+        </div>
+      )}
 
       <div className="tabs-bar">
-        <div className={`tab ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
-          Todas las taxonomías <span className="tab-count">{allTaxonomies.length}</span>
+        <div className={`tab${tab === 'all' ? ' active' : ''}`} onClick={() => setTab('all')}>
+          Todas las taxonomías
+          <span className="tab-count">{active.length}</span>
         </div>
-        <div className={`tab ${tab === 'assigned' ? 'active' : ''}`} onClick={() => setTab('assigned')}>
-          Asignadas a este proyecto <span className="tab-count">{assignedTaxonomies.length}</span>
+        <div className={`tab${tab === 'assigned' ? ' active' : ''}`} onClick={() => setTab('assigned')}>
+          Asignadas a este proyecto
+          <span className="tab-count">{assigned.length}</span>
         </div>
       </div>
 
       {tab === 'assigned' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 13px', background: '#e3eef5', border: '1px solid #c5d8e8', borderRadius: 8, marginBottom: 14, fontSize: 12.5, color: '#1d4a72' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 13px',
+                      background: '#e3eef5', border: '1px solid #c5d8e8', borderRadius: 8, marginBottom: 14,
+                      fontSize: 12.5, color: '#1d4a72' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-            <span>Estas son las taxonomías que se cargarán al anotar en <b>este proyecto</b>. Para añadir más, ve a la pestaña <b>Todas las taxonomías</b>.</span>
+            <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <span>
+              Estas son las dimensiones que se cargarán al anotar en <b>{projectName}</b>.
+              Para añadir más, ve a la pestaña <b>Todas las taxonomías</b>.
+            </span>
           </div>
         </div>
       )}
 
+      {error && (
+        <div style={{ padding: '10px 13px', background: '#fbe6e6', border: '1px solid #e8c5c5',
+                      borderLeft: '3px solid var(--bad)', borderRadius: '0 8px 8px 0', marginBottom: 14,
+                      fontSize: 12.5, color: '#5a2222' }}>
+          {error}
+        </div>
+      )}
+
       <div className="dim-list">
-        {list.map((t: any) => {
-          const dims = dimsByTx[t.id] || [];
-          const assigned = assignedIds.has(t.id);
+        {list.map((t) => {
+          const on = t.projectIds.includes(projectId);
           return (
-            <div key={t.id} className="dim-row">
-              <div className="dim-color" style={{ background: t.color === 'rose' ? 'linear-gradient(135deg,#7a1a1c,#b04143)' : t.color === 'amber' ? 'linear-gradient(135deg,#5a4400,#8a6300)' : t.color === 'violet' ? 'linear-gradient(135deg,#3d2a4d,#5a4080)' : 'linear-gradient(135deg,#0d4a5a,#1a7088)' }}>
-                {(t.name || '?').charAt(0).toUpperCase()}
-              </div>
-              <div className="dim-info">
-                <div className="dim-name">{t.name}</div>
-                <div className="dim-desc">{t.shortDescription}</div>
-                <div className="dim-meta">
-                  {dims.map((d: any) => (
-                    <span key={d.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, background: '#f0ede4', color: 'var(--ink-2)', padding: '1.5px 8px', borderRadius: 9, fontWeight: 500 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: TK_COLOR[d.kind || ''] || '#7d6c4f' }}></span>
-                      {d.name}
-                    </span>
-                  ))}
-                  {assigned ? (
-                    <span className="assigned-pill">
-                      <svg style={{ width: 9, height: 9 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                      Asignada
-                    </span>
-                  ) : (
-                    <span className="unassigned-pill">No asignada</span>
-                  )}
-                  <span className="scale-pill">{(t.assignedTo || []).length} {(t.assignedTo || []).length === 1 ? 'proyecto' : 'proyectos'}</span>
+            <div key={t.id} className={`dim-row${on ? ' is-assigned' : ''}`}>
+              <div className="dim-main">
+                <div className="tax-color" style={{ background: dimColor(t.name), color: '#fff' }}>
+                  {t.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="dim-info">
+                  <b>{t.name}</b>
+                  <small>{t.shortDescription ?? 'Sin descripción.'}</small>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
+                    {t.dimensions.map((d) => {
+                      const full = dimById.get(d.id);
+                      return (
+                        <span key={d.id} className="scale-pill" style={{ borderLeft: `3px solid ${dimColor(d.name)}` }}
+                              title={full?.shortDescription ?? undefined}>
+                          {d.name}
+                          {full?.dependencyLabel && <span style={{ color: '#8a6300' }}> ⊘</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-              <div className="dim-actions">
-                <div className="used"><b>{dims.length}</b><small>dimensiones</small></div>
-                {assigned ? (
-                  <button className="danger-btn" onClick={() => toggle(t.id)}>Desasignar</button>
-                ) : (
-                  <button className="assign-btn" onClick={() => toggle(t.id)}>Asignar</button>
-                )}
+              <div className="dim-meta">
+                <span className="scale-pill">{t.dimensions.length} dimensiones</span>
+                {on && <span className="av-extra">✓ Asignada</span>}
               </div>
+              {!readOnly && (
+                <div className="dim-actions">
+                  <button className={`btn-mini${on ? '' : ' primary-mini'}`} disabled={busy === t.id}
+                          onClick={() => toggle(t, !on)}>
+                    {busy === t.id ? '…' : on ? 'Quitar del proyecto' : 'Asignar'}
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
+        {list.length === 0 && (
+          <div className="empty-state">
+            <h4>{tab === 'assigned' ? 'Ninguna taxonomía asignada' : 'No hay taxonomías activas'}</h4>
+            {tab === 'assigned'
+              ? 'Asigna al menos una para que los anotadores tengan algo que etiquetar.'
+              : 'Crea una taxonomía en el catálogo global.'}
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
-        <button className="btn">Restablecer a valores por defecto</button>
-        <button className="btn primary">Guardar y continuar →</button>
-      </div>
+      {!readOnly && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          <a className="btn primary" href="/proyecto/roles">Continuar a roles →</a>
+        </div>
+      )}
     </div>
   );
 }

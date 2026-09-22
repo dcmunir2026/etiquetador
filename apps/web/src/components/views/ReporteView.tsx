@@ -1,68 +1,118 @@
-'use client';
+import type { ReportData } from '@/lib/queries';
+import { BenchRow, Kpi, StatusTag, num, pct } from './shared';
 
-export function ReporteView() {
+/** Inconsistency report — every figure derives from live annotations. */
+export function ReporteView({ report, projectName }: { report: ReportData; projectName: string }) {
+  const {
+    packagesReviewed, fragmentsCompared, inconsistencyRate, threshold,
+    overThreshold, worstDimension, byDimension, returnedPackages,
+  } = report;
+
   return (
     <div className="page">
-      <h1>Reporte final</h1>
-      <p className="lead">Reporte consolidado del proyecto. Incluye métricas de acuerdo, distribución de anotaciones, taxa de rechazo y exportación del dataset final.</p>
+      <div className="grid g-34">
+        <div className="toc">
+          <h4>Reporte de inconsistencias</h4>
+          <a href="#resumen"><b>Resumen ejecutivo</b></a>
+          <a href="#por-dimension">Discrepancias por dimensión</a>
+          <a href="#reenviados">Paquetes reenviados</a>
+          <a href="#acciones">Acciones tomadas</a>
+        </div>
 
-      <div className="grid g-4" style={{ marginBottom: 20 }}>
-        <div className="kpi"><div className="label">Fragmentos finales</div><div className="value">1.224</div><div className="delta">consolidados</div></div>
-        <div className="kpi"><div className="label">Fleiss Kappa</div><div className="value">0,82</div><div className="delta up">sustancial</div></div>
-        <div className="kpi"><div className="label">% Acuerdo</div><div className="value">84,5%</div><div className="delta up">+2,1% vs. Q2</div></div>
-        <div className="kpi"><div className="label">Tiempo total</div><div className="value">18 días</div><div className="delta">3 personas · 6h/día</div></div>
-      </div>
+        <div>
+          <h1>Reporte de inconsistencias</h1>
+          <p className="lead">
+            Documento exportable generado a partir del estado actual del proyecto <b>{projectName}</b>.
+            Resumen ejecutivo, detalle por dimensión y acciones recomendadas.
+          </p>
 
-      <div className="card" style={{ marginBottom: 14 }}>
-        <h3 style={{ marginTop: 0 }}>Distribución de anotaciones por dimensión</h3>
-        <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-          {[
-            { dim: 'Sesgo de odio', low: 412, med: 510, high: 302 },
-            { dim: 'Emotividad', low: 280, med: 720, high: 224 },
-            { dim: 'Carácter tendencioso', low: 580, med: 480, high: 164 },
-            { dim: 'Semiótica', low: 890, med: 234, high: 100 },
-            { dim: 'Género', low: 1050, med: 130, high: 44 },
-            { dim: 'Raza / etnia', low: 1180, med: 32, high: 12 },
-            { dim: 'Religión', low: 1190, med: 22, high: 12 },
-            { dim: 'Sesgo demográfico', low: 1090, med: 90, high: 44 },
-          ].map((d, i) => {
-            const total = d.low + d.med + d.high;
-            return (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '180px 1fr 100px', gap: 10, alignItems: 'center', fontSize: 12 }}>
-                <div style={{ fontWeight: 500 }}>{d.dim}</div>
-                <div style={{ display: 'flex', height: 18, borderRadius: 4, overflow: 'hidden', background: 'var(--line-soft)' }}>
-                  <div style={{ width: `${(d.low / total) * 100}%`, background: '#1c8a4a' }} title={`Bajo: ${d.low}`} />
-                  <div style={{ width: `${(d.med / total) * 100}%`, background: '#c79d3c' }} title={`Medio: ${d.med}`} />
-                  <div style={{ width: `${(d.high / total) * 100}%`, background: '#a13d3d' }} title={`Alto: ${d.high}`} />
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-3)', textAlign: 'right' }}>
-                  <b style={{ color: 'var(--ink-1)' }}>{total.toLocaleString()}</b> frags
-                </div>
+          <div className="grid g-3" style={{ marginBottom: 18 }}>
+            <Kpi label="Paquetes revisados" value={packagesReviewed} />
+            <Kpi label="Fragmentos comparados" value={num(fragmentsCompared)} />
+            <Kpi label="Tasa de inconsistencia" value={pct(inconsistencyRate, 1)}
+                 tone={inconsistencyRate >= threshold ? 'bad' : 'ok'} />
+          </div>
+
+          <div className="card" id="resumen">
+            <h3>1. Resumen ejecutivo</h3>
+            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--ink-2)', margin: '0 0 10px' }}>
+              De los <b>{packagesReviewed} paquetes</b> procesados, <b>{overThreshold}</b> superaron el
+              umbral global de discrepancia ({pct(threshold)}) y deben reenviarse al etiquetador.
+              {worstDimension && (
+                <> La dimensión con mayor desacuerdo fue <span className="tag sesgo-tendencioso">{worstDimension.name}</span>,
+                  con un {pct(worstDimension.pct)} de fragmentos discrepantes.</>
+              )}
+            </p>
+            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--ink-2)', margin: 0 }}>
+              {worstDimension
+                ? <>Se recomienda reforzar el manual de rúbricas en <b>{worstDimension.name}</b> y elevar el
+                    peso de la validación cualitativa para esa dimensión en la siguiente ronda.</>
+                : <>No hay suficientes anotaciones comparables para emitir una recomendación.</>}
+            </p>
+          </div>
+
+          <div className="card" id="por-dimension" style={{ marginTop: 14 }}>
+            <h3>2. Discrepancias por dimensión</h3>
+            {byDimension.length === 0
+              ? <p style={{ color: 'var(--ink-3)', fontSize: 13 }}>Sin datos comparables todavía.</p>
+              : byDimension.map((d) => (
+                  <BenchRow key={d.name} label={d.name} pct={d.pct} display={pct(d.pct)} />
+                ))}
+          </div>
+
+          <div className="card" id="reenviados" style={{ marginTop: 14 }}>
+            <h3>
+              3. Paquetes reenviados
+              <span className="count">{returnedPackages.length} de {packagesReviewed}</span>
+            </h3>
+            <table>
+              <thead>
+                <tr><th>Paquete</th><th>Reenvíos</th><th>Versión</th><th>Estado</th><th>Notas</th></tr>
+              </thead>
+              <tbody>
+                {returnedPackages.map((p) => (
+                  <tr key={p.code}>
+                    <td><b>{p.code}</b></td>
+                    <td>{p.returns}</td>
+                    <td>v{p.version}</td>
+                    <td><StatusTag status={p.status} /></td>
+                    <td><small style={{ color: 'var(--ink-3)' }}>{p.notes ?? '—'}</small></td>
+                  </tr>
+                ))}
+                {returnedPackages.length === 0 && (
+                  <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>
+                    Ningún paquete ha sido reenviado.
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="card" id="acciones" style={{ marginTop: 14 }}>
+            <h3>4. Acciones tomadas</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              <div style={{ display: 'flex', gap: 11, padding: '10px 13px', background: 'var(--surface-2)', borderRadius: 7 }}>
+                <svg className="ic" style={{ color: 'var(--primary-2)', marginTop: 1 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                <div><b>Reenvío</b> de los {overThreshold} paquetes con discrepancia superior al umbral.</div>
               </div>
-            );
-          })}
-        </div>
-        <div style={{ display: 'flex', gap: 14, marginTop: 14, fontSize: 11, color: 'var(--ink-3)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, background: '#1c8a4a', borderRadius: 2 }}></span> Bajo / Neutral</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, background: '#c79d3c', borderRadius: 2 }}></span> Medio / Sutil</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, background: '#a13d3d', borderRadius: 2 }}></span> Alto / Manifiesto</span>
-        </div>
-      </div>
+              <div style={{ display: 'flex', gap: 11, padding: '10px 13px', background: 'var(--surface-2)', borderRadius: 7 }}>
+                <svg className="ic" style={{ color: 'var(--primary-2)', marginTop: 1 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" />
+                </svg>
+                <div><b>Validación cualitativa</b> sobre una muestra por equipo, con corrección etiqueta a etiqueta.</div>
+              </div>
+            </div>
+          </div>
 
-      <div className="card" style={{ marginBottom: 14 }}>
-        <h3 style={{ marginTop: 0 }}>Exportar dataset</h3>
-        <p style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 0 }}>Genera el dataset final con las anotaciones consolidadas. Formatos disponibles: JSONL (compatible con el LLM Juez), CSV (Excel), Parquet (BI).</p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn primary">↓ JSONL (para LLM Juez)</button>
-          <button className="btn">↓ CSV (Excel)</button>
-          <button className="btn">↓ Parquet (BI)</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+            <button className="btn" disabled title="Pendiente: exportador Word">Exportar a Word →</button>
+          </div>
+          <p style={{ fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'right', marginTop: 6 }}>
+            La exportación a Word y el envío por email aún no están implementados.
+          </p>
         </div>
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Reporte PDF</h3>
-        <p style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 0 }}>Genera un PDF firmado con todas las métricas, la metodología y el detalle de anotación por dimensión. Listo para auditoría editorial.</p>
-        <button className="btn primary">↓ Generar reporte PDF</button>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ El sistema completo se planificó en `docs/ROADMAP.md` (4 semanas / 2 sprints).
 
 | Rama | Para qué | Estado |
 |---|---|---|
-| **`main`** | App real Next.js 14 + Drizzle | ✅ funcional (4 páginas) |
+| **`main`** | App real Next.js 14 + Drizzle | ✅ las 17 vistas del mockup, contra BD |
 | `gh-pages` | Mockup HTML (referencia visual) | ✅ mergeado (PR #43) |
 | `mockup-dev` | Antigua rama de trabajo del mockup | ⚠️ deprecated |
 
@@ -41,6 +41,9 @@ El sistema completo se planificó en `docs/ROADMAP.md` (4 semanas / 2 sprints).
 | BD prod | PostgreSQL + Drizzle (target) | ⏳ |
 | ORM | Drizzle 0.45 | ✅ |
 | Estilos | CSS variables (design tokens propios) | ✅ |
+| Métricas | Fleiss kappa + discrepancias, calculadas en vivo | ✅ |
+| Segmentación | Implementación propia, sin dependencias | ✅ |
+| Parser de corpus | CSV/TSV propio; `.xlsx` pendiente | 🟡 |
 | Auth | Stub con cookie (Marta R. hardcoded) | ⏳ → Auth.js v5 |
 | Workers | BullMQ + Redis | ⏳ no iniciado |
 | Storage | MinIO (archivos Excel, exports) | ⏳ no iniciado |
@@ -54,74 +57,100 @@ El sistema completo se planificó en `docs/ROADMAP.md` (4 semanas / 2 sprints).
 ```
 etiquetador/
 ├── apps/
-│   └── web/                          # Next.js 14 (app + api routes)
-│       └── src/
-│           ├── app/
-│           │   ├── (admin)/          # Route group: layout con sidebar
-│           │   │   ├── layout.tsx
-│           │   │   ├── page.tsx       # / (dashboard)
-│           │   │   ├── proyectos/
-│           │   │   ├── dimensiones/
-│           │   │   └── taxonomias/
-│           │   ├── api/active-project/
-│           │   ├── layout.tsx
-│           │   └── globals.css
-│           ├── components/           # Sidebar, Topbar
-│           ├── db/                   # Schema + client (inlined)
-│           │   ├── schema.ts
-│           │   └── client.ts
-│           └── lib/
-│               ├── auth.ts           # getCurrentUser() stub
-│               └── db.ts             # re-exports
+│   └── web/src/
+│       ├── app/
+│       │   ├── (app)/
+│       │   │   ├── layout.tsx        # Shell: sidebar + topbar
+│       │   │   ├── page.tsx          # ruta raíz (acepta ?view=)
+│       │   │   ├── [...slug]/        # rutas con nombre (/dimensiones, …)
+│       │   │   └── render-view.tsx   # carga datos y renderiza la vista
+│       │   ├── actions/
+│       │   │   ├── catalog.ts        # dimensiones, escalas, taxonomías
+│       │   │   ├── workflow.ts       # corpus, equipos, paquetes, anotar, validar
+│       │   │   └── reads.ts          # lecturas bajo demanda (modales)
+│       │   ├── api/active-project/
+│       │   └── globals.css           # design tokens del mockup
+│       ├── components/
+│       │   ├── Shell / Sidebar / Topbar
+│       │   └── views/                # una por pantalla + shared.tsx
+│       ├── db/                       # schema + client (inlined)
+│       └── lib/
+│           ├── cascade.ts            # skip logic
+│           ├── metrics.ts            # Fleiss kappa, discrepancias
+│           ├── segmentation.ts       # partido de textos
+│           ├── csv.ts                # parser CSV/TSV propio
+│           ├── queries.ts            # read models por vista
+│           ├── views.ts              # tabla ruta ↔ vista (fuente única)
+│           └── auth.ts               # stub
 ├── packages/
-│   ├── db/                           # Schema canónico (Drizzle)
-│   │   ├── src/index.ts              # Tablas + tipos
-│   │   ├── src/client.ts             # Cliente de DB
-│   │   ├── migrations/               # SQL generada
-│   │   ├── seed.ts                   # Script de seed
-│   │   └── drizzle.config.ts
-│   ├── shared/                       # Tipos compartidos (vacío)
-│   └── ui/                           # Componentes UI (vacío)
-├── docs/
-│   ├── ROADMAP.md                    # Sprints 1-2 + backlog
-│   ├── ARCHITECTURE.md               # Clean Arch planeado
-│   └── DECISIONS.md                  # Decisiones tomadas
-├── docker-compose.yml                # Postgres + Redis + MinIO + Meilisearch
-└── pnpm-workspace.yaml
+│   ├── db/
+│   │   ├── src/index.ts              # schema canónico (espejo del de web)
+│   │   ├── init.ts                   # crea y siembra el catálogo
+│   │   └── init-workflow.ts          # crea y siembra el flujo de trabajo
+│   ├── shared/                       # vacío
+│   └── ui/                           # vacío
+└── docs/
 ```
+
+⚠️ `apps/web/src/db/schema.ts` y `packages/db/src/index.ts` son **idénticos
+a propósito** (workaround de webpack con bindings nativos en workspaces).
+Si tocas uno, copia el otro.
 
 ---
 
-## 5. Modelo de datos (refactor del mockup)
+## 5. Modelo de datos
 
 **Decisión clave:** las **dimensiones son GLOBALES**, no por proyecto. Esto
-permite reutilizarlas (Sesgo de odio vive en 3 proyectos). Las **taxonomías**
-son la nueva capa: agrupan dimensiones (N:M) y se asignan a proyectos.
+permite reutilizarlas. Las **taxonomías** agrupan dimensiones (N:M) y se
+asignan a proyectos.
 
 ```
-users (1 superadmin: Marta R.)
-  ↓ 1:N
-projects (EpData 2026-Q3, Q2, Sintético v1, ODS 2026)
-  ↓ N:M (vía project_taxonomies)
-taxonomies (4 grupos: Sesgos sociodemo, Calidad, Aspectos formales, Toxicidad)
-  ↓ N:M (vía taxonomy_dimensions)
-dimensions (11 átomos: Sesgo odio, Emotividad, Género, Raza, Religión, ...)
-  ↓ 1:N
-dimension_values (Bajo / Medio / Alto, etc., por dimensión)
-  ↓ FK
-intensity_scales (6 globales: Booleano, Binario, 3-niveles, 5-niveles, Likert 1-7, Texto libre)
-  ↓ 1:N
-intensity_levels (Sí/No, Bajo/Medio/Alto, ...)
+users → projects → taxonomies → dimensions → dimension_values
+                                     ↓
+                            dimension_dependencies  (skip logic)
 ```
 
-**12 tablas:**
+**23 tablas.** Catálogo (12, de `init.ts`):
 `users`, `projects`, `project_members`, `intensity_scales`, `intensity_levels`,
 `dimensions`, `dimension_values`, `taxonomies`, `taxonomy_dimensions`,
 `project_taxonomies`, `segmentation_configs`, `audit_log`.
 
-**Driver:** `better-sqlite3` para dev (sin Docker), SQL portable a Postgres para prod.
+Flujo de trabajo (11, de `init-workflow.ts`):
+`dimension_dependencies`, `corpus_uploads`, `fragments`, `teams`,
+`team_members`, `packages`, `package_fragments`, `package_assignments`,
+`annotations`, `qual_validations`, `qual_corrections`.
 
----
+### Dependencias entre dimensiones (skip logic)
+
+Una dimensión puede declarar **una** dependencia: se muestra solo cuando su
+padre fue respondido con uno de los valores listados. La cascada se propaga:
+si el padre queda saltado, el hijo también.
+
+Un salto se guarda **explícitamente** (`annotations.skipped = 1`, `value NULL`),
+no como fila ausente. Es deliberado: al medir acuerdo, «no se preguntó» es un
+resultado comparable, y distinguirlo de «sin responder» es lo que permite
+calcular Kappa sobre la cascada.
+
+El motor vive en `apps/web/src/lib/cascade.ts` y es el mismo en cliente
+(pantalla de etiquetado, grafo) y servidor (al guardar). La server action
+**poda** las respuestas antes de escribir, así que nunca se persiste la
+respuesta de una rama que dejó de aplicar.
+
+### Métricas: todo se calcula, nada se almacena
+
+No hay agregados persistidos. Discrepancias y Kappa se recalculan desde
+`annotations` en cada petición (`apps/web/src/lib/metrics.ts`). Dos matices
+que costaron entenderse y conviene no revertir:
+
+- **Tasa de error = por valoración**, no por fragmento. El porcentaje de
+  *fragmentos con algún desacuerdo* se satura: con 16 dimensiones roza el
+  100% aunque el acuerdo real sea bueno. El umbral (12%) se aplica sobre la
+  proporción de pares (fragmento × dimensión) en desacuerdo.
+- **Kappa global = media ponderada de los kappas por dimensión.** Agrupar
+  todas las dimensiones en un solo cálculo mezcla espacios de categorías
+  distintos, hunde el acuerdo esperado por azar y devuelve un valor
+  artificialmente alto (medimos 0,98 donde las dimensiones individuales
+  estaban entre 0,30 y 0,82).
 
 ## 6. Convenciones y patrones establecidos
 
@@ -156,6 +185,21 @@ Cookie `etq_active_project`. Endpoint: `POST /api/active-project` con
 - ⚠️ **Hay duplicación temporal** entre estos dos. Unificar cuando resolvamos el
   problema de webpack OOM con workspaces + native bindings.
 
+### Enrutado
+
+Las rutas con nombre (`/dimensiones`, `/proyecto/roles`, `/etiquetar`…) las
+sirve un catch-all, `app/(app)/[...slug]/page.tsx`, que traduce la ruta a una
+vista con la tabla de **`src/lib/views.ts`**. `/` también acepta `?view=`.
+Ambas entradas delegan en `app/(app)/render-view.tsx`, así que una pantalla se
+comporta igual llegues por donde llegues.
+
+`src/lib/views.ts` es la **única** fuente de la correspondencia ruta ↔ vista;
+la importan tanto el Shell (que empuja rutas al pulsar el menú) como el
+catch-all. Si añades una entrada al Sidebar, añade su ruta ahí: hay un test
+(`src/lib/__tests__/views.test.ts`) que falla si un ítem del menú no tiene
+ruta. Existe porque ya pasó: el Sidebar empujaba `/dimensiones` mientras la app
+solo servía `/`, y todos los enlaces menos el dashboard daban 404.
+
 ### CSS / Design tokens
 NO usamos Tailwind utility classes todavía. Usamos CSS variables en
 `globals.css` que replican el mockup. Migrar a Tailwind completo es opcional.
@@ -164,58 +208,100 @@ NO usamos Tailwind utility classes todavía. Usamos CSS variables en
 
 ## 7. Cómo correr localmente
 
-```bash
-git clone https://github.com/dcmunir2026/etiquetador.git
-cd etiquetador
-git checkout main
+**Node 22 o superior es obligatorio.** `better-sqlite3@13` lo exige
+(`engines: node >= 22`); con Node 20 el binding nativo **no da error, hace
+segfault al cargar** (exit 139). Hay un `.nvmrc` en la raíz.
 
+```bash
+nvm use            # lee .nvmrc → Node 22
 pnpm install
 
-# Crear la DB con datos seed (solo la primera vez)
+# Crear la BD (solo la primera vez)
 cd packages/db
-DATABASE_URL=file:./etiquetador.db pnpm exec tsx seed.ts
+DATABASE_URL=file:./etiquetador.db pnpm init          # catálogo
+DATABASE_URL=file:./etiquetador.db pnpm init:workflow # corpus, equipos, anotaciones
 cd ../..
 
-# Arrancar el dev server
-cd apps/web
-DATABASE_URL=file:../../packages/db/etiquetador.db pnpm dev
-# → http://localhost:3000
+pnpm dev           # → http://localhost:3000
 ```
 
-Sin Docker. Sin Postgres local. Todo en un `.db` de SQLite.
+Sin Docker y sin Postgres: todo en un `.db` de SQLite.
 
----
+`init-workflow.ts` es idempotente — vacía y regenera solo las tablas de
+flujo, respetando el catálogo. Usa un PRNG con semilla fija, así que los
+datos son reproducibles. Genera 200 fragmentos, 4 equipos y ~7.800
+anotaciones con desacuerdo calibrado por dimensión (hay un mapa
+`DIFFICULTY` para que las métricas discriminen en vez de salir todas planas).
 
-## 8. Páginas funcionales al commit `3b4b7d0`
+### Gotcha conocido: `pnpm install` falla por esbuild
 
-| Ruta | Estado | Lee de BD | Acción que falta |
-|---|---|---|---|
-| `/` (dashboard) | ✅ | Sí | Real (todo desde BD) |
-| `/proyectos` | ✅ | Sí | Acciones de crear/archivar |
-| `/dimensiones` | ✅ | Sí | Wizard de creación (mockup #14-#19) |
-| `/taxonomias` | ✅ | Sí | Wizard de taxonomía (mockup #36) |
-| `/proyecto/taxonomias` | ⏳ | – | Asignar taxonomía al proyecto |
-| `/proyecto/roles` | ⏳ | – | CRUD de roles |
-| `/proyecto/paquetes` | ⏳ | – | H8: dividir corpus |
-| `/proyecto/segmentacion` | ⏳ | – | H3+H4: segmentar |
-| `/etiquetar` | ⏳ | – | H10-H12: etiquetar |
-| `/discrepancias` | ⏳ | – | H15: detectar |
-| `/validacion` | ⏳ | – | H18-H19 |
-| `/reporte` | ⏳ | – | H17 |
-| `/kappa` | ⏳ | – | H21 |
+El repo resuelve varias versiones de esbuild. Sus `bin/esbuild` empiezan
+siendo shims idénticos y pnpm los deduplica con hardlinks al store; cuando el
+postinstall de una versión sobrescribe el suyo *in place*, machaca el de otra
+a través del hardlink compartido. El síntoma es:
 
----
+```
+esbuild postinstall: Error: Expected "0.28.2" but got "0.25.12"
+```
+
+y aborta la instalación entera. Solución:
+
+```bash
+pnpm install --ignore-scripts
+cp node_modules/.pnpm/@esbuild+darwin-arm64@0.28.2/node_modules/@esbuild/darwin-arm64/bin/esbuild /tmp/eb
+mv -f /tmp/eb node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/bin/esbuild
+```
+
+Arreglo de fondo pendiente: fijar una sola versión de esbuild, o declarar
+`pnpm.neverBuiltDependencies`.
+
+## 8. Estado de las vistas
+
+Las 17 vistas del mockup (`gh-pages`) están implementadas contra BD real.
+La navegación es una sola página con `?view=`; el enrutado de datos vive en
+`apps/web/src/app/(app)/page.tsx`, que carga solo lo que cada vista necesita.
+
+| Vista | Lee de BD | Escribe |
+|---|---|---|
+| `dashboard` | ✅ proyectos, avance, Kappa | — |
+| `upload` | ✅ cargas previas | ✅ CSV/TSV → fragmentos segmentados |
+| `taxonomies` (Dimensiones) | ✅ | ✅ wizard 5 pasos, archivar/restaurar |
+| `taxonomy-groups` (Taxonomías) | ✅ | ✅ crear, editar dimensiones, archivar |
+| `dimensions` (Taxonomías del proyecto) | ✅ | ✅ asignar/desasignar |
+| `roles` | ✅ | ✅ invitar, rol, equipos y miembros |
+| `paquetes` | ✅ | ✅ dividir corpus y asignar |
+| `segmentation` | ✅ | ✅ guardar config (+ preview en vivo) |
+| `tagging` | ✅ | ✅ anotar en cascada, enviar paquete |
+| `discrepancias` | ✅ calculado | — |
+| `discrepancias-equipos` | ✅ calculado | — (solo lectura, por diseño) |
+| `graph-deps` | ✅ calculado | — |
+| `quant-validation` | ✅ calculado | ✅ devolver paquete al equipo |
+| `validacion` | ✅ | ✅ muestra, aprobar, corregir etiquetas |
+| `reporte` | ✅ calculado | — |
+| `kappa` | ✅ calculado | — |
+| `login` | — | — (stub) |
+
+**Sin implementar, y es deliberado:**
+- **Parser de `.xlsx`.** La carga acepta CSV/TSV con parser propio
+  (`lib/csv.ts`). Para Excel falta decidir SheetJS vs exceljs (§10). La vista
+  lo dice explícitamente al soltar un `.xlsx`.
+- **Exportar a Word y envío por email** en `reporte` y `kappa`: los
+  formularios están, la acción no. Falta decidir proveedor.
+- **Auth real.** Sigue el stub por cookie; `login` no autentica.
 
 ## 9. Próximos pasos (orden recomendado)
 
-1. **Server Actions para CRUD de dimensiones** — replicar el wizard del mockup (#14-#19) con DB real. **H6, H7**.
-2. **Wizard de creación de dimensión** (4 pasos) — modal/page con nombre, escala, valores, descripción. Persiste en BD.
-3. **Asignar taxonomías a proyectos** desde `/proyecto/taxonomias` — replicar mockup vista de tabs.
-4. **Auth.js v5** — reemplazar stub. Decidir si email+password o provider.
-5. **Upload de Excel** (H1) + fragmentación (H3, H4) + paquetes (H8) + espejos (H9) + etiquetado (H10) — Sprint 2 completo.
-6. **Discrepancias** (H15) + validación cualitativa (H18) + reporte (H17) + Fleiss (H21) — Sprint 3+.
-
----
+1. **Auth.js v5** — sustituir el stub de cookie. Es lo único que bloquea un
+   despliegue real: hoy cualquiera es Marta R.
+2. **Parser de Excel** — decidir SheetJS vs exceljs y conectar `.xlsx` en
+   `UploadView` (el resto del pipeline de carga ya funciona).
+3. **Exportador de reporte** a Word + envío por email.
+4. **Unificar el schema duplicado** entre `apps/web/src/db/` y
+   `packages/db/src/` (hoy son idénticos y hay que tocar los dos a la vez).
+5. **Paginación** en las vistas que hoy listan todo: `tagging` carga bien,
+   pero `discrepancias` trunca a 60 filas y las tablas de catálogo no paginan.
+6. **Migraciones reales** con drizzle-kit: hoy el esquema se crea por SQL
+   directo en `init.ts` / `init-workflow.ts`, lo cual no es versionable.
 
 ## 10. Decisiones pendientes (necesitan input del usuario)
 
@@ -246,7 +332,12 @@ Scope común: `(admin)`, `db`, `wizard`, `segmentation`, `packages`.
 - ❌ No tocar `gh-pages` (es el mockup publicado)
 - ❌ No usar `pnpm` con workspaces nativos para `better-sqlite3` (causa OOM en webpack). Por eso el schema está duplicado en `apps/web/src/db/`.
 - ❌ No usar server actions directamente desde client components sin `revalidatePath`
-- ❌ No crear UI sin pasar por la pantalla de `view-dimensions` del mockup (es la referencia visual)
+- ❌ No crear UI sin mirar antes el mockup de `gh-pages` (sigue siendo la referencia visual)
+- ❌ No persistir agregados de acuerdo: se calculan desde `annotations` (ver §5)
+- ❌ No usar Node 20: `better-sqlite3` hace segfault, no da error claro
+- ❌ No lanzar `pnpm build` con el dev server corriendo: comparten `.next` y
+  lo corrompen (todas las rutas pasan a 500 con `MODULE_NOT_FOUND` de
+  `_document.js`). Si pasa: parar el dev server, `rm -rf apps/web/.next`, reiniciar.
 
 ---
 

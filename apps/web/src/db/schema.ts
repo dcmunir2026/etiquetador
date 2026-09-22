@@ -37,8 +37,10 @@ export const SCALE_KINDS = [
   'boolean',
   'binary',
   '3-level',
+  '4-level',
   '5-level',
   'likert',
+  'categorical',
   'numerical',
   'free-text',
 ] as const;
@@ -69,6 +71,8 @@ export const users = sqliteTable(
     name: text('name'),
     avatarColor: text('avatar_color'),
     isSuperAdmin: integer('is_super_admin', { mode: 'boolean' }).notNull().default(false),
+    /** bcrypt hash. NULL means the account cannot sign in yet. */
+    passwordHash: text('password_hash'),
     emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -253,6 +257,268 @@ export const segmentationConfigs = sqliteTable(
   }),
 );
 
+// ─── DIMENSION DEPENDENCIES (skip logic) ────────────────────────────
+//
+// A dimension can be shown only when its parent dimension was answered
+// with one of `values`. Mirrors the mockup's `dependencies[0]` model:
+// a single parent per dimension, matched with `=` against a value list.
+
+export const DEPENDENCY_OPERATORS = ['=', '!=', 'in'] as const;
+export type DependencyOperator = (typeof DEPENDENCY_OPERATORS)[number];
+
+export const DEPENDENCY_BEHAVIORS = ['skip'] as const;
+export type DependencyBehavior = (typeof DEPENDENCY_BEHAVIORS)[number];
+
+export const dimensionDependencies = sqliteTable(
+  'dimension_dependencies',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    /** The dimension that is conditionally shown. */
+    dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    /** The dimension whose answer gates it. */
+    dependsOnId: text('depends_on_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    operator: text('operator', { enum: DEPENDENCY_OPERATORS }).notNull().default('='),
+    /** JSON array of parent values that reveal this dimension. */
+    values: text('values').notNull(),
+    behavior: text('behavior', { enum: DEPENDENCY_BEHAVIORS }).notNull().default('skip'),
+    /** Human-readable rule, e.g. "¿Hay odio? = Sí". */
+    label: text('label'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    // One rule per dimension keeps resolution deterministic (mockup parity).
+    dimUnique: uniqueIndex('dimension_dependencies_dim_unique').on(t.dimensionId),
+    parentIdx: index('dimension_dependencies_parent_idx').on(t.dependsOnId),
+  }),
+);
+
+// ─── CORPUS UPLOADS (H1 — Cargar Excel) ─────────────────────────────
+
+export const UPLOAD_STATUSES = ['uploaded', 'mapped', 'segmented', 'failed'] as const;
+export type UploadStatus = (typeof UPLOAD_STATUSES)[number];
+
+export const corpusUploads = sqliteTable(
+  'corpus_uploads',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    filename: text('filename').notNull(),
+    sheetName: text('sheet_name'),
+    sizeBytes: integer('size_bytes').notNull().default(0),
+    rowCount: integer('row_count').notNull().default(0),
+    uniqueCount: integer('unique_count').notNull().default(0),
+    duplicateCount: integer('duplicate_count').notNull().default(0),
+    avgTokens: integer('avg_tokens').notNull().default(0),
+    fragmentablePct: integer('fragmentable_pct').notNull().default(0),
+    /** JSON: { pivot, conversationId, question, metadata[] } → column letters. */
+    columnMapping: text('column_mapping'),
+    status: text('status', { enum: UPLOAD_STATUSES }).notNull().default('uploaded'),
+    uploadedBy: text('uploaded_by').references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    projectIdx: index('corpus_uploads_project_idx').on(t.projectId),
+  }),
+);
+
+// ─── FRAGMENTS (H3/H4 — unidad etiquetable) ─────────────────────────
+
+export const fragments = sqliteTable(
+  'fragments',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    uploadId: text('upload_id').references(() => corpusUploads.id, { onDelete: 'set null' }),
+    /** Source row identity, from the Excel `conversacionId` column. */
+    conversationId: text('conversation_id'),
+    question: text('question'),
+    /** The full answer the fragment was cut from (shown as context). */
+    sourceText: text('source_text'),
+    /** The actual text to annotate. */
+    text: text('text').notNull(),
+    /** 1-based position within its source answer. */
+    fragmentIndex: integer('fragment_index').notNull().default(1),
+    fragmentTotal: integer('fragment_total').notNull().default(1),
+    variant: integer('variant').notNull().default(1),
+    charLength: integer('char_length').notNull().default(0),
+    tokenCount: integer('token_count').notNull().default(0),
+    apiSuccess: integer('api_success', { mode: 'boolean' }).notNull().default(true),
+    isDuplicate: integer('is_duplicate', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    projectIdx: index('fragments_project_idx').on(t.projectId),
+    conversationIdx: index('fragments_conversation_idx').on(t.conversationId),
+  }),
+);
+
+// ─── TEAMS (per project) ────────────────────────────────────────────
+
+export const CONSENSUS_METRICS = ['fleiss', 'krippendorff', 'weighted-majority', 'unanimous'] as const;
+export type ConsensusMetric = (typeof CONSENSUS_METRICS)[number];
+
+export const teams = sqliteTable(
+  'teams',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** How many annotators share each package (dúo=2, trío=3, …). */
+    groupSize: integer('group_size').notNull().default(2),
+    consensusMetric: text('consensus_metric', { enum: CONSENSUS_METRICS }).notNull().default('fleiss'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    projectNameUnique: uniqueIndex('teams_project_name_unique').on(t.projectId, t.name),
+  }),
+);
+
+export const teamMembers = sqliteTable(
+  'team_members',
+  {
+    teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    role: text('role', { enum: USER_ROLES }).notNull().default('annotator'),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.teamId, t.userId] }),
+    userIdx: index('team_members_user_idx').on(t.userId),
+  }),
+);
+
+// ─── PACKAGES (H8 — división del corpus) ────────────────────────────
+
+export const PACKAGE_STATUSES = ['draft', 'assigned', 'in_progress', 'submitted', 'approved', 'returned', 'blocked'] as const;
+export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
+
+export const packages = sqliteTable(
+  'packages',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    teamId: text('team_id').references(() => teams.id, { onDelete: 'set null' }),
+    /** Display code, e.g. PK-A-001. */
+    code: text('code').notNull(),
+    /** True when the same fragments go to every annotator (paquete espejo). */
+    isMirror: integer('is_mirror', { mode: 'boolean' }).notNull().default(true),
+    status: text('status', { enum: PACKAGE_STATUSES }).notNull().default('assigned'),
+    /** Bumped every time the package is returned for re-annotation. */
+    version: integer('version').notNull().default(1),
+    returnCount: integer('return_count').notNull().default(0),
+    notes: text('notes'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    projectCodeUnique: uniqueIndex('packages_project_code_unique').on(t.projectId, t.code),
+    teamIdx: index('packages_team_idx').on(t.teamId),
+  }),
+);
+
+export const packageFragments = sqliteTable(
+  'package_fragments',
+  {
+    packageId: text('package_id').notNull().references(() => packages.id, { onDelete: 'cascade' }),
+    fragmentId: text('fragment_id').notNull().references(() => fragments.id, { onDelete: 'cascade' }),
+    order: integer('order').notNull().default(0),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.packageId, t.fragmentId] }),
+    fragIdx: index('package_fragments_fragment_idx').on(t.fragmentId),
+  }),
+);
+
+export const ASSIGNMENT_STATUSES = ['assigned', 'in_progress', 'submitted'] as const;
+export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
+
+export const packageAssignments = sqliteTable(
+  'package_assignments',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    packageId: text('package_id').notNull().references(() => packages.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status', { enum: ASSIGNMENT_STATUSES }).notNull().default('assigned'),
+    /** Submission round for this annotator (v0 = never submitted). */
+    version: integer('version').notNull().default(0),
+    isLead: integer('is_lead', { mode: 'boolean' }).notNull().default(false),
+    submittedAt: integer('submitted_at', { mode: 'timestamp' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    packageUserUnique: uniqueIndex('package_assignments_package_user_unique').on(t.packageId, t.userId),
+    userIdx: index('package_assignments_user_idx').on(t.userId),
+  }),
+);
+
+// ─── ANNOTATIONS (H10-H12 — el dato central) ────────────────────────
+
+export const annotations = sqliteTable(
+  'annotations',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    fragmentId: text('fragment_id').notNull().references(() => fragments.id, { onDelete: 'cascade' }),
+    packageId: text('package_id').references(() => packages.id, { onDelete: 'set null' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    /** The chosen label, or free text. NULL means the dimension was skipped. */
+    value: text('value'),
+    /** True when skip-logic hid this dimension for this annotator. */
+    skipped: integer('skipped', { mode: 'boolean' }).notNull().default(false),
+    notes: text('notes'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    // One answer per (fragment, annotator, dimension).
+    uniqueAnnotation: uniqueIndex('annotations_unique').on(t.fragmentId, t.userId, t.dimensionId),
+    fragmentIdx: index('annotations_fragment_idx').on(t.fragmentId),
+    packageIdx: index('annotations_package_idx').on(t.packageId),
+    dimensionIdx: index('annotations_dimension_idx').on(t.dimensionId),
+  }),
+);
+
+// ─── QUALITATIVE VALIDATION (H18-H19) ───────────────────────────────
+
+export const QUAL_DECISIONS = ['pending', 'approved', 'corrected'] as const;
+export type QualDecision = (typeof QUAL_DECISIONS)[number];
+
+/** One row per fragment drawn into a team's qualitative review sample. */
+export const qualValidations = sqliteTable(
+  'qual_validations',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+    packageId: text('package_id').references(() => packages.id, { onDelete: 'set null' }),
+    fragmentId: text('fragment_id').notNull().references(() => fragments.id, { onDelete: 'cascade' }),
+    validatorId: text('validator_id').references(() => users.id, { onDelete: 'set null' }),
+    status: text('status', { enum: QUAL_DECISIONS }).notNull().default('pending'),
+    rejectReason: text('reject_reason'),
+    reviewedAt: integer('reviewed_at', { mode: 'timestamp' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    teamFragmentUnique: uniqueIndex('qual_validations_team_fragment_unique').on(t.teamId, t.fragmentId),
+    teamIdx: index('qual_validations_team_idx').on(t.teamId),
+  }),
+);
+
+/** A validator overriding one dimension's consensus value. */
+export const qualCorrections = sqliteTable(
+  'qual_corrections',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    validationId: text('validation_id').notNull().references(() => qualValidations.id, { onDelete: 'cascade' }),
+    dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
+    originalValue: text('original_value'),
+    correctedValue: text('corrected_value'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    validationDimUnique: uniqueIndex('qual_corrections_validation_dim_unique').on(t.validationId, t.dimensionId),
+  }),
+);
+
 // ─── AUDIT LOG ───────────────────────────────────────────────────────
 
 export const auditLog = sqliteTable(
@@ -353,3 +619,93 @@ export type SegmentationConfig = typeof segmentationConfigs.$inferSelect;
 export type NewSegmentationConfig = typeof segmentationConfigs.$inferInsert;
 export type AuditLog = typeof auditLog.$inferSelect;
 export type NewAuditLog = typeof auditLog.$inferInsert;
+
+// ─── Relations / types for the workflow tables ──────────────────────
+
+export const dimensionDependenciesRelations = relations(dimensionDependencies, ({ one }) => ({
+  dimension: one(dimensions, { fields: [dimensionDependencies.dimensionId], references: [dimensions.id], relationName: 'dependencyChild' }),
+  dependsOn: one(dimensions, { fields: [dimensionDependencies.dependsOnId], references: [dimensions.id], relationName: 'dependencyParent' }),
+}));
+
+export const corpusUploadsRelations = relations(corpusUploads, ({ one, many }) => ({
+  project: one(projects, { fields: [corpusUploads.projectId], references: [projects.id] }),
+  fragments: many(fragments),
+}));
+
+export const fragmentsRelations = relations(fragments, ({ one, many }) => ({
+  project: one(projects, { fields: [fragments.projectId], references: [projects.id] }),
+  upload: one(corpusUploads, { fields: [fragments.uploadId], references: [corpusUploads.id] }),
+  annotations: many(annotations),
+  packages: many(packageFragments),
+}));
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+  project: one(projects, { fields: [teams.projectId], references: [projects.id] }),
+  members: many(teamMembers),
+  packages: many(packages),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, { fields: [teamMembers.teamId], references: [teams.id] }),
+  user: one(users, { fields: [teamMembers.userId], references: [users.id] }),
+}));
+
+export const packagesRelations = relations(packages, ({ one, many }) => ({
+  project: one(projects, { fields: [packages.projectId], references: [projects.id] }),
+  team: one(teams, { fields: [packages.teamId], references: [teams.id] }),
+  fragments: many(packageFragments),
+  assignments: many(packageAssignments),
+}));
+
+export const packageFragmentsRelations = relations(packageFragments, ({ one }) => ({
+  package: one(packages, { fields: [packageFragments.packageId], references: [packages.id] }),
+  fragment: one(fragments, { fields: [packageFragments.fragmentId], references: [fragments.id] }),
+}));
+
+export const packageAssignmentsRelations = relations(packageAssignments, ({ one }) => ({
+  package: one(packages, { fields: [packageAssignments.packageId], references: [packages.id] }),
+  user: one(users, { fields: [packageAssignments.userId], references: [users.id] }),
+}));
+
+export const annotationsRelations = relations(annotations, ({ one }) => ({
+  fragment: one(fragments, { fields: [annotations.fragmentId], references: [fragments.id] }),
+  package: one(packages, { fields: [annotations.packageId], references: [packages.id] }),
+  user: one(users, { fields: [annotations.userId], references: [users.id] }),
+  dimension: one(dimensions, { fields: [annotations.dimensionId], references: [dimensions.id] }),
+}));
+
+export const qualValidationsRelations = relations(qualValidations, ({ one, many }) => ({
+  project: one(projects, { fields: [qualValidations.projectId], references: [projects.id] }),
+  team: one(teams, { fields: [qualValidations.teamId], references: [teams.id] }),
+  fragment: one(fragments, { fields: [qualValidations.fragmentId], references: [fragments.id] }),
+  validator: one(users, { fields: [qualValidations.validatorId], references: [users.id] }),
+  corrections: many(qualCorrections),
+}));
+
+export const qualCorrectionsRelations = relations(qualCorrections, ({ one }) => ({
+  validation: one(qualValidations, { fields: [qualCorrections.validationId], references: [qualValidations.id] }),
+  dimension: one(dimensions, { fields: [qualCorrections.dimensionId], references: [dimensions.id] }),
+}));
+
+export type DimensionDependency = typeof dimensionDependencies.$inferSelect;
+export type NewDimensionDependency = typeof dimensionDependencies.$inferInsert;
+export type CorpusUpload = typeof corpusUploads.$inferSelect;
+export type NewCorpusUpload = typeof corpusUploads.$inferInsert;
+export type Fragment = typeof fragments.$inferSelect;
+export type NewFragment = typeof fragments.$inferInsert;
+export type Team = typeof teams.$inferSelect;
+export type NewTeam = typeof teams.$inferInsert;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type NewTeamMember = typeof teamMembers.$inferInsert;
+export type Package = typeof packages.$inferSelect;
+export type NewPackage = typeof packages.$inferInsert;
+export type PackageFragment = typeof packageFragments.$inferSelect;
+export type NewPackageFragment = typeof packageFragments.$inferInsert;
+export type PackageAssignment = typeof packageAssignments.$inferSelect;
+export type NewPackageAssignment = typeof packageAssignments.$inferInsert;
+export type Annotation = typeof annotations.$inferSelect;
+export type NewAnnotation = typeof annotations.$inferInsert;
+export type QualValidation = typeof qualValidations.$inferSelect;
+export type NewQualValidation = typeof qualValidations.$inferInsert;
+export type QualCorrection = typeof qualCorrections.$inferSelect;
+export type NewQualCorrection = typeof qualCorrections.$inferInsert;

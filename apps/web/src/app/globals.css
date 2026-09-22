@@ -6,6 +6,7 @@
   :root{
     --bg:        #fafaf7;
     --surface:   #ffffff;
+    --surface-2: #fafaf2;
     --line:      #e6e3dc;
     --line-soft: #efeee7;
     --ink-1:     #14171e;
@@ -617,3 +618,16 @@
 
 /* Toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2332;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,0.3);max-width:520px;text-align:center}
+
+/* Compact KPI row and dependency-graph panel (mockup's newest screens). */
+.kpi-row--compact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi--sm{padding:10px 14px}
+.kpi--sm .label{font-size:10.5px;letter-spacing:0.04em;margin-bottom:4px}
+.kpi--sm .delta{font-size:10.5px;margin-top:3px}
+.kpi--sm .value{margin-bottom:0;line-height:1.1}
+.graph-tab-panel{display:block}
+.graph-tab-panel>div+div{margin-top:6px}
+
+@media (max-width:900px){
+  .kpi-row--compact{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

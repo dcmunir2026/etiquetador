@@ -13,6 +13,9 @@ const TITLES: Record<string, string> = {
   paquetes: 'Paquetes espejo',
   tagging: 'Etiquetar fragmento',
   discrepancias: 'Discrepancias',
+  'discrepancias-equipos': 'Discrepancias de equipos',
+  'graph-deps': 'Grafo de dependencias',
+  'quant-validation': 'Validación cuantitativa',
   taxonomies: 'Dimensiones',
   'taxonomy-groups': 'Taxonomías',
   segmentation: 'Configuración de segmentación',
@@ -34,7 +37,7 @@ function projectTag(slug: string): string {
   return '?';
 }
 
-export function Topbar({ currentView, projects, activeProject, onPickProject }: { currentView: string; projects: Project[]; activeProject: Project | null; onPickProject: (id: string) => void }) {
+export function Topbar({ currentView, projects, activeProject, onPickProject, canCreateProject }: { currentView: string; projects: Project[]; activeProject: Project | null; onPickProject: (id: string) => void; canCreateProject?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +58,6 @@ export function Topbar({ currentView, projects, activeProject, onPickProject }: 
         {proj ? proj.name : 'EpData'} · <b>{title}</b>
       </div>
       <div className="right">
-        <span className="pill"><span className="dot"></span>3.662 fragmentos cargados</span>
         <div ref={ref} style={{ position: 'relative' }}>
           <div
             className={`proj-switcher ${!proj ? 'is-empty' : ''}`}
@@ -99,13 +101,15 @@ export function Topbar({ currentView, projects, activeProject, onPickProject }: 
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
-        <button className="btn primary">
-          <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Nuevo proyecto
-        </button>
+        {canCreateProject && (
+          <button className="btn primary">
+            <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nuevo proyecto
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,96 +1,162 @@
 'use client';
-import { useState, useEffect } from 'react';
-import type { ViewData } from './ViewRouter';
 
-const TK_COLOR: Record<string, string> = {
-  'tk-odio':'#d97757','tk-emot':'#a85a35','tk-tend':'#7d6c4f','tk-semi':'#3d8268',
-  'tk-gen':'#5b8fb8','tk-race':'#8b6db5','tk-rel':'#c79d3c','tk-demo':'#9c5b8b',
-  'tk-stat':'#5a7d8f','tk-toxic':'#7a1a1c','tk-fact':'#1c6e3a',
-};
-function tkToHex(tk: string | null | undefined): string {
-  if (!tk) return '#7d6c4f';
-  return TK_COLOR[tk] || '#7d6c4f';
-}
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { DimensionRow } from '@/lib/queries';
+import { setDimensionStatus } from '@/app/actions/catalog';
+import { DimensionWizard } from './DimensionWizard';
+import { Kpi, ago, dimColor } from './shared';
 
-export function DimensionsView({ data }: { data: ViewData }) {
-  const [search, setSearch] = useState('');
-  const [dims, setDims] = useState<any[]>(data.dimensions);
+type Scale = { id: string; name: string; kind: string; isCustom: boolean };
 
-  useEffect(() => {
-    setDims(data.dimensions);
-  }, [data.dimensions]);
+/** Global dimension catalogue — the atoms every project draws from. */
+export function DimensionsView({ dimensions, scales, readOnly = false }: { dimensions: DimensionRow[]; scales: Scale[]; readOnly?: boolean }) {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const [scaleFilter, setScaleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const filtered = search ? dims.filter(d => d.name.toLowerCase().includes(search.toLowerCase())) : dims;
-  const archiveCount = data.dimensions.filter((d: any) => d.status === 'archived').length;
+  const scaleNames = useMemo(
+    () => Array.from(new Set(dimensions.map((d) => d.scaleName).filter(Boolean))) as string[],
+    [dimensions],
+  );
+
+  const visible = dimensions.filter((d) => {
+    if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+    if (scaleFilter !== 'all' && d.scaleName !== scaleFilter) return false;
+    if (query.trim() && !d.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
+    return true;
+  });
+
+  const activeCount = dimensions.filter((d) => d.status === 'active').length;
+  const archivedCount = dimensions.filter((d) => d.status === 'archived').length;
+  const totalAssignments = dimensions.reduce((a, d) => a + d.taxonomyCount, 0);
+
+  async function toggleStatus(d: DimensionRow) {
+    setBusy(d.id);
+    await setDimensionStatus(d.id, d.status === 'archived' ? 'active' : 'archived');
+    setBusy(null);
+    router.refresh();
+  }
 
   return (
     <div className="page">
       <h1>Dimensiones</h1>
-      <p className="lead">Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable. Agrúpala en una <a href="/?view=taxonomy-groups" style={{ color: 'var(--primary-2)', fontWeight: 500 }}>taxonomía</a> y asígnala a los proyectos. Solo el super admin puede crear, editar o archivar.</p>
+      <p className="lead">
+        Listado global de dimensiones disponibles. Cada dimensión es un atributo anotable que se
+        carga en los proyectos al anotar. Agrupa varias en una{' '}
+        <a href="/taxonomias" style={{ color: 'var(--primary-2)', fontWeight: 500 }}>taxonomía</a>{' '}
+        para asignarlas como conjunto.
+      </p>
 
-      <div className="grid g-2" style={{ marginBottom: 20 }}>
-        <div className="kpi">
-          <div className="label">Dimensiones activas</div>
-          <div className="value">{dims.length}</div>
-          <div className="delta">{archiveCount} archivada(s)</div>
-        </div>
-        <div className="kpi">
-          <div className="label">Asignaciones totales</div>
-          <div className="value">{data.totalTaxonomyDimensions}</div>
-          <div className="delta">a taxonomías</div>
-        </div>
+      <div className="grid g-2" style={{ marginBottom: 18 }}>
+        <Kpi label="Dimensiones activas" value={activeCount} delta={`${archivedCount} archivadas`} />
+        <Kpi label="Usos en taxonomías" value={totalAssignments}
+             delta={`${activeCount ? (totalAssignments / activeCount).toFixed(2) : '0'} por dimensión`} />
       </div>
 
-      <div className="card" style={{ padding: 0 }}>
-        <div className="tax-toolbar">
-          <input type="search" placeholder="Buscar dimensión..." value={search} onChange={e => setSearch(e.target.value)} />
-          <select>
-            <option>Todas las escalas</option>
-            <option>3 niveles</option>
-            <option>5 niveles</option>
-            <option>Likert</option>
-            <option>Binario</option>
-          </select>
-          <select>
-            <option>Estado: activas</option>
-            <option>Estado: archivadas</option>
-            <option>Todas</option>
-          </select>
-          <button className="btn primary" style={{ marginLeft: 'auto' }} onClick={() => window.dispatchEvent(new CustomEvent('open-dimension-wizard'))}>+ Nueva dimensión</button>
+      {readOnly && (
+        <div style={{ marginBottom: 14, padding: '9px 13px', background: 'var(--surface-2)',
+                      border: '1px solid var(--line)', borderLeft: '3px solid var(--ink-3)',
+                      borderRadius: '0 7px 7px 0', fontSize: 12.5, color: 'var(--ink-3)' }}>
+          Solo lectura: tu rol puede consultar esta pantalla, pero no modificarla.
         </div>
+      )}
 
-        <div className="dim-grid">
-          {filtered.map((d: any) => {
-            const tCount = data.txCountByDim[d.id] || 0;
-            return (
-              <div key={d.id} className="dim-card">
-                <div className="dim-card-head">
-                  <div className="av-lg" style={{ background: tkToHex('tk-' + (d.slug?.split('-')[0] || 'stat')) }}>
-                    {(d.name || '?').charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <b>{d.name}</b>
-                    <small>{d.shortDescription ? '' : '3 niveles · 3 valores'}</small>
-                  </div>
-                </div>
-                <p>{d.shortDescription || 'Sin descripción breve.'}</p>
-                <div className="chips">
-                  <span className="chip">3 niveles</span>
-                  <span className="chip">3 valores</span>
-                  <span className="chip blue">{tCount} {tCount === 1 ? 'taxonomía' : 'taxonomías'}</span>
-                </div>
-                <div className="meta">
-                  <span>Creada por <b>{d.createdBy || '—'}</b> · hace 12 días</span>
-                </div>
-                <div className="dim-card-actions">
-                  <button className="btn sm">Ver usos</button>
-                  <button className="btn sm" style={{ marginLeft: 'auto' }}>Editar</button>
-                </div>
+      <div className="tax-toolbar">
+        <input type="search" placeholder="Buscar dimensión..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        <select value={scaleFilter} onChange={(e) => setScaleFilter(e.target.value)}>
+          <option value="all">Todas las escalas</option>
+          {scaleNames.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="active">Estado: activas</option>
+          <option value="archived">Estado: archivadas</option>
+          <option value="all">Estado: todas</option>
+        </select>
+        {!readOnly && (
+          <button className="btn primary" style={{ marginLeft: 'auto' }} onClick={() => setWizardOpen(true)}>
+            + Nueva dimensión
+          </button>
+        )}
+      </div>
+
+      <div className="tax-grid">
+        {visible.map((d) => (
+          <div key={d.id} className={`tax-card${d.status === 'archived' ? ' is-archived' : ''}`}>
+            <div className="tax-card-head">
+              <div className="tax-color" style={{ background: d.status === 'archived' ? '#e6e3dc' : dimColor(d.name), color: d.status === 'archived' ? 'var(--ink-3)' : '#fff' }}>
+                {d.name.charAt(0).toUpperCase()}
               </div>
-            );
-          })}
-        </div>
+              <div>
+                <h4 style={d.status === 'archived' ? { textDecoration: 'line-through', color: 'var(--ink-3)' } : undefined}>
+                  {d.name}
+                </h4>
+                <p>{d.shortDescription ?? 'Sin descripción.'}</p>
+              </div>
+            </div>
+
+            <div className="tax-card-meta">
+              <span className="scale-pill">{d.scaleName ?? d.kind}</span>
+              {d.kind === 'free-text'
+                ? <span className="scale-pill">texto libre</span>
+                : <span className="scale-pill">{d.values.length} valores</span>}
+              {d.taxonomyCount > 0 && (
+                <span className="tax-used-pill">
+                  {d.taxonomyCount} {d.taxonomyCount === 1 ? 'taxonomía' : 'taxonomías'}
+                </span>
+              )}
+              {d.projectCount > 0 && (
+                <span className="tax-used-pill">
+                  {d.projectCount} {d.projectCount === 1 ? 'proyecto' : 'proyectos'}
+                </span>
+              )}
+            </div>
+
+            {d.dependencyLabel && (
+              <div style={{ fontSize: 11.5, color: '#8a6300', background: '#fdf3da', border: '1px solid #e8d49c',
+                            borderRadius: 6, padding: '5px 9px', margin: '0 0 8px' }}>
+                ⊘ Solo visible cuando <b>{d.dependencyLabel}</b>
+              </div>
+            )}
+
+            {d.values.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+                {d.values.slice(0, 7).map((v) => <span key={v} className="scale-pill">{v}</span>)}
+                {d.values.length > 7 && <span className="scale-pill">+{d.values.length - 7}</span>}
+              </div>
+            )}
+
+            <div className="tax-card-foot">
+              <small>
+                {d.status === 'archived' ? 'Archivada' : 'Creada'} por{' '}
+                <b style={{ color: 'var(--ink-2)' }}>{d.createdByName ?? '—'}</b> · {ago(d.createdAt)}
+                {d.annotationCount > 0 && <> · {d.annotationCount.toLocaleString('es-ES')} anotaciones</>}
+              </small>
+              {!readOnly && (
+                <div className="actions-mini">
+                  <button className="btn-mini" disabled={busy === d.id} onClick={() => toggleStatus(d)}>
+                    {d.status === 'archived' ? 'Restaurar' : 'Archivar'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {visible.length === 0 && (
+          <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+            <h4>Sin resultados</h4>
+            Ninguna dimensión coincide con los filtros actuales.
+          </div>
+        )}
       </div>
+
+      {wizardOpen && (
+        <DimensionWizard dimensions={dimensions} scales={scales} onClose={() => setWizardOpen(false)} />
+      )}
     </div>
   );
 }
