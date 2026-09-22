@@ -4,6 +4,9 @@ import { useState } from 'react';
 import type { DiscrepantFragment, TeamValidationRow } from '@/lib/queries';
 import { loadFragmentBreakdown, loadTeamDiscrepancies } from '@/app/actions/reads';
 import { EmptyState, Kpi, num, pct } from './shared';
+import { Modal } from '@/components/shared/Modal';
+
+export { Modal };
 
 type Breakdown = Awaited<ReturnType<typeof loadFragmentBreakdown>>;
 
@@ -224,30 +227,8 @@ export function TeamDiscrepanciesView({ teams }: { teams: TeamValidationRow[] })
   );
 }
 
-export function Modal({ title, subtitle, right, children, onClose, maxWidth = 900 }: {
-  title: string; subtitle?: string; right?: string; children: React.ReactNode;
-  onClose: () => void; maxWidth?: number;
-}) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,23,30,0.55)', zIndex: 71,
-                  backdropFilter: 'blur(2px)', overflowY: 'auto' }}>
-      <div style={{ background: 'var(--surface)', width: '100%', maxWidth, margin: '24px auto',
-                    borderRadius: 14, display: 'flex', flexDirection: 'column',
-                    maxHeight: 'calc(100vh - 48px)', overflow: 'hidden', border: '1px solid var(--line)' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--line-soft)',
-                      display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button className="btn ghost" onClick={onClose} style={{ padding: '6px 10px' }}>← Volver</button>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em',
-                          color: 'var(--ink-3)', fontWeight: 600 }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink-1)' }}>{subtitle}</div>}
-          </div>
-          {right && <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>{right}</div>}
-        </div>
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: '1 1 auto', minHeight: 0, background: 'var(--bg)' }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
+export function ModalPlaceholder(): never {
+  // Replaced by re-export from '@/components/shared/Modal' above; kept only
+  // historically. Remove with the rest of the file on a future cleanup.
+  throw new Error('moved');
 }

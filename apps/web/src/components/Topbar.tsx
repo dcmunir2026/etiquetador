@@ -37,7 +37,21 @@ function projectTag(slug: string): string {
   return '?';
 }
 
-export function Topbar({ currentView, projects, activeProject, onPickProject, canCreateProject }: { currentView: string; projects: Project[]; activeProject: Project | null; onPickProject: (id: string) => void; canCreateProject?: boolean }) {
+export function Topbar({
+  currentView,
+  projects,
+  activeProject,
+  onPickProject,
+  canCreateProject,
+  onCreateProject,
+}: {
+  currentView: string;
+  projects: Project[];
+  activeProject: Project | null;
+  onPickProject: (id: string) => void;
+  canCreateProject?: boolean;
+  onCreateProject?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -102,7 +116,12 @@ export function Topbar({ currentView, projects, activeProject, onPickProject, ca
           </svg>
         </button>
         {canCreateProject && (
-          <button className="btn primary">
+          <button
+            className="btn primary"
+            onClick={onCreateProject}
+            disabled={!onCreateProject}
+            title="Crear un proyecto nuevo"
+          >
             <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />

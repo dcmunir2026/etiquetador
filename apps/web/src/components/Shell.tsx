@@ -4,6 +4,7 @@ import { useState, useTransition, ReactNode, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { NewProjectModal } from '@/components/views/NewProjectModal';
 import { VIEW_FROM_PATH, PATH_FROM_VIEW } from '@/lib/views';
 import type { Role } from '@/lib/permissions';
 
@@ -25,6 +26,9 @@ export function Shell({
   const pathname = usePathname();
   const [, startTransition] = useTransition();
   const [view, setView] = useState<string>(() => VIEW_FROM_PATH[pathname] ?? 'dashboard');
+  // Topbar "Nuevo proyecto" opens this; the server action redirects to
+  // /dimensiones on success and unmounts the whole shell along the way.
+  const [creatingProject, setCreatingProject] = useState(false);
 
   useEffect(() => {
     setView(VIEW_FROM_PATH[pathname] ?? 'dashboard');
@@ -61,9 +65,16 @@ export function Shell({
           activeProject={activeProject}
           onPickProject={pickProject}
           canCreateProject={user.isSuperAdmin}
+          onCreateProject={user.isSuperAdmin ? () => setCreatingProject(true) : undefined}
         />
         {children}
       </main>
+      {user.isSuperAdmin && (
+        <NewProjectModal
+          open={creatingProject}
+          onClose={() => setCreatingProject(false)}
+        />
+      )}
     </div>
   );
 }
