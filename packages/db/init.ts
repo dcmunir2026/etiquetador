@@ -1,123 +1,42 @@
-// One-off: create SQLite schema and seed data, bypassing packages/db/src/client.ts
-// (which has a syntax error in closeDb). Imports schema directly. Delete after.
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+// Creates the catalogue tables and seeds them. Schema is created ahead of
+// time via `pnpm db:push` (drizzle-kit push), so this script only inserts.
+//
+//   DATABASE_URL=postgres://etiquetador:etiquetador_dev@localhost:5433/etiquetador pnpm init
+//
+// Idempotent for catalogue data: every insert checks for an existing row
+// first (by natural key) and skips it when present, so re-running won't
+// duplicate. Workflow tables are owned by init-workflow.ts.
+
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { eq } from 'drizzle-orm';
 import * as schema from './src/index';
 
-const DB_PATH = (process.env.DATABASE_URL ?? 'file:./etiquetador.db').replace(/^file:(?:\/\/)?/, '');
-const sqlite = new Database(DB_PATH);
-sqlite.pragma('journal_mode = WAL');
-sqlite.pragma('foreign_keys = ON');
-const db = drizzle(sqlite, { schema });
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error('DATABASE_URL no está definida. Apunta a Postgres en docker-compose.');
+}
 
-console.log('Creating tables...');
+const client = postgres(url, { max: 1 });
+const db = drizzle(client, { schema });
 
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY, email TEXT NOT NULL, name TEXT, avatar_color TEXT,
-    is_super_admin INTEGER NOT NULL DEFAULT 0, email_verified_at INTEGER,
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users(email);
-
-  CREATE TABLE IF NOT EXISTS projects (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL,
-    description TEXT, status TEXT NOT NULL DEFAULT 'active',
-    created_by TEXT NOT NULL REFERENCES users(id),
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS projects_slug_unique ON projects(slug);
-
-  CREATE TABLE IF NOT EXISTS project_members (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role TEXT NOT NULL DEFAULT 'annotator',
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS project_members_unique ON project_members(project_id, user_id);
-
-  CREATE TABLE IF NOT EXISTS intensity_scales (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL,
-    is_custom INTEGER NOT NULL DEFAULT 0,
-    created_by TEXT REFERENCES users(id),
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS intensity_scales_name_unique ON intensity_scales(name);
-
-  CREATE TABLE IF NOT EXISTS intensity_levels (
-    id TEXT PRIMARY KEY,
-    scale_id TEXT NOT NULL REFERENCES intensity_scales(id) ON DELETE CASCADE,
-    label TEXT NOT NULL, value TEXT NOT NULL, "order" INTEGER NOT NULL, color TEXT);
-  CREATE UNIQUE INDEX IF NOT EXISTS intensity_levels_scale_order_unique ON intensity_levels(scale_id, "order");
-
-  CREATE TABLE IF NOT EXISTS dimensions (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL,
-    description TEXT, short_description TEXT, long_description TEXT,
-    kind TEXT NOT NULL, scale_id TEXT REFERENCES intensity_scales(id) ON DELETE SET NULL,
-    status TEXT NOT NULL DEFAULT 'active',
-    created_by TEXT REFERENCES users(id),
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS dimensions_slug_unique ON dimensions(slug);
-
-  CREATE TABLE IF NOT EXISTS dimension_values (
-    id TEXT PRIMARY KEY,
-    dimension_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    label TEXT NOT NULL, value TEXT NOT NULL, "order" INTEGER NOT NULL, color TEXT);
-  CREATE UNIQUE INDEX IF NOT EXISTS dimension_values_dim_order_unique ON dimension_values(dimension_id, "order");
-
-  CREATE TABLE IF NOT EXISTS taxonomies (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL,
-    short_description TEXT, long_description TEXT, color TEXT,
-    status TEXT NOT NULL DEFAULT 'active',
-    created_by TEXT REFERENCES users(id),
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS taxonomies_slug_unique ON taxonomies(slug);
-
-  CREATE TABLE IF NOT EXISTS taxonomy_dimensions (
-    taxonomy_id TEXT NOT NULL REFERENCES taxonomies(id) ON DELETE CASCADE,
-    dimension_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    "order" INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (taxonomy_id, dimension_id));
-  CREATE INDEX IF NOT EXISTS taxonomy_dimensions_dim_idx ON taxonomy_dimensions(dimension_id);
-
-  CREATE TABLE IF NOT EXISTS project_taxonomies (
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    taxonomy_id TEXT NOT NULL REFERENCES taxonomies(id) ON DELETE CASCADE,
-    assigned_by TEXT REFERENCES users(id),
-    assigned_at INTEGER NOT NULL,
-    PRIMARY KEY (project_id, taxonomy_id));
-  CREATE INDEX IF NOT EXISTS project_taxonomies_tax_idx ON project_taxonomies(taxonomy_id);
-
-  CREATE TABLE IF NOT EXISTS segmentation_configs (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name TEXT NOT NULL, unit TEXT NOT NULL,
-    max_chunk_size INTEGER NOT NULL, overlap INTEGER NOT NULL DEFAULT 0,
-    respect_boundaries INTEGER NOT NULL DEFAULT 1, tolerance INTEGER NOT NULL DEFAULT 15,
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS segmentation_configs_name_project_unique ON segmentation_configs(project_id, name);
-
-  CREATE TABLE IF NOT EXISTS audit_log (
-    id TEXT PRIMARY KEY,
-    actor_id TEXT REFERENCES users(id),
-    project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
-    action TEXT NOT NULL, target_type TEXT, target_id TEXT, metadata TEXT,
-    created_at INTEGER NOT NULL);
-  CREATE INDEX IF NOT EXISTS audit_log_actor_idx ON audit_log(actor_id);
-  CREATE INDEX IF NOT EXISTS audit_log_project_idx ON audit_log(project_id);
-  CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log(created_at);
-`);
-
-console.log('Tables created. Seeding...');
+console.log('Seeding catalogue...');
 
 function slugify(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
 }
 
-// 1. Superadmin user
-const [marta] = db.insert(schema.users).values({
-  email: 'marta@etiquetador.local',
-  name: 'Marta R.',
-  avatarColor: 'linear-gradient(135deg,#0e4a52,#1d6e75)',
-  isSuperAdmin: true,
-}).returning().all();
+// 1. Superadmin user — one row only, identified by email.
+let [marta] = await db.select().from(schema.users)
+  .where(eq(schema.users.email, 'marta@etiquetador.local'));
+if (!marta) {
+  [marta] = await db.insert(schema.users).values({
+    email: 'marta@etiquetador.local',
+    name: 'Marta R.',
+    avatarColor: 'linear-gradient(135deg,#0e4a52,#1d6e75)',
+    isSuperAdmin: true,
+  }).returning();
+}
 console.log('  user:', marta.email);
 
 // 2. Intensity scales
@@ -135,13 +54,19 @@ const scales = [
 
 const scaleIds: Record<string, string> = {};
 for (const s of scales) {
-  const [row] = db.insert(schema.intensityScales).values({
-    name: s.name, kind: s.kind, isCustom: false, createdBy: marta.id,
-  }).returning().all();
+  let [row] = await db.select().from(schema.intensityScales).where(eq(schema.intensityScales.name, s.name));
+  if (!row) {
+    [row] = await db.insert(schema.intensityScales).values({
+      name: s.name, kind: s.kind, isCustom: false, createdBy: marta.id,
+    }).returning();
+    for (let i = 0; i < s.levels.length; i++) {
+      const lv = s.levels[i]!;
+      await db.insert(schema.intensityLevels).values({
+        scaleId: row.id, label: lv.label, value: lv.value, order: i,
+      });
+    }
+  }
   scaleIds[s.name] = row.id;
-  s.levels.forEach((lv, i) => {
-    db.insert(schema.intensityLevels).values({ scaleId: row.id, label: lv.label, value: lv.value, order: i }).run();
-  });
 }
 console.log('  scales:', Object.keys(scaleIds).length);
 
@@ -162,15 +87,21 @@ const dimData = [
 
 const dimIds: Record<string, string> = {};
 for (const d of dimData) {
-  const [row] = db.insert(schema.dimensions).values({
-    name: d.name, slug: slugify(d.name), shortDescription: d.shortDesc,
-    kind: 'category', scaleId: scaleIds[d.scale], status: 'active', createdBy: marta.id,
-  }).returning().all();
+  let [row] = await db.select().from(schema.dimensions).where(eq(schema.dimensions.slug, slugify(d.name)));
+  if (!row) {
+    [row] = await db.insert(schema.dimensions).values({
+      name: d.name, slug: slugify(d.name), shortDescription: d.shortDesc,
+      kind: 'category', scaleId: scaleIds[d.scale], status: 'active', createdBy: marta.id,
+    }).returning();
+    const levels = scales.find(s => s.name === d.scale)!.levels;
+    for (let i = 0; i < levels.length; i++) {
+      const lv = levels[i]!;
+      await db.insert(schema.dimensionValues).values({
+        dimensionId: row.id, label: lv.label, value: lv.value, order: i,
+      });
+    }
+  }
   dimIds[d.name] = row.id;
-  const levels = scales.find(s => s.name === d.scale)!.levels;
-  levels.forEach((lv, i) => {
-    db.insert(schema.dimensionValues).values({ dimensionId: row.id, label: lv.label, value: lv.value, order: i }).run();
-  });
 }
 console.log('  dimensions:', Object.keys(dimIds).length);
 
@@ -184,11 +115,16 @@ const projectData = [
 
 const projIds: Record<string, string> = {};
 for (const p of projectData) {
-  const [row] = db.insert(schema.projects).values({
-    name: p.name, slug: p.slug, description: p.desc, status: 'active', createdBy: marta.id,
-  }).returning().all();
+  let [row] = await db.select().from(schema.projects).where(eq(schema.projects.slug, p.slug));
+  if (!row) {
+    [row] = await db.insert(schema.projects).values({
+      name: p.name, slug: p.slug, description: p.desc, status: 'active', createdBy: marta.id,
+    }).returning();
+    await db.insert(schema.projectMembers).values({
+      projectId: row.id, userId: marta.id, role: 'projectadmin',
+    });
+  }
   projIds[p.slug] = row.id;
-  db.insert(schema.projectMembers).values({ projectId: row.id, userId: marta.id, role: 'projectadmin' }).run();
 }
 console.log('  projects:', Object.keys(projIds).length);
 
@@ -206,16 +142,19 @@ const taxData = [
 
 const taxIds: Record<string, string> = {};
 for (const t of taxData) {
-  const [row] = db.insert(schema.taxonomies).values({
-    name: t.name, slug: slugify(t.name), shortDescription: t.shortDesc, color: t.color, status: 'active', createdBy: marta.id,
-  }).returning().all();
+  let [row] = await db.select().from(schema.taxonomies).where(eq(schema.taxonomies.slug, slugify(t.name)));
+  if (!row) {
+    [row] = await db.insert(schema.taxonomies).values({
+      name: t.name, slug: slugify(t.name), shortDescription: t.shortDesc, color: t.color, status: 'active', createdBy: marta.id,
+    }).returning();
+    t.dims.forEach((dimName, i) => {
+      const dimId = dimIds[dimName];
+      if (dimId) {
+        void db.insert(schema.taxonomyDimensions).values({ taxonomyId: row.id, dimensionId: dimId, order: i });
+      }
+    });
+  }
   taxIds[t.name] = row.id;
-  t.dims.forEach((dimName, i) => {
-    const dimId = dimIds[dimName];
-    if (dimId) {
-      db.insert(schema.taxonomyDimensions).values({ taxonomyId: row.id, dimensionId: dimId, order: i }).run();
-    }
-  });
 }
 console.log('  taxonomies:', Object.keys(taxIds).length);
 
@@ -232,10 +171,17 @@ for (const pt of ptData) {
   for (const taxName of pt.taxonomies) {
     const taxId = taxIds[taxName];
     if (!taxId) continue;
-    db.insert(schema.projectTaxonomies).values({ projectId: projId, taxonomyId: taxId, assignedBy: marta.id }).run();
+    const existing = await db.select().from(schema.projectTaxonomies)
+      .where(eq(schema.projectTaxonomies.projectId, projId));
+    const dup = existing.find((r) => r.taxonomyId === taxId);
+    if (!dup) {
+      await db.insert(schema.projectTaxonomies).values({
+        projectId: projId, taxonomyId: taxId, assignedBy: marta.id,
+      });
+    }
   }
 }
 console.log('  project-taxonomy assignments done.');
 
-sqlite.close();
+await client.end();
 console.log('Seed complete. Marta R. is superadmin.');

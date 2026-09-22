@@ -1,22 +1,27 @@
-// Creates the workflow tables (dependencies, corpus, teams, packages,
-// annotations, qualitative validation) and seeds them with coherent data.
+// Seeds the workflow tables (dependencies, corpus, teams, packages,
+// annotations, qualitative validation) with coherent data.
 //
 // Idempotent: drops and re-seeds only the workflow tables. The catalogue
 // seeded by init.ts (users, projects, dimensions, taxonomies) is preserved,
 // except for the cascade dimensions this script owns.
 //
-//   DATABASE_URL=file:./etiquetador.db pnpm exec tsx init-workflow.ts
+//   DATABASE_URL=postgres://etiquetador:etiquetador_dev@localhost:5433/etiquetador \
+//     pnpm exec tsx init-workflow.ts
+//
+// Tables are assumed to already exist (created via `pnpm db:push`).
 
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
 import * as schema from './src/index';
 
-const DB_PATH = (process.env.DATABASE_URL ?? 'file:./etiquetador.db').replace(/^file:(?:\/\/)?/, '');
-const sqlite = new Database(DB_PATH);
-sqlite.pragma('journal_mode = WAL');
-sqlite.pragma('foreign_keys = ON');
-const db = drizzle(sqlite, { schema });
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error('DATABASE_URL no está definida. Apunta a Postgres en docker-compose.');
+}
+
+const client = postgres(url, { max: 1 });
+const db = drizzle(client, { schema });
 
 // ─── Deterministic PRNG so re-seeding yields identical data ──────────
 let _seed = 0x5eed1234;
@@ -31,280 +36,170 @@ function slugify(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-console.log('Creating workflow tables...');
+console.log('Clearing previous workflow seed...');
 
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS dimension_dependencies (
-    id TEXT PRIMARY KEY,
-    dimension_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    depends_on_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    operator TEXT NOT NULL DEFAULT '=',
-    "values" TEXT NOT NULL,
-    behavior TEXT NOT NULL DEFAULT 'skip',
-    label TEXT,
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS dimension_dependencies_dim_unique ON dimension_dependencies(dimension_id);
-  CREATE INDEX IF NOT EXISTS dimension_dependencies_parent_idx ON dimension_dependencies(depends_on_id);
+const WORKFLOW_TABLES = [
+  schema.qualCorrections,
+  schema.qualValidations,
+  schema.annotations,
+  schema.packageAssignments,
+  schema.packageFragments,
+  schema.packages,
+  schema.teamMembers,
+  schema.teams,
+  schema.fragments,
+  schema.corpusUploads,
+  schema.dimensionDependencies,
+  schema.taxonomyDimensions,
+] as const;
 
-  CREATE TABLE IF NOT EXISTS corpus_uploads (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    filename TEXT NOT NULL, sheet_name TEXT,
-    size_bytes INTEGER NOT NULL DEFAULT 0,
-    row_count INTEGER NOT NULL DEFAULT 0,
-    unique_count INTEGER NOT NULL DEFAULT 0,
-    duplicate_count INTEGER NOT NULL DEFAULT 0,
-    avg_tokens INTEGER NOT NULL DEFAULT 0,
-    fragmentable_pct INTEGER NOT NULL DEFAULT 0,
-    column_mapping TEXT,
-    status TEXT NOT NULL DEFAULT 'uploaded',
-    uploaded_by TEXT REFERENCES users(id),
-    created_at INTEGER NOT NULL);
-  CREATE INDEX IF NOT EXISTS corpus_uploads_project_idx ON corpus_uploads(project_id);
-
-  CREATE TABLE IF NOT EXISTS fragments (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    upload_id TEXT REFERENCES corpus_uploads(id) ON DELETE SET NULL,
-    conversation_id TEXT, question TEXT, source_text TEXT,
-    text TEXT NOT NULL,
-    fragment_index INTEGER NOT NULL DEFAULT 1,
-    fragment_total INTEGER NOT NULL DEFAULT 1,
-    variant INTEGER NOT NULL DEFAULT 1,
-    char_length INTEGER NOT NULL DEFAULT 0,
-    token_count INTEGER NOT NULL DEFAULT 0,
-    api_success INTEGER NOT NULL DEFAULT 1,
-    is_duplicate INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL);
-  CREATE INDEX IF NOT EXISTS fragments_project_idx ON fragments(project_id);
-  CREATE INDEX IF NOT EXISTS fragments_conversation_idx ON fragments(conversation_id);
-
-  CREATE TABLE IF NOT EXISTS teams (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    group_size INTEGER NOT NULL DEFAULT 2,
-    consensus_metric TEXT NOT NULL DEFAULT 'fleiss',
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS teams_project_name_unique ON teams(project_id, name);
-
-  CREATE TABLE IF NOT EXISTS team_members (
-    team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role TEXT NOT NULL DEFAULT 'annotator',
-    PRIMARY KEY (team_id, user_id));
-  CREATE INDEX IF NOT EXISTS team_members_user_idx ON team_members(user_id);
-
-  CREATE TABLE IF NOT EXISTS packages (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
-    code TEXT NOT NULL,
-    is_mirror INTEGER NOT NULL DEFAULT 1,
-    status TEXT NOT NULL DEFAULT 'assigned',
-    version INTEGER NOT NULL DEFAULT 1,
-    return_count INTEGER NOT NULL DEFAULT 0,
-    notes TEXT,
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS packages_project_code_unique ON packages(project_id, code);
-  CREATE INDEX IF NOT EXISTS packages_team_idx ON packages(team_id);
-
-  CREATE TABLE IF NOT EXISTS package_fragments (
-    package_id TEXT NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
-    fragment_id TEXT NOT NULL REFERENCES fragments(id) ON DELETE CASCADE,
-    "order" INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (package_id, fragment_id));
-  CREATE INDEX IF NOT EXISTS package_fragments_fragment_idx ON package_fragments(fragment_id);
-
-  CREATE TABLE IF NOT EXISTS package_assignments (
-    id TEXT PRIMARY KEY,
-    package_id TEXT NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'assigned',
-    version INTEGER NOT NULL DEFAULT 0,
-    is_lead INTEGER NOT NULL DEFAULT 0,
-    submitted_at INTEGER,
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS package_assignments_package_user_unique ON package_assignments(package_id, user_id);
-  CREATE INDEX IF NOT EXISTS package_assignments_user_idx ON package_assignments(user_id);
-
-  CREATE TABLE IF NOT EXISTS annotations (
-    id TEXT PRIMARY KEY,
-    fragment_id TEXT NOT NULL REFERENCES fragments(id) ON DELETE CASCADE,
-    package_id TEXT REFERENCES packages(id) ON DELETE SET NULL,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    dimension_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    value TEXT, skipped INTEGER NOT NULL DEFAULT 0, notes TEXT,
-    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS annotations_unique ON annotations(fragment_id, user_id, dimension_id);
-  CREATE INDEX IF NOT EXISTS annotations_fragment_idx ON annotations(fragment_id);
-  CREATE INDEX IF NOT EXISTS annotations_package_idx ON annotations(package_id);
-  CREATE INDEX IF NOT EXISTS annotations_dimension_idx ON annotations(dimension_id);
-
-  CREATE TABLE IF NOT EXISTS qual_validations (
-    id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    package_id TEXT REFERENCES packages(id) ON DELETE SET NULL,
-    fragment_id TEXT NOT NULL REFERENCES fragments(id) ON DELETE CASCADE,
-    validator_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
-    reject_reason TEXT,
-    reviewed_at INTEGER,
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS qual_validations_team_fragment_unique ON qual_validations(team_id, fragment_id);
-  CREATE INDEX IF NOT EXISTS qual_validations_team_idx ON qual_validations(team_id);
-
-  CREATE TABLE IF NOT EXISTS qual_corrections (
-    id TEXT PRIMARY KEY,
-    validation_id TEXT NOT NULL REFERENCES qual_validations(id) ON DELETE CASCADE,
-    dimension_id TEXT NOT NULL REFERENCES dimensions(id) ON DELETE CASCADE,
-    original_value TEXT, corrected_value TEXT,
-    created_at INTEGER NOT NULL);
-  CREATE UNIQUE INDEX IF NOT EXISTS qual_corrections_validation_dim_unique ON qual_corrections(validation_id, dimension_id);
-`);
-
-console.log('Workflow tables ready. Clearing previous workflow seed...');
-
-// Wipe in FK-safe order.
-for (const t of ['qual_corrections', 'qual_validations', 'annotations', 'package_assignments',
-                 'package_fragments', 'packages', 'team_members', 'teams',
-                 'fragments', 'corpus_uploads', 'dimension_dependencies']) {
-  sqlite.exec(`DELETE FROM ${t};`);
-}
+await db.transaction(async (tx) => {
+  // Cascade dimensions and their taxonomy memberships are owned by this
+  // script — wipe them so the cascade upserts cleanly.
+  for (const table of WORKFLOW_TABLES) {
+    await tx.delete(table);
+  }
+});
 
 // ─── Look up the catalogue seeded by init.ts ─────────────────────────
 
-const [marta] = db.select().from(schema.users).where(eq(schema.users.isSuperAdmin, true)).all();
+const [marta] = await db.select().from(schema.users).where(eq(schema.users.isSuperAdmin, true));
 if (!marta) throw new Error('No superadmin found. Run init.ts first.');
 
-const allProjects = db.select().from(schema.projects).all();
+const allProjects = await db.select().from(schema.projects);
 const q3 = allProjects.find(p => p.slug === 'epdata-2026q3');
 if (!q3) throw new Error('Project epdata-2026q3 not found. Run init.ts first.');
 
-function scaleByName(name: string): string | null {
-  const [row] = db.select().from(schema.intensityScales).where(eq(schema.intensityScales.name, name)).all();
+async function scaleByName(name: string): Promise<string | null> {
+  const [row] = await db.select().from(schema.intensityScales).where(eq(schema.intensityScales.name, name));
   return row?.id ?? null;
 }
 
 /** Create a scale with its levels if it does not exist yet. */
-function ensureScale(name: string, kind: schema.ScaleKind, labels: string[]): string {
-  const existing = scaleByName(name);
+async function ensureScale(name: string, kind: schema.ScaleKind, labels: string[]): Promise<string> {
+  const existing = await scaleByName(name);
   if (existing) return existing;
-  const [row] = db.insert(schema.intensityScales).values({
+  const [row] = await db.insert(schema.intensityScales).values({
     name, kind, isCustom: false, createdBy: marta.id,
-  }).returning().all();
-  labels.forEach((label, i) => {
-    db.insert(schema.intensityLevels).values({ scaleId: row.id, label, value: String(i + 1), order: i }).run();
-  });
+  }).returning();
+  for (let i = 0; i < labels.length; i++) {
+    await db.insert(schema.intensityLevels).values({
+      scaleId: row.id, label: labels[i]!, value: String(i + 1), order: i,
+    });
+  }
   return row.id;
 }
 
 const PALETTE = ['#d97757', '#a85a35', '#7d6c4f', '#3d8268', '#5b8fb8', '#8b6db5', '#c79d3c', '#9c5b8b'];
 
 /** Create (or replace) a dimension together with its values. */
-function upsertDimension(opts: {
+async function upsertDimension(opts: {
   name: string; kind: schema.DimensionKind; scaleId: string | null;
   shortDesc: string; longDesc?: string; values: string[];
-}): string {
+}): Promise<string> {
   const slug = slugify(opts.name);
-  const [existing] = db.select().from(schema.dimensions).where(eq(schema.dimensions.slug, slug)).all();
+  const [existing] = await db.select().from(schema.dimensions).where(eq(schema.dimensions.slug, slug));
   if (existing) {
-    db.delete(schema.dimensionValues).where(eq(schema.dimensionValues.dimensionId, existing.id)).run();
-    opts.values.forEach((label, i) => {
-      db.insert(schema.dimensionValues).values({
+    await db.delete(schema.dimensionValues).where(eq(schema.dimensionValues.dimensionId, existing.id));
+    for (let i = 0; i < opts.values.length; i++) {
+      const label = opts.values[i]!;
+      await db.insert(schema.dimensionValues).values({
         dimensionId: existing.id, label, value: label, order: i, color: PALETTE[i % PALETTE.length],
-      }).run();
-    });
+      });
+    }
     return existing.id;
   }
-  const [row] = db.insert(schema.dimensions).values({
+  const [row] = await db.insert(schema.dimensions).values({
     name: opts.name, slug, kind: opts.kind, scaleId: opts.scaleId,
     shortDescription: opts.shortDesc, longDescription: opts.longDesc,
     status: 'active', createdBy: marta.id,
-  }).returning().all();
-  opts.values.forEach((label, i) => {
-    db.insert(schema.dimensionValues).values({
+  }).returning();
+  for (let i = 0; i < opts.values.length; i++) {
+    const label = opts.values[i]!;
+    await db.insert(schema.dimensionValues).values({
       dimensionId: row.id, label, value: label, order: i, color: PALETTE[i % PALETTE.length],
-    }).run();
-  });
+    });
+  }
   return row.id;
 }
 
 // ─── 1. Hate-speech cascade (the mockup's skip-logic showcase) ───────
 
-const sBool = ensureScale('Booleano', 'boolean', ['Sí', 'No']);
-const sFree = ensureScale('Texto libre', 'free-text', ['(texto libre)']);
-const sHateType = ensureScale('Tipo de odio', 'categorical', ['Político', 'General', 'Religioso', 'Xenófobo', 'Misógino', 'Sexual']);
-const sRelType = ensureScale('Tipo de religión', 'categorical', ['Anticatólico', 'Antisemita', 'Antimusulmán', 'Antievangélico']);
-const sIntensity = ensureScale('Cuatro niveles', '4-level', ['Incívicos', 'Malintencionado', 'Insulto', 'Amenaza']);
+const sBool = await ensureScale('Booleano', 'boolean', ['Sí', 'No']);
+const sFree = await ensureScale('Texto libre', 'free-text', ['(texto libre)']);
+const sHateType = await ensureScale('Tipo de odio', 'categorical', ['Político', 'General', 'Religioso', 'Xenófobo', 'Misógino', 'Sexual']);
+const sRelType = await ensureScale('Tipo de religión', 'categorical', ['Anticatólico', 'Antisemita', 'Antimusulmán', 'Antievangélico']);
+const sIntensity = await ensureScale('Cuatro niveles', '4-level', ['Incívicos', 'Malintencionado', 'Insulto', 'Amenaza']);
 
 const HATE_TYPES = ['Político', 'General', 'Religioso', 'Xenófobo', 'Misógino', 'Sexual'];
 const REL_TYPES = ['Anticatólico', 'Antisemita', 'Antimusulmán', 'Antievangélico'];
 const INTENSITIES = ['Incívicos', 'Malintencionado', 'Insulto', 'Amenaza'];
 
-const dHayOdio = upsertDimension({
+const dHayOdio = await upsertDimension({
   name: '¿Hay odio?', kind: 'flag', scaleId: sBool, values: ['Sí', 'No'],
   shortDesc: 'Pregunta gate. Detecta presencia de discurso de odio en el contenido.',
   longDesc: 'Marca Sí cuando el fragmento contiene deshumanización, generalización ofensiva, insulto identitario o incitación contra un grupo. No se considera odio la crítica política ni el relato negativo de hechos.',
 });
-const dTipoOdio = upsertDimension({
+const dTipoOdio = await upsertDimension({
   name: 'Tipo de odio', kind: 'category', scaleId: sHateType, values: HATE_TYPES,
   shortDesc: 'Tipo de odio detectado. Solo se muestra cuando ¿Hay odio? = Sí.',
 });
-const dTipoReligion = upsertDimension({
+const dTipoReligion = await upsertDimension({
   name: 'Tipo de religión', kind: 'category', scaleId: sRelType, values: REL_TYPES,
   shortDesc: 'Subtipo cuando el odio es Religioso.',
 });
-const dIntensidad = upsertDimension({
+const dIntensidad = await upsertDimension({
   name: 'Intensidad', kind: 'intensity', scaleId: sIntensity, values: INTENSITIES,
   shortDesc: 'Nivel de intensidad del odio.',
 });
-const dMetafora = upsertDimension({
+const dMetafora = await upsertDimension({
   name: 'Metáfora', kind: 'flag', scaleId: sBool, values: ['Sí', 'No'],
   shortDesc: '¿El contenido usa metáforas para vehicular el odio? Visible siempre.',
 });
-const dSarcasmo = upsertDimension({
+const dSarcasmo = await upsertDimension({
   name: 'Sarcasmo', kind: 'flag', scaleId: sBool, values: ['Sí', 'No'],
   shortDesc: '¿El contenido usa sarcasmo? Visible siempre.',
 });
-const dModificador = upsertDimension({
+const dModificador = await upsertDimension({
   name: 'Modificador', kind: 'free-text', scaleId: sFree, values: [],
   shortDesc: 'Campo libre para matizar la etiqueta. Visible siempre.',
 });
 
-function addDependency(childId: string, parentId: string, values: string[], label: string) {
-  db.insert(schema.dimensionDependencies).values({
+async function addDependency(childId: string, parentId: string, values: string[], label: string) {
+  await db.insert(schema.dimensionDependencies).values({
     dimensionId: childId, dependsOnId: parentId, operator: '=',
     values: JSON.stringify(values), behavior: 'skip', label,
-  }).run();
+  });
 }
-addDependency(dTipoOdio, dHayOdio, ['Sí'], '¿Hay odio? = Sí');
-addDependency(dIntensidad, dHayOdio, ['Sí'], '¿Hay odio? = Sí');
-addDependency(dTipoReligion, dTipoOdio, ['Religioso'], 'Tipo de odio = Religioso');
+await addDependency(dTipoOdio, dHayOdio, ['Sí'], '¿Hay odio? = Sí');
+await addDependency(dIntensidad, dHayOdio, ['Sí'], '¿Hay odio? = Sí');
+await addDependency(dTipoReligion, dTipoOdio, ['Religioso'], 'Tipo de odio = Religioso');
 console.log('  cascade dimensions + 3 dependencies');
 
 // Group them in a taxonomy and assign it to the active project.
 const cascadeDims = [dHayOdio, dTipoOdio, dTipoReligion, dIntensidad, dMetafora, dSarcasmo, dModificador];
-let [cascadeTax] = db.select().from(schema.taxonomies).where(eq(schema.taxonomies.slug, 'discurso-de-odio-cascada')).all();
+let [cascadeTax] = await db.select().from(schema.taxonomies)
+  .where(eq(schema.taxonomies.slug, 'discurso-de-odio-cascada'));
 if (!cascadeTax) {
-  [cascadeTax] = db.insert(schema.taxonomies).values({
+  [cascadeTax] = await db.insert(schema.taxonomies).values({
     name: 'Discurso de odio (cascada)', slug: 'discurso-de-odio-cascada',
     shortDescription: 'Cascada de odio: pregunta gate, tipo, subtipo religioso e intensidad, más matices formales.',
     color: 'rose', status: 'active', createdBy: marta.id,
-  }).returning().all();
+  }).returning();
 }
-db.delete(schema.taxonomyDimensions).where(eq(schema.taxonomyDimensions.taxonomyId, cascadeTax.id)).run();
-cascadeDims.forEach((dimId, i) => {
-  db.insert(schema.taxonomyDimensions).values({ taxonomyId: cascadeTax.id, dimensionId: dimId, order: i }).run();
-});
-const alreadyAssigned = db.select().from(schema.projectTaxonomies)
-  .where(eq(schema.projectTaxonomies.projectId, q3.id)).all()
-  .some(r => r.taxonomyId === cascadeTax.id);
-if (!alreadyAssigned) {
-  db.insert(schema.projectTaxonomies).values({
+await db.delete(schema.taxonomyDimensions)
+  .where(eq(schema.taxonomyDimensions.taxonomyId, cascadeTax.id));
+for (let i = 0; i < cascadeDims.length; i++) {
+  await db.insert(schema.taxonomyDimensions).values({
+    taxonomyId: cascadeTax.id, dimensionId: cascadeDims[i]!, order: i,
+  });
+}
+const ptForQ3 = await db.select().from(schema.projectTaxonomies)
+  .where(eq(schema.projectTaxonomies.projectId, q3.id));
+if (!ptForQ3.some(r => r.taxonomyId === cascadeTax.id)) {
+  await db.insert(schema.projectTaxonomies).values({
     projectId: q3.id, taxonomyId: cascadeTax.id, assignedBy: marta.id,
-  }).run();
+  });
 }
 
 // ─── 2. Roster ───────────────────────────────────────────────────────
@@ -328,26 +223,25 @@ const ROSTER: SeedUser[] = [
 
 const userIds: Record<string, string> = { 'Marta R.': marta.id };
 for (const u of ROSTER) {
-  const [existing] = db.select().from(schema.users).where(eq(schema.users.email, u.email)).all();
+  const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, u.email));
   if (existing) { userIds[u.name] = existing.id; continue; }
-  const [row] = db.insert(schema.users).values({
+  const [row] = await db.insert(schema.users).values({
     email: u.email, name: u.name, avatarColor: u.color, isSuperAdmin: false,
-  }).returning().all();
+  }).returning();
   userIds[u.name] = row.id;
 }
 console.log('  users:', Object.keys(userIds).length);
 
 // Every annotator is also a project member.
 for (const name of Object.keys(userIds)) {
-  const uid = userIds[name];
-  const already = db.select().from(schema.projectMembers)
-    .where(eq(schema.projectMembers.userId, uid)).all()
-    .some(m => m.projectId === q3.id);
-  if (already) continue;
+  const uid = userIds[name]!;
+  const existingMemberships = await db.select().from(schema.projectMembers)
+    .where(eq(schema.projectMembers.userId, uid));
+  if (existingMemberships.some(m => m.projectId === q3.id)) continue;
   const role: schema.UserRole = uid === marta.id ? 'projectadmin'
     : ['Carlos Antúnez', 'Sara Velasco', 'Javier Moreno'].includes(name) ? 'validator'
     : 'annotator';
-  db.insert(schema.projectMembers).values({ projectId: q3.id, userId: uid, role }).run();
+  await db.insert(schema.projectMembers).values({ projectId: q3.id, userId: uid, role });
 }
 
 // ─── 3. Teams ────────────────────────────────────────────────────────
@@ -361,19 +255,19 @@ const TEAM_SPEC = [
 
 const teamIds: Record<string, string> = {};
 for (const t of TEAM_SPEC) {
-  const [row] = db.insert(schema.teams).values({
+  const [row] = await db.insert(schema.teams).values({
     projectId: q3.id, name: t.name, groupSize: t.members.length, consensusMetric: 'fleiss',
-  }).returning().all();
+  }).returning();
   teamIds[t.name] = row.id;
   for (const m of t.members) {
-    db.insert(schema.teamMembers).values({ teamId: row.id, userId: userIds[m], role: 'annotator' }).run();
+    await db.insert(schema.teamMembers).values({ teamId: row.id, userId: userIds[m], role: 'annotator' });
   }
 }
 console.log('  teams:', Object.keys(teamIds).length);
 
 // ─── 4. Corpus upload + fragments ────────────────────────────────────
 
-const [upload] = db.insert(schema.corpusUploads).values({
+const [upload] = await db.insert(schema.corpusUploads).values({
   projectId: q3.id,
   filename: 'EpData_Reader_T2_2026Q3.xlsx',
   sheetName: 'respuestas',
@@ -391,16 +285,16 @@ const [upload] = db.insert(schema.corpusUploads).values({
   }),
   status: 'segmented',
   uploadedBy: marta.id,
-}).returning().all();
+}).returning();
 
 // A default segmentation config, matching the mockup's live-preview defaults.
-const existingSeg = db.select().from(schema.segmentationConfigs)
-  .where(eq(schema.segmentationConfigs.projectId, q3.id)).all();
+const existingSeg = await db.select().from(schema.segmentationConfigs)
+  .where(eq(schema.segmentationConfigs.projectId, q3.id));
 if (existingSeg.length === 0) {
-  db.insert(schema.segmentationConfigs).values({
+  await db.insert(schema.segmentationConfigs).values({
     projectId: q3.id, name: 'Default (palabras)', unit: 'word',
     maxChunkSize: 120, overlap: 20, respectBoundaries: true, tolerance: 15,
-  }).run();
+  });
 }
 
 // Question / answer pool. `hate` marks fragments that should trigger the
@@ -458,52 +352,43 @@ const TOTAL_FRAGMENTS = FRAGMENTS_PER_PACKAGE * TEAM_SPEC.length;
 type SeededFragment = { id: string; hate: boolean };
 const seededFragments: SeededFragment[] = [];
 
-const insertFragment = sqlite.prepare(`
-  INSERT INTO fragments (id, project_id, upload_id, conversation_id, question, source_text, text,
-    fragment_index, fragment_total, variant, char_length, token_count, api_success, is_duplicate, created_at)
-  VALUES (@id, @project_id, @upload_id, @conversation_id, @question, @source_text, @text,
-    @fragment_index, @fragment_total, @variant, @char_length, @token_count, @api_success, @is_duplicate, @created_at)
-`);
-
-const seedFragments = sqlite.transaction(() => {
+await db.transaction(async (tx) => {
   for (let i = 0; i < TOTAL_FRAGMENTS; i++) {
     // ~22% of the corpus carries hate content, so the cascade is well exercised.
     const isHate = rnd() < 0.22;
     const qa = isHate ? pick(HATEFUL) : pick(NEUTRAL);
     const id = `frg_${(i + 1).toString().padStart(4, '0')}`;
     const text = qa.a;
-    insertFragment.run({
+    await tx.insert(schema.fragments).values({
       id,
-      project_id: q3.id,
-      upload_id: upload.id,
-      conversation_id: `${Math.floor(rnd() * 0xffffff).toString(16).padStart(6, '0')}-95d6-411b-a14a-${Math.floor(rnd() * 0xffffffff).toString(16).padStart(8, '0')}`,
+      projectId: q3.id,
+      uploadId: upload.id,
+      conversationId: `${Math.floor(rnd() * 0xffffff).toString(16).padStart(6, '0')}-95d6-411b-a14a-${Math.floor(rnd() * 0xffffffff).toString(16).padStart(8, '0')}`,
       question: qa.q,
-      source_text: qa.a,
+      sourceText: qa.a,
       text,
-      fragment_index: 1,
-      fragment_total: 1,
+      fragmentIndex: 1,
+      fragmentTotal: 1,
       variant: 1 + Math.floor(rnd() * 3),
-      char_length: text.length,
-      token_count: Math.round(text.length / 4),
-      api_success: rnd() < 0.96 ? 1 : 0,
-      is_duplicate: 0,
-      created_at: Date.now(),
+      charLength: text.length,
+      tokenCount: Math.round(text.length / 4),
+      apiSuccess: rnd() < 0.96,
+      isDuplicate: false,
     });
     seededFragments.push({ id, hate: !!qa.hate });
   }
 });
-seedFragments();
 console.log('  fragments:', seededFragments.length);
 
 // ─── 5. Resolve the project's dimension set (through its taxonomies) ─
 
-const projectTaxIds = db.select().from(schema.projectTaxonomies)
-  .where(eq(schema.projectTaxonomies.projectId, q3.id)).all().map(r => r.taxonomyId);
+const projectTaxIds = (await db.select().from(schema.projectTaxonomies)
+  .where(eq(schema.projectTaxonomies.projectId, q3.id))).map(r => r.taxonomyId);
 
 const dimIdSet = new Set<string>();
 for (const taxId of projectTaxIds) {
-  for (const td of db.select().from(schema.taxonomyDimensions)
-    .where(eq(schema.taxonomyDimensions.taxonomyId, taxId)).all()) {
+  for (const td of await db.select().from(schema.taxonomyDimensions)
+    .where(eq(schema.taxonomyDimensions.taxonomyId, taxId))) {
     dimIdSet.add(td.dimensionId);
   }
 }
@@ -515,20 +400,22 @@ type ProjDim = {
   depth: number;
 };
 
-const allDimRows = db.select().from(schema.dimensions).all().filter(d => dimIdSet.has(d.id) && d.status === 'active');
-const allDeps = db.select().from(schema.dimensionDependencies).all();
+const allDimRows = (await db.select().from(schema.dimensions))
+  .filter(d => dimIdSet.has(d.id) && d.status === 'active');
+const allDeps = await db.select().from(schema.dimensionDependencies);
 
-const projDims: ProjDim[] = allDimRows.map(d => {
-  const values = db.select().from(schema.dimensionValues)
-    .where(eq(schema.dimensionValues.dimensionId, d.id)).all()
+const projDims: ProjDim[] = [];
+for (const d of allDimRows) {
+  const values = (await db.select().from(schema.dimensionValues)
+    .where(eq(schema.dimensionValues.dimensionId, d.id)))
     .sort((a, b) => a.order - b.order).map(v => v.label);
   const dep = allDeps.find(x => x.dimensionId === d.id);
-  return {
+  projDims.push({
     id: d.id, name: d.name, kind: d.kind, values,
     dep: dep ? { parentId: dep.dependsOnId, values: JSON.parse(dep.values) as string[] } : null,
     depth: 0,
-  };
-});
+  });
+}
 
 // Depth = length of the dependency chain, so we can resolve parents first.
 const dimById = new Map(projDims.map(d => [d.id, d]));
@@ -540,7 +427,7 @@ for (const d of projDims) {
   d.depth = depth;
 }
 const orderedDims = [...projDims].sort((a, b) => a.depth - b.depth || a.name.localeCompare(b.name));
-console.log('  project dimensions:', orderedDims.length, '(max depth', Math.max(...orderedDims.map(d => d.depth)) + ')');
+console.log('  project dimensions:', orderedDims.length, '(max depth', Math.max(...projDims.map(d => d.depth)) + ')');
 
 type Answer = { value: string | null; skipped: boolean };
 
@@ -568,8 +455,8 @@ function consensusValueFor(d: ProjDim, isHate: boolean): string {
   // Bias towards the first value so annotations are not uniformly random:
   // real corpora are dominated by "no bias detected".
   const r = rnd();
-  if (r < 0.55) return d.values[0];
-  return d.values[Math.floor(rnd() * d.values.length) % d.values.length];
+  if (r < 0.55) return d.values[0]!;
+  return d.values[Math.floor(rnd() * d.values.length) % d.values.length]!;
 }
 
 // ─── 6. Packages, assignments and annotations ────────────────────────
@@ -611,49 +498,44 @@ const DIFFICULTY: Record<string, number> = {
 };
 const DEFAULT_DIFFICULTY = 0.08;
 
-const insertAnnotation = sqlite.prepare(`
-  INSERT INTO annotations (id, fragment_id, package_id, user_id, dimension_id, value, skipped, notes, created_at, updated_at)
-  VALUES (@id, @fragment_id, @package_id, @user_id, @dimension_id, @value, @skipped, NULL, @created_at, @created_at)
-`);
-const insertPkgFrag = sqlite.prepare(`
-  INSERT INTO package_fragments (package_id, fragment_id, "order") VALUES (?, ?, ?)
-`);
-
 let annotationCount = 0;
-const now = Date.now();
 
-const seedWork = sqlite.transaction(() => {
+await db.transaction(async (tx) => {
   for (const plan of PLANS) {
     const spec = TEAM_SPEC.find(t => t.name === plan.team)!;
-    const teamId = teamIds[plan.team];
-    const memberIds = spec.members.map(m => userIds[m]);
+    const teamId = teamIds[plan.team]!;
+    const memberIds = spec.members.map(m => userIds[m]!);
 
-    const [pkg] = db.insert(schema.packages).values({
+    const [pkg] = await tx.insert(schema.packages).values({
       projectId: q3.id, teamId, code: plan.code, isMirror: true,
       status: plan.status, version: plan.status === 'returned' ? 2 : 1,
       returnCount: plan.status === 'returned' ? 1 : 0,
       notes: plan.status === 'returned' ? 'Reenviado por superar el umbral de discrepancia' : null,
-    }).returning().all();
+    }).returning();
 
     const slice = seededFragments.slice(plan.from, plan.from + FRAGMENTS_PER_PACKAGE);
-    slice.forEach((f, i) => insertPkgFrag.run(pkg.id, f.id, i));
+    for (let i = 0; i < slice.length; i++) {
+      await tx.insert(schema.packageFragments).values({
+        packageId: pkg.id, fragmentId: slice[i]!.id, order: i,
+      });
+    }
 
-    memberIds.forEach((uid, i) => {
-      db.insert(schema.packageAssignments).values({
-        packageId: pkg.id, userId: uid,
+    for (let i = 0; i < memberIds.length; i++) {
+      await tx.insert(schema.packageAssignments).values({
+        packageId: pkg.id, userId: memberIds[i]!,
         status: plan.submitted ? 'submitted' : 'in_progress',
         version: plan.submitted ? 1 : 0,
         isLead: i === 0,
-        submittedAt: plan.submitted ? new Date(now - 3600_000 * (i + 1)) : null,
-      }).run();
-    });
+        submittedAt: plan.submitted ? new Date(Date.now() - 3600_000 * (i + 1)) : null,
+      });
+    }
 
     const toAnnotate = slice.slice(0, plan.annotated);
-    toAnnotate.forEach((frag) => {
+    for (const frag of toAnnotate) {
       // The value the team would converge on, before individual disagreement.
       const consensus = resolveAnswers(d => consensusValueFor(d, frag.hate));
 
-      memberIds.forEach((uid) => {
+      for (const uid of memberIds) {
         // Each annotator independently deviates per dimension, at a rate set
         // by that dimension's difficulty. Deviating on a gate re-resolves the
         // cascade for this annotator, so their skipped set differs too.
@@ -665,7 +547,7 @@ const seedWork = sqlite.transaction(() => {
           if (rnd() >= rate) continue;
           const current = consensus.get(d.id)!.value;
           const alt = d.values.filter(v => v !== current);
-          if (alt.length) overrides.set(d.id, alt[Math.floor(rnd() * alt.length) % alt.length]);
+          if (alt.length) overrides.set(d.id, alt[Math.floor(rnd() * alt.length) % alt.length]!);
         }
 
         const answers = overrides.size > 0
@@ -674,19 +556,17 @@ const seedWork = sqlite.transaction(() => {
 
         for (const d of orderedDims) {
           const a = answers.get(d.id)!;
-          insertAnnotation.run({
+          await tx.insert(schema.annotations).values({
             id: `ann_${(++annotationCount).toString(36)}`,
-            fragment_id: frag.id, package_id: pkg.id, user_id: uid, dimension_id: d.id,
+            fragmentId: frag.id, packageId: pkg.id, userId: uid, dimensionId: d.id,
             value: a.skipped ? null : a.value,
-            skipped: a.skipped ? 1 : 0,
-            created_at: now,
+            skipped: a.skipped,
           });
         }
-      });
-    });
+      }
+    }
   }
 });
-seedWork();
 console.log('  packages:', PLANS.length, '· annotations:', annotationCount);
 
 // ─── 7. Qualitative validation samples ───────────────────────────────
@@ -707,52 +587,52 @@ const REJECT_REASONS = [
 
 let qualCount = 0, correctionCount = 0;
 
-const seedQual = sqlite.transaction(() => {
+await db.transaction(async (tx) => {
   for (const plan of PLANS) {
-    const teamId = teamIds[plan.team];
-    const [pkg] = db.select().from(schema.packages)
-      .where(eq(schema.packages.code, plan.code)).all();
+    const teamId = teamIds[plan.team]!;
+    const [pkg] = await tx.select().from(schema.packages)
+      .where(eq(schema.packages.code, plan.code));
     const slice = seededFragments.slice(plan.from, plan.from + plan.annotated);
     const sample = slice.slice(0, Math.min(SAMPLE_SIZE, slice.length));
     const reviewed = QUAL_PLAN[plan.team] ?? 0;
 
-    sample.forEach((frag, i) => {
+    for (let i = 0; i < sample.length; i++) {
+      const frag = sample[i]!;
       const isReviewed = i < reviewed;
       // Roughly a fifth of reviewed fragments need a correction.
       const corrected = isReviewed && rnd() < 0.22;
       const status: schema.QualDecision = !isReviewed ? 'pending' : corrected ? 'corrected' : 'approved';
-      const [val] = db.insert(schema.qualValidations).values({
+      const [val] = await tx.insert(schema.qualValidations).values({
         projectId: q3.id, teamId, packageId: pkg?.id ?? null, fragmentId: frag.id,
         validatorId: isReviewed ? validatorId : null,
         status,
         rejectReason: corrected ? pick(REJECT_REASONS) : null,
-        reviewedAt: isReviewed ? new Date(now - 3600_000 * (i + 1)) : null,
-      }).returning().all();
+        reviewedAt: isReviewed ? new Date(Date.now() - 3600_000 * (i + 1)) : null,
+      }).returning();
       qualCount++;
 
       if (corrected) {
         // Override one dimension the team actually answered.
-        const answered = db.select().from(schema.annotations)
-          .where(eq(schema.annotations.fragmentId, frag.id)).all()
+        const answered = (await tx.select().from(schema.annotations)
+          .where(eq(schema.annotations.fragmentId, frag.id)))
           .filter(a => !a.skipped && a.value);
         if (answered.length) {
-          const target = answered[Math.floor(rnd() * answered.length) % answered.length];
+          const target = answered[Math.floor(rnd() * answered.length) % answered.length]!;
           const d = dimById.get(target.dimensionId);
           const alt = (d?.values ?? []).filter(v => v !== target.value);
           if (alt.length) {
-            db.insert(schema.qualCorrections).values({
+            await tx.insert(schema.qualCorrections).values({
               validationId: val.id, dimensionId: target.dimensionId,
-              originalValue: target.value, correctedValue: alt[Math.floor(rnd() * alt.length) % alt.length],
-            }).run();
+              originalValue: target.value, correctedValue: alt[Math.floor(rnd() * alt.length) % alt.length]!,
+            });
             correctionCount++;
           }
         }
       }
-    });
+    }
   }
 });
-seedQual();
 console.log('  qual validations:', qualCount, '· corrections:', correctionCount);
 
-sqlite.close();
+await client.end();
 console.log('\nWorkflow seed complete.');

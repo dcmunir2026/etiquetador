@@ -37,7 +37,7 @@ El sistema completo se planificó en `docs/ROADMAP.md` (4 semanas / 2 sprints).
 | Capa | Tecnología | Estado |
 |---|---|---|
 | Front + backend | Next.js 14 (App Router) + TypeScript | ✅ |
-| BD local | better-sqlite3 (sin Docker en dev) | ✅ |
+| BD local | PostgreSQL 16 vía docker-compose (etiquetador-postgres:5433) | ✅ |
 | BD prod | PostgreSQL + Drizzle (target) | ⏳ |
 | ORM | Drizzle 0.45 | ✅ |
 | Estilos | CSS variables (design tokens propios) | ✅ |
@@ -208,24 +208,29 @@ NO usamos Tailwind utility classes todavía. Usamos CSS variables en
 
 ## 7. Cómo correr localmente
 
-**Node 22 o superior es obligatorio.** `better-sqlite3@13` lo exige
-(`engines: node >= 22`); con Node 20 el binding nativo **no da error, hace
-segfault al cargar** (exit 139). Hay un `.nvmrc` en la raíz.
+**Node 22 o superior es obligatorio** (`engines: node >= 22`). Hay un
+`.nvmrc` en la raíz. Postgres corre en Docker.
 
 ```bash
 nvm use            # lee .nvmrc → Node 22
 pnpm install
 
-# Crear la BD (solo la primera vez)
+# Arrancar Postgres (solo la primera vez, o si el contenedor está caído)
+docker compose up -d postgres
+
+# Crear las tablas y sembrar datos (solo la primera vez)
 cd packages/db
-DATABASE_URL=file:./etiquetador.db pnpm init          # catálogo
-DATABASE_URL=file:./etiquetador.db pnpm init:workflow # corpus, equipos, anotaciones
+pnpm db:push                       # crea el esquema en Postgres
+DATABASE_URL=postgres://etiquetador:etiquetador_dev@localhost:5433/etiquetador pnpm init
+DATABASE_URL=postgres://etiquetador:etiquetador_dev@localhost:5433/etiquetador pnpm init:workflow
+DATABASE_URL=postgres://etiquetador:etiquetador_dev@localhost:5433/etiquetador pnpm seed:passwords
 cd ../..
 
 pnpm dev           # → http://localhost:3000
 ```
 
-Sin Docker y sin Postgres: todo en un `.db` de SQLite.
+`apps/web/.env` ya apunta al Postgres local con la contraseña `etiquetador_dev`.
+Si reinicias el contenedor, los datos persisten en el volumen `postgres_data`.
 
 `init-workflow.ts` es idempotente — vacía y regenera solo las tablas de
 flujo, respetando el catálogo. Usa un PRNG con semilla fija, así que los
@@ -330,11 +335,11 @@ Scope común: `(admin)`, `db`, `wizard`, `segmentation`, `packages`.
 ## 12. Cosas que NO hacer
 
 - ❌ No tocar `gh-pages` (es el mockup publicado)
-- ❌ No usar `pnpm` con workspaces nativos para `better-sqlite3` (causa OOM en webpack). Por eso el schema está duplicado en `apps/web/src/db/`.
+- ❌ El esquema está duplicado en `apps/web/src/db/schema.ts` y `packages/db/src/index.ts` (Next.js no resuelve bien el path desde `@etiquetador/db`). Si modificas uno, copia al otro.
 - ❌ No usar server actions directamente desde client components sin `revalidatePath`
 - ❌ No crear UI sin mirar antes el mockup de `gh-pages` (sigue siendo la referencia visual)
 - ❌ No persistir agregados de acuerdo: se calculan desde `annotations` (ver §5)
-- ❌ No usar Node 20: `better-sqlite3` hace segfault, no da error claro
+- ❌ No usar Node 20: `engines` exige Node 22
 - ❌ No lanzar `pnpm build` con el dev server corriendo: comparten `.next` y
   lo corrompen (todas las rutas pasan a 500 con `MODULE_NOT_FOUND` de
   `_document.js`). Si pasa: parar el dev server, `rm -rf apps/web/.next`, reiniciar.

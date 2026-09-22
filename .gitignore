@@ -61,3 +61,4 @@ coverage/
 packages/db/etiquetador.db
 packages/db/etiquetador.db-shm
 packages/db/etiquetador.db-wal
+*.db

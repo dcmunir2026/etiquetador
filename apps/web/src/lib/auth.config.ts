@@ -1,7 +1,7 @@
 /**
  * Auth.js v5 configuration shared between Node and Edge.
  *
- * Must stay free of `better-sqlite3`: the middleware imports this file and
+ * Must stay free of DB drivers: the middleware imports this file and
  * runs on the Edge runtime. The Credentials provider, which needs the DB,
  * is added in `auth.ts`.
  */

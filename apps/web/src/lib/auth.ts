@@ -1,8 +1,8 @@
 /**
  * Node-side Auth.js entry: wires the Credentials provider to the database.
  *
- * Edge code must not import this file — it pulls in better-sqlite3. The
- * middleware imports `auth.config.ts` instead.
+ * Edge code must not import this file — it pulls in postgres.js and the DB.
+ * The middleware imports `auth.config.ts` instead.
  */
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';

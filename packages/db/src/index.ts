@@ -6,18 +6,19 @@
 //   - Projects get assigned TAXONOMIES (not dimensions).
 //   - Intensity scales are GLOBAL (binary, 3-level, 5-level, etc).
 //
-// Driver: SQLite (via better-sqlite3). Production target: PostgreSQL.
-// Drizzle abstracts most differences; we keep SQL portable.
+// Driver: PostgreSQL via postgres.js + drizzle-orm/pg-core.
 
 import { relations, sql } from 'drizzle-orm';
 import {
-  sqliteTable,
+  pgTable,
   text,
   integer,
+  boolean,
+  timestamp,
   uniqueIndex,
   index,
   primaryKey,
-} from 'drizzle-orm/sqlite-core';
+} from 'drizzle-orm/pg-core';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ function newId(): string {
   return `t_${ts}_${rand}`;
 }
 
-// ─── Enums (SQLite has no native enums; we use text + check at app layer) ─
+// ─── Enums (kept as text + app-layer checks, matching the SQLite era) ─
 
 export const PROJECT_STATUSES = ['active', 'archived'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -63,19 +64,19 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 // ─── USERS ───────────────────────────────────────────────────────────
 
-export const users = sqliteTable(
+export const users = pgTable(
   'users',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     email: text('email').notNull(),
     name: text('name'),
     avatarColor: text('avatar_color'),
-    isSuperAdmin: integer('is_super_admin', { mode: 'boolean' }).notNull().default(false),
+    isSuperAdmin: boolean('is_super_admin').notNull().default(false),
     /** bcrypt hash. NULL means the account cannot sign in yet. */
     passwordHash: text('password_hash'),
-    emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    emailVerifiedAt: timestamp('email_verified_at', { mode: 'date' }),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     emailUnique: uniqueIndex('users_email_unique').on(t.email),
@@ -84,7 +85,7 @@ export const users = sqliteTable(
 
 // ─── PROJECTS ─────────────────────────────────────────────────────────
 
-export const projects = sqliteTable(
+export const projects = pgTable(
   'projects',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -93,8 +94,8 @@ export const projects = sqliteTable(
     description: text('description'),
     status: text('status', { enum: PROJECT_STATUSES }).notNull().default('active'),
     createdBy: text('created_by').notNull().references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     slugUnique: uniqueIndex('projects_slug_unique').on(t.slug),
@@ -103,14 +104,14 @@ export const projects = sqliteTable(
 
 // ─── PROJECT MEMBERS ──────────────────────────────────────────────────
 
-export const projectMembers = sqliteTable(
+export const projectMembers = pgTable(
   'project_members',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     role: text('role', { enum: USER_ROLES }).notNull().default('annotator'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     uniqueMember: uniqueIndex('project_members_unique').on(t.projectId, t.userId),
@@ -119,22 +120,22 @@ export const projectMembers = sqliteTable(
 
 // ─── INTENSITY SCALES (GLOBAL) ──────────────────────────────────────
 
-export const intensityScales = sqliteTable(
+export const intensityScales = pgTable(
   'intensity_scales',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
     name: text('name').notNull(),
     kind: text('kind', { enum: SCALE_KINDS }).notNull(),
-    isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
+    isCustom: boolean('is_custom').notNull().default(false),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     nameUnique: uniqueIndex('intensity_scales_name_unique').on(t.name),
   }),
 );
 
-export const intensityLevels = sqliteTable(
+export const intensityLevels = pgTable(
   'intensity_levels',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -151,7 +152,7 @@ export const intensityLevels = sqliteTable(
 
 // ─── DIMENSIONS (GLOBAL — atoms) ────────────────────────────────────
 
-export const dimensions = sqliteTable(
+export const dimensions = pgTable(
   'dimensions',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -164,15 +165,15 @@ export const dimensions = sqliteTable(
     scaleId: text('scale_id').references(() => intensityScales.id, { onDelete: 'set null' }),
     status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     slugUnique: uniqueIndex('dimensions_slug_unique').on(t.slug),
   }),
 );
 
-export const dimensionValues = sqliteTable(
+export const dimensionValues = pgTable(
   'dimension_values',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -189,7 +190,7 @@ export const dimensionValues = sqliteTable(
 
 // ─── TAXONOMIES (GLOBAL — groups of dimensions) ─────────────────────
 
-export const taxonomies = sqliteTable(
+export const taxonomies = pgTable(
   'taxonomies',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -200,8 +201,8 @@ export const taxonomies = sqliteTable(
     color: text('color'),
     status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
     createdBy: text('created_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     slugUnique: uniqueIndex('taxonomies_slug_unique').on(t.slug),
@@ -209,7 +210,7 @@ export const taxonomies = sqliteTable(
 );
 
 // N:M: which dimensions are in which taxonomy
-export const taxonomyDimensions = sqliteTable(
+export const taxonomyDimensions = pgTable(
   'taxonomy_dimensions',
   {
     taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
@@ -223,13 +224,13 @@ export const taxonomyDimensions = sqliteTable(
 );
 
 // N:M: which taxonomies are assigned to which project
-export const projectTaxonomies = sqliteTable(
+export const projectTaxonomies = pgTable(
   'project_taxonomies',
   {
     projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     taxonomyId: text('taxonomy_id').notNull().references(() => taxonomies.id, { onDelete: 'cascade' }),
     assignedBy: text('assigned_by').references(() => users.id),
-    assignedAt: integer('assigned_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    assignedAt: timestamp('assigned_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.projectId, t.taxonomyId] }),
@@ -239,7 +240,7 @@ export const projectTaxonomies = sqliteTable(
 
 // ─── SEGMENTATION CONFIGS (per project) ─────────────────────────────
 
-export const segmentationConfigs = sqliteTable(
+export const segmentationConfigs = pgTable(
   'segmentation_configs',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -248,9 +249,9 @@ export const segmentationConfigs = sqliteTable(
     unit: text('unit', { enum: SEGMENTATION_UNITS }).notNull(),
     maxChunkSize: integer('max_chunk_size').notNull(),
     overlap: integer('overlap').notNull().default(0),
-    respectBoundaries: integer('respect_boundaries', { mode: 'boolean' }).notNull().default(true),
+    respectBoundaries: boolean('respect_boundaries').notNull().default(true),
     tolerance: integer('tolerance').notNull().default(15),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     nameProjectUnique: uniqueIndex('segmentation_configs_name_project_unique').on(t.projectId, t.name),
@@ -269,7 +270,7 @@ export type DependencyOperator = (typeof DEPENDENCY_OPERATORS)[number];
 export const DEPENDENCY_BEHAVIORS = ['skip'] as const;
 export type DependencyBehavior = (typeof DEPENDENCY_BEHAVIORS)[number];
 
-export const dimensionDependencies = sqliteTable(
+export const dimensionDependencies = pgTable(
   'dimension_dependencies',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -283,7 +284,7 @@ export const dimensionDependencies = sqliteTable(
     behavior: text('behavior', { enum: DEPENDENCY_BEHAVIORS }).notNull().default('skip'),
     /** Human-readable rule, e.g. "¿Hay odio? = Sí". */
     label: text('label'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     // One rule per dimension keeps resolution deterministic (mockup parity).
@@ -297,7 +298,7 @@ export const dimensionDependencies = sqliteTable(
 export const UPLOAD_STATUSES = ['uploaded', 'mapped', 'segmented', 'failed'] as const;
 export type UploadStatus = (typeof UPLOAD_STATUSES)[number];
 
-export const corpusUploads = sqliteTable(
+export const corpusUploads = pgTable(
   'corpus_uploads',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -314,7 +315,7 @@ export const corpusUploads = sqliteTable(
     columnMapping: text('column_mapping'),
     status: text('status', { enum: UPLOAD_STATUSES }).notNull().default('uploaded'),
     uploadedBy: text('uploaded_by').references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     projectIdx: index('corpus_uploads_project_idx').on(t.projectId),
@@ -323,7 +324,7 @@ export const corpusUploads = sqliteTable(
 
 // ─── FRAGMENTS (H3/H4 — unidad etiquetable) ─────────────────────────
 
-export const fragments = sqliteTable(
+export const fragments = pgTable(
   'fragments',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -342,9 +343,9 @@ export const fragments = sqliteTable(
     variant: integer('variant').notNull().default(1),
     charLength: integer('char_length').notNull().default(0),
     tokenCount: integer('token_count').notNull().default(0),
-    apiSuccess: integer('api_success', { mode: 'boolean' }).notNull().default(true),
-    isDuplicate: integer('is_duplicate', { mode: 'boolean' }).notNull().default(false),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    apiSuccess: boolean('api_success').notNull().default(true),
+    isDuplicate: boolean('is_duplicate').notNull().default(false),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     projectIdx: index('fragments_project_idx').on(t.projectId),
@@ -357,7 +358,7 @@ export const fragments = sqliteTable(
 export const CONSENSUS_METRICS = ['fleiss', 'krippendorff', 'weighted-majority', 'unanimous'] as const;
 export type ConsensusMetric = (typeof CONSENSUS_METRICS)[number];
 
-export const teams = sqliteTable(
+export const teams = pgTable(
   'teams',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -366,14 +367,14 @@ export const teams = sqliteTable(
     /** How many annotators share each package (dúo=2, trío=3, …). */
     groupSize: integer('group_size').notNull().default(2),
     consensusMetric: text('consensus_metric', { enum: CONSENSUS_METRICS }).notNull().default('fleiss'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     projectNameUnique: uniqueIndex('teams_project_name_unique').on(t.projectId, t.name),
   }),
 );
 
-export const teamMembers = sqliteTable(
+export const teamMembers = pgTable(
   'team_members',
   {
     teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
@@ -391,7 +392,7 @@ export const teamMembers = sqliteTable(
 export const PACKAGE_STATUSES = ['draft', 'assigned', 'in_progress', 'submitted', 'approved', 'returned', 'blocked'] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
-export const packages = sqliteTable(
+export const packages = pgTable(
   'packages',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -400,14 +401,14 @@ export const packages = sqliteTable(
     /** Display code, e.g. PK-A-001. */
     code: text('code').notNull(),
     /** True when the same fragments go to every annotator (paquete espejo). */
-    isMirror: integer('is_mirror', { mode: 'boolean' }).notNull().default(true),
+    isMirror: boolean('is_mirror').notNull().default(true),
     status: text('status', { enum: PACKAGE_STATUSES }).notNull().default('assigned'),
     /** Bumped every time the package is returned for re-annotation. */
     version: integer('version').notNull().default(1),
     returnCount: integer('return_count').notNull().default(0),
     notes: text('notes'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     projectCodeUnique: uniqueIndex('packages_project_code_unique').on(t.projectId, t.code),
@@ -415,7 +416,7 @@ export const packages = sqliteTable(
   }),
 );
 
-export const packageFragments = sqliteTable(
+export const packageFragments = pgTable(
   'package_fragments',
   {
     packageId: text('package_id').notNull().references(() => packages.id, { onDelete: 'cascade' }),
@@ -431,7 +432,7 @@ export const packageFragments = sqliteTable(
 export const ASSIGNMENT_STATUSES = ['assigned', 'in_progress', 'submitted'] as const;
 export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
-export const packageAssignments = sqliteTable(
+export const packageAssignments = pgTable(
   'package_assignments',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -440,9 +441,9 @@ export const packageAssignments = sqliteTable(
     status: text('status', { enum: ASSIGNMENT_STATUSES }).notNull().default('assigned'),
     /** Submission round for this annotator (v0 = never submitted). */
     version: integer('version').notNull().default(0),
-    isLead: integer('is_lead', { mode: 'boolean' }).notNull().default(false),
-    submittedAt: integer('submitted_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    isLead: boolean('is_lead').notNull().default(false),
+    submittedAt: timestamp('submitted_at', { mode: 'date' }),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     packageUserUnique: uniqueIndex('package_assignments_package_user_unique').on(t.packageId, t.userId),
@@ -452,7 +453,7 @@ export const packageAssignments = sqliteTable(
 
 // ─── ANNOTATIONS (H10-H12 — el dato central) ────────────────────────
 
-export const annotations = sqliteTable(
+export const annotations = pgTable(
   'annotations',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -463,10 +464,10 @@ export const annotations = sqliteTable(
     /** The chosen label, or free text. NULL means the dimension was skipped. */
     value: text('value'),
     /** True when skip-logic hid this dimension for this annotator. */
-    skipped: integer('skipped', { mode: 'boolean' }).notNull().default(false),
+    skipped: boolean('skipped').notNull().default(false),
     notes: text('notes'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     // One answer per (fragment, annotator, dimension).
@@ -483,7 +484,7 @@ export const QUAL_DECISIONS = ['pending', 'approved', 'corrected'] as const;
 export type QualDecision = (typeof QUAL_DECISIONS)[number];
 
 /** One row per fragment drawn into a team's qualitative review sample. */
-export const qualValidations = sqliteTable(
+export const qualValidations = pgTable(
   'qual_validations',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -494,8 +495,8 @@ export const qualValidations = sqliteTable(
     validatorId: text('validator_id').references(() => users.id, { onDelete: 'set null' }),
     status: text('status', { enum: QUAL_DECISIONS }).notNull().default('pending'),
     rejectReason: text('reject_reason'),
-    reviewedAt: integer('reviewed_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    reviewedAt: timestamp('reviewed_at', { mode: 'date' }),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     teamFragmentUnique: uniqueIndex('qual_validations_team_fragment_unique').on(t.teamId, t.fragmentId),
@@ -504,7 +505,7 @@ export const qualValidations = sqliteTable(
 );
 
 /** A validator overriding one dimension's consensus value. */
-export const qualCorrections = sqliteTable(
+export const qualCorrections = pgTable(
   'qual_corrections',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -512,7 +513,7 @@ export const qualCorrections = sqliteTable(
     dimensionId: text('dimension_id').notNull().references(() => dimensions.id, { onDelete: 'cascade' }),
     originalValue: text('original_value'),
     correctedValue: text('corrected_value'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     validationDimUnique: uniqueIndex('qual_corrections_validation_dim_unique').on(t.validationId, t.dimensionId),
@@ -521,7 +522,7 @@ export const qualCorrections = sqliteTable(
 
 // ─── AUDIT LOG ───────────────────────────────────────────────────────
 
-export const auditLog = sqliteTable(
+export const auditLog = pgTable(
   'audit_log',
   {
     id: text('id').primaryKey().$defaultFn(() => newId()),
@@ -531,7 +532,7 @@ export const auditLog = sqliteTable(
     targetType: text('target_type'),
     targetId: text('target_id'),
     metadata: text('metadata'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     actorIdx: index('audit_log_actor_idx').on(t.actorId),
