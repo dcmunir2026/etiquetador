@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MemberRow, TeamRow } from '@/lib/queries';
-import { createTeam, inviteMember, setMemberRole, setTeamMembers } from '@/app/actions/workflow';
-import { Avatar, Kpi, StatusTag } from './shared';
+import { createTeam, setMemberRole, setTeamMembers } from '@/app/actions/workflow';
+import { inviteMember, resendInvitation } from '@/app/actions/invitations';
+import { Avatar, Kpi } from './shared';
 
 const ROLE_LABELS: Record<string, string> = {
   superadmin: 'Superadministrador',
@@ -39,6 +40,14 @@ export function RolesView({
     setBusy(userId);
     await setMemberRole(projectId, userId, role as never);
     setBusy(null);
+    router.refresh();
+  }
+
+  async function resend(userId: string) {
+    setBusy(userId);
+    const res = await resendInvitation({ projectId, userId });
+    setBusy(null);
+    if (!res.ok) alert(res.error);
     router.refresh();
   }
 
@@ -134,7 +143,16 @@ export function RolesView({
               )}
             </div>
             <div><small style={{ color: 'var(--ink-3)' }}>{m.teamNames.join(', ') || '—'}</small></div>
-            <div><StatusTag status="active" /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+              <InvitationStateTag state={m.invitationState} />
+              {m.invitationState === 'pending' && (
+                <button className="btn-mini" disabled={busy === m.id}
+                        onClick={() => resend(m.id)}
+                        title={`Caduca ${m.pendingInviteExpiresAt?.toLocaleString('es-ES') ?? 'pronto'}`}>
+                  {busy === m.id ? 'Enviando…' : 'Reenviar invitación'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
         <div className="role-row" style={{ opacity: 0.75 }}>
@@ -218,7 +236,9 @@ function InviteDialog({ projectId, teams, onClose, onDone }: {
         </select>
       </div>
       <p style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>
-        No se envía email todavía: el usuario queda creado y asociado al proyecto.
+        Se envía un correo con un enlace único de un solo uso: al hacer clic, la persona
+        crea su contraseña y queda dentro del proyecto. Si <code>RESEND_API_KEY</code> no
+        está configurada, el enlace sale por consola del servidor (modo dev).
       </p>
     </Overlay>
   );
@@ -308,6 +328,18 @@ function TeamMembersDialog({ team, members, onClose, onDone }: {
       </div>
     </Overlay>
   );
+}
+
+/** Per-member invitation state, shown in the Estado column. */
+function InvitationStateTag({ state }: { state: MemberRow['invitationState'] }) {
+  const map = {
+    accepted:    { className: 'sesgo-estadistico',  label: 'Activo' },
+    pending:     { className: 'sesgo-religion',     label: 'Pendiente' },
+    no_password: { className: 'sesgo-genero',       label: 'Sin contraseña' },
+    never:       { className: 'sesgo-semiotica',    label: 'Sin invitación' },
+  } as const;
+  const m = map[state];
+  return <span className={`tag ${m.className}`}>{m.label}</span>;
 }
 
 /** Shared modal chrome for the dialogs on this screen. */

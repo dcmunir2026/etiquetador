@@ -216,54 +216,6 @@ export async function setTeamMembers(teamId: string, userIds: string[]): Promise
 /** Minimum length for a password an admin sets on someone's behalf. */
 const MIN_PASSWORD = 8;
 
-export async function inviteMember(input: {
-  projectId: string; email: string; name?: string; role: UserRole;
-  teamId?: string; password?: string;
-}): Promise<ActionResult> {
-  const gate = await authorize('roles', input.projectId);
-  if (!gate.ok) return { ok: false, error: gate.error };
-  const db = getDb();
-  const email = input.email?.trim().toLowerCase();
-  if (!email || !email.includes('@')) return { ok: false, error: 'Introduce un email válido.' };
-
-  const password = input.password?.trim();
-  if (password && password.length < MIN_PASSWORD) {
-    return { ok: false, error: `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.` };
-  }
-
-  let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user) {
-    // Without a password the account exists but cannot sign in, which is
-    // the intended state until an admin sets one.
-    [user] = await db.insert(users).values({
-      email, name: input.name?.trim() || email.split('@')[0]!, isSuperAdmin: false,
-      passwordHash: password ? await bcrypt.hash(password, 10) : null,
-    }).returning();
-  } else if (password) {
-    await db.update(users).set({ passwordHash: await bcrypt.hash(password, 10), updatedAt: new Date() })
-      .where(eq(users.id, user.id));
-  }
-  if (!user) return { ok: false, error: 'No se pudo crear el usuario.' };
-
-  const [member] = await db.select().from(projectMembers)
-    .where(and(eq(projectMembers.projectId, input.projectId), eq(projectMembers.userId, user.id))).limit(1);
-  if (!member) {
-    await db.insert(projectMembers).values({ projectId: input.projectId, userId: user.id, role: input.role });
-  } else {
-    await db.update(projectMembers).set({ role: input.role }).where(eq(projectMembers.id, member.id));
-  }
-
-  if (input.teamId) {
-    const [tm] = await db.select().from(teamMembers)
-      .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.userId, user.id))).limit(1);
-    if (!tm) await db.insert(teamMembers).values({ teamId: input.teamId, userId: user.id, role: 'annotator' });
-  }
-
-  await audit('member.invite', 'user', user.id, input.projectId, { email, role: input.role });
-  revalidatePath('/', 'layout');
-  return { ok: true, id: user.id };
-}
-
 /** Set or replace someone's password. Admin-side reset; there is no email flow yet. */
 export async function resetPassword(projectId: string, userId: string, password: string): Promise<ActionResult> {
   const gate = await authorize('roles', projectId);

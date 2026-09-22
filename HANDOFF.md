@@ -44,7 +44,8 @@ El sistema completo se planificó en `docs/ROADMAP.md` (4 semanas / 2 sprints).
 | Métricas | Fleiss kappa + discrepancias, calculadas en vivo | ✅ |
 | Segmentación | Implementación propia, sin dependencias | ✅ |
 | Parser de corpus | CSV/TSV propio; `.xlsx` pendiente | 🟡 |
-| Auth | Stub con cookie (Marta R. hardcoded) | ⏳ → Auth.js v5 |
+| Auth | Auth.js v5 (Credentials, JWT) | ✅ |
+| Email | Resend (magic-link en invitaciones) | ✅ |
 | Workers | BullMQ + Redis | ⏳ no iniciado |
 | Storage | MinIO (archivos Excel, exports) | ⏳ no iniciado |
 | Búsqueda | Meilisearch | ⏳ no iniciado |
@@ -268,12 +269,12 @@ La navegación es una sola página con `?view=`; el enrutado de datos vive en
 
 | Vista | Lee de BD | Escribe |
 |---|---|---|
-| `dashboard` | ✅ proyectos, avance, Kappa | — |
+| `dashboard` | ✅ proyectos, avance, Kappa | ✅ crear proyecto (Topbar) |
 | `upload` | ✅ cargas previas | ✅ CSV/TSV → fragmentos segmentados |
 | `taxonomies` (Dimensiones) | ✅ | ✅ wizard 5 pasos, archivar/restaurar |
 | `taxonomy-groups` (Taxonomías) | ✅ | ✅ crear, editar dimensiones, archivar |
 | `dimensions` (Taxonomías del proyecto) | ✅ | ✅ asignar/desasignar |
-| `roles` | ✅ | ✅ invitar, rol, equipos y miembros |
+| `roles` | ✅ | ✅ invitar (vía magic link + email), rol, equipos y miembros |
 | `paquetes` | ✅ | ✅ dividir corpus y asignar |
 | `segmentation` | ✅ | ✅ guardar config (+ preview en vivo) |
 | `tagging` | ✅ | ✅ anotar en cascada, enviar paquete |
@@ -284,7 +285,8 @@ La navegación es una sola página con `?view=`; el enrutado de datos vive en
 | `validacion` | ✅ | ✅ muestra, aprobar, corregir etiquetas |
 | `reporte` | ✅ calculado | — |
 | `kappa` | ✅ calculado | — |
-| `login` | — | — (stub) |
+| `login` | — | — (Auth.js v5 con credenciales) |
+| `/invite/[token]` | ✅ lookup del token | ✅ crea contraseña + auto-sign-in |
 
 **Sin implementar, y es deliberado:**
 - **Parser de `.xlsx`.** La carga acepta CSV/TSV con parser propio

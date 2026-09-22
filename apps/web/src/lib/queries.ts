@@ -10,9 +10,10 @@ import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   annotations, corpusUploads, dimensionDependencies, dimensionValues, dimensions,
-  fragments, intensityScales, packageAssignments, packageFragments, packages,
-  projectMembers, projectTaxonomies, projects, qualCorrections, qualValidations,
-  segmentationConfigs, taxonomies, taxonomyDimensions, teamMembers, teams, users,
+  fragments, intensityScales, invitationTokens, packageAssignments,
+  packageFragments, packages, projectMembers, projectTaxonomies, projects,
+  qualCorrections, qualValidations, segmentationConfigs, taxonomies,
+  taxonomyDimensions, teamMembers, teams, users,
 } from '@/db/schema';
 import type { CascadeDimension } from './cascade';
 import { computeDiscrepancies, fleissKappa, type RatingRow } from './metrics';
@@ -296,11 +297,29 @@ export async function getTeams(projectId: string): Promise<TeamRow[]> {
   }));
 }
 
+export type InvitationState = 'accepted' | 'pending' | 'no_password' | 'never';
+
 export type MemberRow = {
   id: string; name: string; email: string; color: string | null;
   role: string; isSuperAdmin: boolean; teamNames: string[];
+  invitationState: InvitationState;
+  pendingInviteExpiresAt: Date | null;
 };
 
+/**
+ * Per-project member list with their current invitation state.
+ *
+ * State is derived from the latest `invitation_tokens` row for this user
+ * in this project, plus whether they have ever set a password:
+ *   - `accepted`   — redeemed at least one token (signed in at some point).
+ *   - `pending`    — there is an un-redeemed, unexpired token AND no
+ *                    password yet. Admin can re-send the magic link.
+ *   - `no_password`— never accepted an invitation (no password), and no
+ *                    live token to send again. The seed/legacy state.
+ *   - `never`      — has a password but never went through the invite
+ *                    flow (e.g. seeded user). The default for active
+ *                    accounts that joined before invitations existed.
+ */
 export async function getProjectMembers(projectId: string): Promise<MemberRow[]> {
   const db = getDb();
   const rows = await db.select({ m: projectMembers, u: users })
@@ -308,6 +327,28 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
     .innerJoin(users, eq(users.id, projectMembers.userId))
     .where(eq(projectMembers.projectId, projectId))
     .orderBy(asc(users.name));
+
+  const userIds = rows.map((r) => u_safe_id(r));
+  const tokenRows = userIds.length === 0
+    ? []
+    : await db.select({
+        userId: invitationTokens.userId,
+        expiresAt: invitationTokens.expiresAt,
+        usedAt: invitationTokens.usedAt,
+        createdAt: invitationTokens.createdAt,
+      })
+        .from(invitationTokens)
+        .where(and(
+          eq(invitationTokens.projectId, projectId),
+          inArray(invitationTokens.userId, userIds),
+        ))
+        .orderBy(desc(invitationTokens.createdAt));
+
+  // Latest token per user (rows are pre-sorted desc by createdAt).
+  const latestByUser = new Map<string, typeof tokenRows[number]>();
+  for (const t of tokenRows) {
+    if (!latestByUser.has(t.userId)) latestByUser.set(t.userId, t);
+  }
 
   const teamRows = await db.select({ userId: teamMembers.userId, teamName: teams.name })
     .from(teamMembers)
@@ -321,12 +362,35 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
     teamsByUser.set(t.userId, bucket);
   }
 
-  return rows.map(({ m, u }) => ({
-    id: u.id, name: u.name ?? u.email, email: u.email, color: u.avatarColor,
-    role: m.role, isSuperAdmin: u.isSuperAdmin,
-    teamNames: teamsByUser.get(u.id) ?? [],
-  }));
+  const now = Date.now();
+  return rows.map(({ m, u }) => {
+    const latest = latestByUser.get(u.id);
+    let state: InvitationState;
+    let pendingExpiry: Date | null = null;
+    if (u.passwordHash) {
+      // Has a password ⇒ they completed some sign-in path.
+      // If they ever redeemed an invite, call it accepted; otherwise
+      // they were seeded or signed up by another route (treat as "never"
+      // — no invitation is currently in flight).
+      state = latest?.usedAt ? 'accepted' : 'never';
+    } else if (latest && !latest.usedAt && latest.expiresAt.getTime() > now) {
+      state = 'pending';
+      pendingExpiry = latest.expiresAt;
+    } else {
+      state = 'no_password';
+    }
+    return {
+      id: u.id, name: u.name ?? u.email, email: u.email, color: u.avatarColor,
+      role: m.role, isSuperAdmin: u.isSuperAdmin,
+      teamNames: teamsByUser.get(u.id) ?? [],
+      invitationState: state,
+      pendingInviteExpiresAt: pendingExpiry,
+    };
+  });
 }
+
+// Local helper: keeps the destructuring above compact and typed.
+function u_safe_id(r: { u: { id: string } }): string { return r.u.id; }
 
 export type PackageRow = {
   id: string; code: string; status: string; version: number; returnCount: number;

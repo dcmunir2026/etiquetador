@@ -520,6 +520,36 @@ export const qualCorrections = pgTable(
   }),
 );
 
+// ─── INVITATION TOKENS (one-time magic-link sign-in) ─────────────────
+//
+// The raw token is base64url(32 random bytes). We store SHA-256(token) so a
+// leaked DB dump is not enough to impersonate invitees; only the value
+// emailed to the recipient can be redeemed. `usedAt` makes the link
+// single-use — important because the same link is enough to set the
+// password and gain the project membership.
+
+export const invitationTokens = pgTable(
+  'invitation_tokens',
+  {
+    id: text('id').primaryKey().$defaultFn(() => newId()),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    /** SHA-256 of the raw token, in hex. Unique. */
+    tokenHash: text('token_hash').notNull(),
+    /** When the link stops working. 7 days by default. */
+    expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+    /** Null until the recipient redeems it. */
+    usedAt: timestamp('used_at', { mode: 'date' }),
+    invitedBy: text('invited_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tokenHashUnique: uniqueIndex('invitation_tokens_token_hash_unique').on(t.tokenHash),
+    userIdx: index('invitation_tokens_user_idx').on(t.userId),
+    projectIdx: index('invitation_tokens_project_idx').on(t.projectId),
+  }),
+);
+
 // ─── AUDIT LOG ───────────────────────────────────────────────────────
 
 export const auditLog = pgTable(
@@ -710,3 +740,5 @@ export type QualValidation = typeof qualValidations.$inferSelect;
 export type NewQualValidation = typeof qualValidations.$inferInsert;
 export type QualCorrection = typeof qualCorrections.$inferSelect;
 export type NewQualCorrection = typeof qualCorrections.$inferInsert;
+export type InvitationToken = typeof invitationTokens.$inferSelect;
+export type NewInvitationToken = typeof invitationTokens.$inferInsert;

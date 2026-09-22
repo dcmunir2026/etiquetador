@@ -8,7 +8,7 @@
 import type { NextAuthConfig } from 'next-auth';
 
 /** Paths reachable without a session. */
-const PUBLIC_PATHS = ['/login', '/api/auth'];
+const PUBLIC_PATHS = ['/login', '/invite', '/api/auth'];
 
 export const authConfig = {
   pages: { signIn: '/login' },
