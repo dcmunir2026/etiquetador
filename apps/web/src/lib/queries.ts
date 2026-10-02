@@ -584,8 +584,13 @@ export type DiscrepantFragment = {
 
 export async function getTeamDiscrepantFragments(teamId: string): Promise<DiscrepantFragment[]> {
   const db = getDb();
-  const [pkg] = await db.select().from(packages).where(eq(packages.teamId, teamId)).limit(1);
-  if (!pkg) return [];
+  // A team can carry more than one package (initial round + returned
+  // ones). Aggregate across all of them so the modal lists every
+  // fragment the team disagreed on, not just the first package.
+  const pkgRows = await db.select({ id: packages.id })
+    .from(packages).where(eq(packages.teamId, teamId));
+  const pkgIds = pkgRows.map((r) => r.id);
+  if (pkgIds.length === 0) return [];
 
   const [rows, dimRows, memberRows, freeText] = await Promise.all([
     db.select({
@@ -593,7 +598,7 @@ export async function getTeamDiscrepantFragments(teamId: string): Promise<Discre
     }).from(annotations)
       .innerJoin(fragments, eq(fragments.id, annotations.fragmentId))
       .innerJoin(users, eq(users.id, annotations.userId))
-      .where(eq(annotations.packageId, pkg.id)),
+      .where(inArray(annotations.packageId, pkgIds)),
     db.select({ id: dimensions.id, name: dimensions.name }).from(dimensions),
     db.select({ userId: teamMembers.userId }).from(teamMembers).where(eq(teamMembers.teamId, teamId)),
     freeTextDimensionIds(),
