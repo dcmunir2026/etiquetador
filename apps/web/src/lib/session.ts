@@ -23,6 +23,10 @@ export type CurrentUser = {
   name: string;
   isSuperAdmin: boolean;
   avatarColor: string | null;
+  /** Mirrors users.must_change_password. The auth middleware also reads
+   *  this from the JWT (Edge can't reach the DB), but here we always
+   *  return the freshest value from the row. */
+  mustChangePassword: boolean;
 };
 
 /** The signed-in user, or null. */
@@ -44,6 +48,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     name: row.name ?? row.email,
     isSuperAdmin: row.isSuperAdmin,
     avatarColor: row.avatarColor,
+    mustChangePassword: row.mustChangePassword,
   };
 }
 

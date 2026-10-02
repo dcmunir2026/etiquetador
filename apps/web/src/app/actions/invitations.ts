@@ -21,14 +21,16 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db/client';
 import {
-  auditLog, invitationTokens, projects, projectMembers, users,
+  auditLog, invitationTokens, projects, projectMembers, teamMembers, teams, users,
   type UserRole,
 } from '@/db/schema';
 import { authorize, requireUser } from '@/lib/session';
 import { sendInvitationEmail } from '@/lib/mail';
 import { signIn } from '@/lib/auth';
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
+export type ActionResult =
+  | { ok: true; id?: string; usedDefaultPassword?: boolean; defaultPassword?: string }
+  | { ok: false; error: string };
 
 const TOKEN_BYTES = 32;
 const DEFAULT_EXPIRES_HOURS = 24 * 7;
@@ -95,11 +97,33 @@ export async function inviteMember(input: {
       .where(eq(projectMembers.id, member.id));
   }
 
-  // Attach to a team if requested. Team membership is in `team_members`,
-  // which is owned by the team edit dialog (setTeamMembers); the invite
-  // path doesn't add the user to the team here. Leaving the option in
-  // the input is informative for call sites that pass it.
-  void input.teamId;
+  // Attach to a team if requested. `team_members` is the join table
+  // between users and teams; we just insert a row with `role:
+  // 'annotator'` (the default in the schema). We verify the team belongs
+  // to the same project first so a stale or foreign teamId can't sneak
+  // someone into the wrong project.
+  if (input.teamId) {
+    const [team] = await db.select({ id: teams.id, projectId: teams.projectId })
+      .from(teams)
+      .where(eq(teams.id, input.teamId))
+      .limit(1);
+    if (!team || team.projectId !== input.projectId) {
+      return { ok: false, error: 'El equipo seleccionado no pertenece a este proyecto.' };
+    }
+    // Skip if already a member (PK is (team_id, user_id); the insert
+    // would otherwise raise a unique-violation).
+    const [existingMembership] = await db.select({ userId: teamMembers.userId })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.userId, user.id)))
+      .limit(1);
+    if (!existingMembership) {
+      await db.insert(teamMembers).values({
+        teamId: input.teamId,
+        userId: user.id,
+        role: 'annotator',
+      });
+    }
+  }
 
   // Issue the token.
   const { raw, hash } = newToken();
@@ -121,9 +145,31 @@ export async function inviteMember(input: {
     expiresInHours: DEFAULT_EXPIRES_HOURS,
   });
   if (!sent.ok) {
-    // Surface the failure to the admin. The user and token row stay so the
-    // admin can retry from a future "Reenviar invitación" action; for now
-    // we just return the error so the UI shows it.
+    // Mail didn't go out. Don't strand the account — if the user has no
+    // password yet, seed the default so the admin can hand the
+    // credentials to the person directly. The recipient will be asked to
+    // change it on first sign-in via `must_change_password`.
+    const seeded = await maybeSeedDefaultPassword(user.id);
+    if (seeded) {
+      await db.insert(auditLog).values({
+        actorId: gate.user.id,
+        projectId: input.projectId,
+        action: 'member.invite.fallback_password',
+        targetType: 'user',
+        targetId: user.id,
+        metadata: JSON.stringify({ email, reason: sent.error, teamId: input.teamId ?? null }),
+      });
+      revalidatePath('/', 'layout');
+      return {
+        ok: true,
+        id: user.id,
+        usedDefaultPassword: true,
+        defaultPassword: DEFAULT_INVITATION_PASSWORD,
+      };
+    }
+    // Already had a password — they can still sign in via their existing
+    // credentials; just couldn't email the magic link. Surface the send
+    // error so the admin knows.
     return { ok: false, error: `El correo no salió: ${sent.error}` };
   }
 
@@ -133,7 +179,10 @@ export async function inviteMember(input: {
     action: 'member.invite',
     targetType: 'user',
     targetId: user.id,
-    metadata: JSON.stringify({ email, role: input.role, expiresAt: expiresAt.toISOString() }),
+    metadata: JSON.stringify({
+      email, role: input.role, expiresAt: expiresAt.toISOString(),
+      teamId: input.teamId ?? null,
+    }),
   });
 
   revalidatePath('/', 'layout');
@@ -190,7 +239,30 @@ export async function resendInvitation(input: {
     inviteUrl,
     expiresInHours: DEFAULT_EXPIRES_HOURS,
   });
-  if (!sent.ok) return { ok: false, error: `El correo no salió: ${sent.error}` };
+  if (!sent.ok) {
+    // Same fallback as `inviteMember`: if the account is still password-
+    // less, seed the default so the admin can hand the credentials to
+    // the person directly instead of leaving the account stranded.
+    const seeded = await maybeSeedDefaultPassword(input.userId);
+    if (seeded) {
+      await db.insert(auditLog).values({
+        actorId: gate.user.id,
+        projectId: input.projectId,
+        action: 'member.invite.resend.fallback_password',
+        targetType: 'user',
+        targetId: user.id,
+        metadata: JSON.stringify({ email: user.email, reason: sent.error }),
+      });
+      revalidatePath('/', 'layout');
+      return {
+        ok: true,
+        id: user.id,
+        usedDefaultPassword: true,
+        defaultPassword: DEFAULT_INVITATION_PASSWORD,
+      };
+    }
+    return { ok: false, error: `El correo no salió: ${sent.error}` };
+  }
 
   await db.insert(auditLog).values({
     actorId: gate.user.id,
@@ -244,6 +316,33 @@ export async function checkInvitation(rawToken: string): Promise<InviteStatus> {
 }
 
 const MIN_PASSWORD = 8;
+
+/**
+ * The default password seeded onto an account when its invitation email
+ * could not be delivered (RESEND_API_KEY missing in dev, or any send
+ * failure). The recipient is forced to change it on first sign-in via
+ * the `must_change_password` flag and the middleware redirect.
+ */
+const DEFAULT_INVITATION_PASSWORD = process.env.DEV_PASSWORD || 'etiquetador';
+
+/**
+ * If the email send failed and the user account has no password yet,
+ * fall back to seeding the default password so the admin can hand the
+ * credentials to the person directly. Returns true if the fallback
+ * actually applied.
+ */
+async function maybeSeedDefaultPassword(userId: string): Promise<boolean> {
+  const db = getDb();
+  const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!u || u.passwordHash) return false;
+  const hash = await bcrypt.hash(DEFAULT_INVITATION_PASSWORD, 10);
+  await db.update(users).set({
+    passwordHash: hash,
+    mustChangePassword: true,
+    updatedAt: new Date(),
+  }).where(eq(users.id, userId));
+  return true;
+}
 
 /** Set a password on the invited user and sign them in. */
 export async function redeemInvitation(input: {

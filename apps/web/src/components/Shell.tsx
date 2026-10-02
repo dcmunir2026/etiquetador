@@ -14,12 +14,14 @@ export type ShellUser = {
 };
 
 export function Shell({
-  user, role, projects, activeProject, children,
+  user, role, projects, activeProject, taggingProgress = null, children,
 }: {
   user: ShellUser;
   role: Role | null;
   projects: Project[];
   activeProject: Project | null;
+  /** Fragments finished out of the user's package, for the sidebar badge. */
+  taggingProgress?: { done: number; total: number } | null;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -57,6 +59,7 @@ export function Shell({
         user={user}
         role={role}
         project={activeProject}
+        taggingProgress={taggingProgress}
       />
       <main>
         <Topbar

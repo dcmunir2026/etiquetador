@@ -15,8 +15,10 @@
     --ink-4:     #9aa0ad;
     --primary:   #0e4a52;
     --primary-2: #1d6e75;
+    --primary-fade: #e6f0f1;
     --accent:    #c75d3a;
     --ok:        #2f8a5a;
+    --good:      #0e4a52;
     --warn:      #b58300;
     --bad:       #b04143;
     --info:      #3b6cb0;
@@ -67,6 +69,8 @@
   .btn:hover{border-color:var(--ink-3)}
   .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
   .btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
+  .btn.success{background:var(--good);color:#fff;border-color:var(--good)}
+  .btn.success:hover{background:var(--good);border-color:var(--good);filter:brightness(0.92)}
   .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
   .btn.ghost:hover{background:#f0ede4}
@@ -139,6 +143,11 @@
   .dim .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
   .opt{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;text-align:center;background:#fafaf2;cursor:pointer;transition:all 0.15s}
   .opt:hover{border-color:var(--ink-3);background:#fff}
+  /* Base selected state: the mockup only ever emitted the tonal variants
+     below, so a value outside no/bajo/alto had nothing to paint it. */
+  .opt.selected{background:var(--primary-fade);border-color:var(--primary-2);
+    color:var(--primary-2);font-weight:600;box-shadow:inset 0 0 0 1px currentColor}
+  .opt.selected:hover{background:var(--primary-fade);border-color:var(--primary-2)}
   .opt.selected.no{background:#e6f1ec;border-color:var(--ok);color:var(--ok);font-weight:600}
   .opt.selected.bajo{background:#fdf2dc;border-color:var(--warn);color:#8a6b00;font-weight:600}
   .opt.selected.alto{background:#f6dcd9;border-color:var(--bad);color:#8a1a1c;font-weight:600}
@@ -209,7 +218,7 @@
   .dim-edit .cats .ct.add{border:1px dashed var(--line);color:var(--ink-4);background:transparent}
   .dim-edit .scale select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fafaf2;color:var(--ink-2)}
 
-  .role-row{display:grid;grid-template-columns:240px 1fr 110px 110px 80px;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line-soft);align-items:center;font-size:13px}
+  .role-row{display:grid;grid-template-columns:240px 1fr 110px 110px 80px 230px;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line-soft);align-items:center;font-size:13px}
   .role-row.head{background:#f6f4ed;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
   .role-row .name{display:flex;align-items:center;gap:9px}
   .role-row .name .avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
@@ -345,7 +354,7 @@
   .wiz-row{margin-bottom:18px}
   .wiz-row label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
   .wiz-row label .req{color:#c0392b;margin-left:2px}
-  .wiz-row input[type=text],.wiz-row textarea,.wiz-row select{width:100%;font:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);box-sizing:border-box}
+  .wiz-row input[type=text],.wiz-row input[type=email],.wiz-row textarea,.wiz-row select{width:100%;font:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:#fafaf2;color:var(--ink-1);box-sizing:border-box}
   .wiz-row input:focus,.wiz-row textarea:focus,.wiz-row select:focus{outline:2px solid var(--primary-2);outline-offset:-1px;border-color:var(--primary-2);background:#fff}
   .wiz-row textarea{min-height:70px;resize:vertical;font-family:inherit;line-height:1.5}
   .wiz-row .wiz-hint{font-size:11.5px;color:var(--ink-4);margin-top:5px}

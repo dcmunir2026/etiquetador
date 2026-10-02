@@ -6,7 +6,7 @@
  */
 
 import { revalidatePath } from 'next/cache';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   annotations, auditLog, dimensionDependencies, dimensionValues, dimensions, fragments,
@@ -93,7 +93,12 @@ export async function createDimension(input: DimensionInput): Promise<ActionResu
 
 export async function updateDimension(
   id: string,
-  patch: { name?: string; shortDescription?: string; longDescription?: string; values?: Array<{ label: string; color?: string }> },
+  patch: {
+    name?: string; slug?: string;
+    shortDescription?: string; longDescription?: string;
+    scaleId?: string | null; kind?: 'category' | 'intensity' | 'flag' | 'free-text';
+    values?: Array<{ label: string; color?: string }>;
+  },
 ): Promise<ActionResult> {
   const gate = await authorize('taxonomies');
   if (!gate.ok) return { ok: false, error: gate.error };
@@ -101,15 +106,54 @@ export async function updateDimension(
   const [existing] = await db.select().from(dimensions).where(eq(dimensions.id, id)).limit(1);
   if (!existing) return { ok: false, error: 'Dimensión no encontrada.' };
 
-  await db.update(dimensions).set({
-    name: patch.name?.trim() || existing.name,
-    shortDescription: patch.shortDescription ?? existing.shortDescription,
-    longDescription: patch.longDescription ?? existing.longDescription,
-    updatedAt: new Date(),
-  }).where(eq(dimensions.id, id));
+  // Slug uniqueness, excluding the current row. Matches the pattern used
+  // by createDimension() — a clash on a different row means another
+  // dimension already owns this URL identifier.
+  if (patch.slug !== undefined) {
+    const newSlug = slugify(patch.slug.trim() || existing.name);
+    const [clash] = await db.select({ id: dimensions.id })
+      .from(dimensions)
+      .where(and(eq(dimensions.slug, newSlug), ne(dimensions.id, id)))
+      .limit(1);
+    if (clash) return { ok: false, error: `Ya existe una dimensión con el slug "${newSlug}".` };
+  }
 
-  // The scale is intentionally immutable: changing it would invalidate
-  // every annotation already recorded against this dimension.
+  // Refuse the edit outright if this dimension already has annotations
+  // recorded against it. annotations.value is a free text column (no FK
+  // to dimensionValues) — mutating the scale, kind or value list would
+  // leave every prior annotation pointing at a string that no longer
+  // exists in the catalogue, which silently corrupts downstream metrics.
+  // Archive the dimension first if the goal is to retire its use.
+  const [used] = await db.select({ c: sql<number>`count(*)` })
+    .from(annotations)
+    .where(eq(annotations.dimensionId, id));
+  const annotationTotal = Number(used?.c ?? 0);
+  if (annotationTotal > 0) {
+    return {
+      ok: false,
+      error: `Esta dimensión ya tiene ${annotationTotal.toLocaleString('es-ES')} anotaciones registradas. Archívala para dejar de usarla antes de poder editarla.`,
+    };
+  }
+
+  // Build the patch incrementally so callers can omit fields they did
+  // not touch (the modal diffs against the loaded row and only sends
+  // changed keys). `slug` is re-derived from the new value or, if the
+  // caller did not touch it, kept as-is — never blanked.
+  const next: Partial<typeof dimensions.$inferInsert> = { updatedAt: new Date() };
+  if (patch.name !== undefined) next.name = patch.name.trim() || existing.name;
+  if (patch.slug !== undefined) next.slug = slugify(patch.slug.trim() || existing.name);
+  if (patch.shortDescription !== undefined) next.shortDescription = patch.shortDescription ?? existing.shortDescription;
+  if (patch.longDescription !== undefined) next.longDescription = patch.longDescription ?? existing.longDescription;
+  if (patch.scaleId !== undefined) next.scaleId = patch.scaleId;
+  if (patch.kind !== undefined) next.kind = patch.kind;
+
+  if (Object.keys(next).length > 1) { // >1 because updatedAt is always set
+    await db.update(dimensions).set(next).where(eq(dimensions.id, id));
+  }
+
+  // The scale is intentionally immutable once annotations exist — the
+  // guard above guarantees `annotationCount === 0` by the time we reach
+  // here, so deleting and reinserting dimensionValues is safe.
   if (patch.values) {
     await db.delete(dimensionValues).where(eq(dimensionValues.dimensionId, id));
     for (const [i, v] of patch.values.entries()) {

@@ -61,11 +61,17 @@ export function resolveVisibility(
 
   const rule = dim.dependency;
   const parent = byId.get(rule.parentId);
-  if (parent) {
-    const parentVisibility = resolveVisibility(parent, answers, byId, seen);
-    if (parentVisibility === 'skipped') return 'skipped';
-    if (parentVisibility === 'pending-parent') return 'pending-parent';
-  }
+  // The gate names a dimension this project does not carry — archived, or
+  // never assigned through its taxonomies. The rule cannot be evaluated and
+  // nothing will ever answer it, so treat the dimension as a root instead of
+  // leaving it waiting forever: `buildCascade` already files it under roots,
+  // and a dimension stuck on 'pending-parent' would silently drop out of
+  // every completeness check while still rendering as answerable.
+  if (!parent) return 'visible';
+
+  const parentVisibility = resolveVisibility(parent, answers, byId, seen);
+  if (parentVisibility === 'skipped') return 'skipped';
+  if (parentVisibility === 'pending-parent') return 'pending-parent';
 
   const parentAnswer = answers[rule.parentId];
   if (parentAnswer === undefined || parentAnswer === '') return 'pending-parent';
@@ -168,4 +174,27 @@ export function wouldCycle(childId: string, parentId: string, dims: CascadeDimen
     cur = byId.get(cur.dependency.parentId);
   }
   return false;
+}
+
+/**
+ * Visible dimensions a fragment still has unanswered.
+ *
+ * Only what the cascade actually asks for counts: a dimension whose gate did
+ * not open is skipped, not pending. Free text stays optional — the tagging
+ * screen labels it so — and everything else must carry a value before a
+ * fragment is considered finished.
+ *
+ * Shared by the annotation screen (to block "next") and by the server (to
+ * block a package submission), so both judge completeness the same way.
+ */
+export function missingAnswers(dims: CascadeDimension[], answers: AnswerMap): CascadeDimension[] {
+  return flattenCascade(buildCascade(dims, answers))
+    .filter((n) => n.visibility === 'visible' && n.dim.kind !== 'free-text')
+    .filter((n) => !(answers[n.dim.id] ?? '').trim())
+    .map((n) => n.dim);
+}
+
+/** A fragment is done when the cascade has nothing left to ask. */
+export function isComplete(dims: CascadeDimension[], answers: AnswerMap): boolean {
+  return missingAnswers(dims, answers).length === 0;
 }

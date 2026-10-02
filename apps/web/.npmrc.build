@@ -1,0 +1,5 @@
+# Used only by Dockerfile.web to flatten node_modules for the standalone
+# output's symlinks to resolve inside the container. NOT used by the dev workflow
+# (which keeps pnpm's default isolated layout for fast installs).
+node-linker=hoisted
+public-hoist-pattern[]=*

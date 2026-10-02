@@ -129,7 +129,14 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
     case 'tagging': {
       const idx = searchParams.fragment ? Number(searchParams.fragment) - 1 : undefined;
       const data = await getTaggingData(projectId, user?.id ?? '', Number.isFinite(idx) ? idx : undefined);
-      return <TaggingView projectId={projectId} data={data} userName={user?.name ?? user?.email ?? ''} />;
+      // Keyed by fragment: moving to another fragment only changes a search
+      // param, so without this React keeps the same component instance and
+      // its answers state — one fragment's labels would show up, and save,
+      // on the next one.
+      return (
+        <TaggingView key={data.fragment?.id ?? 'sin-fragmento'}
+                     projectId={projectId} data={data} userName={user?.name ?? user?.email ?? ''} />
+      );
     }
 
     case 'discrepancias': {
@@ -152,9 +159,13 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
       const dimensions = await getProjectDimensions(projectId);
       return (
         <GraphDepsView
+          projectId={projectId}
           dimensions={dimensions}
           sampleFragment={tagging.fragment ?? sample[0] ?? null}
           sampleAnswers={tagging.answers}
+          // Ordering drives the annotation form too, so it follows the
+          // project-configuration permission, not this screen's.
+          canReorder={canWrite('dimensions', role)}
         />
       );
     }

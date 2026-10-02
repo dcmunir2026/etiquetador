@@ -74,7 +74,22 @@ export const users = pgTable(
     isSuperAdmin: boolean('is_super_admin').notNull().default(false),
     /** bcrypt hash. NULL means the account cannot sign in yet. */
     passwordHash: text('password_hash'),
+    /**
+     * True when the account was provisioned with a default password (seed
+     * or admin reset). The auth middleware forces a redirect to the
+     * change-password screen while this is set, and the screen clears it
+     * after the user submits a new password. Invitees who set their own
+     * password via the redeem flow keep the default `false`.
+     */
+    mustChangePassword: boolean('must_change_password').notNull().default(false),
     emailVerifiedAt: timestamp('email_verified_at', { mode: 'date' }),
+    /**
+     * Soft-delete tombstone. NULL = active account. When set, the
+     * auth flow rejects sign-in (auth.ts → check deleted_at IS NULL),
+     * the Roles view hides the row from the default list, and the
+     * membership / annotation history stays intact for audit.
+     */
+    deletedAt: timestamp('deleted_at', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
   },

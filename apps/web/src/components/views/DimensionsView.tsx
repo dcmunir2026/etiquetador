@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { DimensionRow } from '@/lib/queries';
 import { setDimensionStatus } from '@/app/actions/catalog';
 import { DimensionWizard } from './DimensionWizard';
+import { EditDimensionModal } from './EditDimensionModal';
 import { Kpi, ago, dimColor } from './shared';
 
 type Scale = { id: string; name: string; kind: string; isCustom: boolean };
@@ -16,6 +17,7 @@ export function DimensionsView({ dimensions, scales, readOnly = false }: { dimen
   const [scaleFilter, setScaleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('active');
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [editing, setEditing] = useState<DimensionRow | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const scaleNames = useMemo(
@@ -137,6 +139,9 @@ export function DimensionsView({ dimensions, scales, readOnly = false }: { dimen
               </small>
               {!readOnly && (
                 <div className="actions-mini">
+                  <button className="btn-mini" disabled={busy === d.id} onClick={() => setEditing(d)}>
+                    Editar
+                  </button>
                   <button className="btn-mini" disabled={busy === d.id} onClick={() => toggleStatus(d)}>
                     {d.status === 'archived' ? 'Restaurar' : 'Archivar'}
                   </button>
@@ -156,6 +161,14 @@ export function DimensionsView({ dimensions, scales, readOnly = false }: { dimen
 
       {wizardOpen && (
         <DimensionWizard dimensions={dimensions} scales={scales} onClose={() => setWizardOpen(false)} />
+      )}
+
+      {editing && (
+        <EditDimensionModal
+          dimension={editing}
+          scales={scales}
+          onClose={() => setEditing(null)}
+        />
       )}
     </div>
   );

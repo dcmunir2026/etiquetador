@@ -9,7 +9,7 @@
 
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import * as schema from './src/index';
 
@@ -31,6 +31,14 @@ for (const u of allUsers) {
   await db.update(schema.users).set({ passwordHash: hash }).where(eq(schema.users.id, u.id));
 }
 console.log(`Contraseña puesta a ${allUsers.length} cuentas.`);
+
+// Mark accounts that didn't go through the invitation flow as needing a
+// password change. The auth middleware bounces them to the change-password
+// screen on first login until they set their own. We skip invitees — they
+// already chose a password when they redeemed the magic link.
+await db.update(schema.users)
+  .set({ mustChangePassword: true })
+  .where(and(isNotNull(schema.users.passwordHash), isNull(schema.users.emailVerifiedAt)));
 
 // ─── Make every role exercisable ─────────────────────────────────────
 // The seed only produced superadmin, annotator and validator. Promote one

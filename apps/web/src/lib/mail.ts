@@ -1,10 +1,12 @@
 /**
- * Outgoing mail — Resend by default, console fallback for dev.
+ * Outgoing mail — Resend by default.
  *
- * In production `RESEND_API_KEY` is required; in dev (no key) we just log
- * the message so the rest of the invite flow is still testable. The
- * fallback never throws, so callers can treat a missing key as "the link
- * is in the server log" rather than as a hard failure.
+ * In production `RESEND_API_KEY` is required. In dev (no key) the helper
+ * returns `{ ok: false }` so callers can fall back to alternative flows
+ * (e.g. seeding the default password on the invited account). The link
+ * is still logged to the server console so a developer can copy it if
+ * they want to test the magic-link redeem path manually — but the API
+ * contract treats it as a delivery failure, not a silent success.
  */
 
 import 'server-only';
@@ -38,12 +40,17 @@ export async function sendInvitationEmail(input: {
 
   const r = client();
   if (!r) {
-    // Dev fallback: log so devs can copy the link during testing.
+    // No API key — surface as a delivery failure. The caller (inviteMember
+    // / resendInvitation) falls back to seeding the default password on
+    // the invited account so the admin can hand credentials over in
+    // person. We still log the link so devs can copy it and exercise the
+    // magic-link redeem path manually if they want.
+    console.log(`[mail:dev] RESEND_API_KEY not set — would have sent:`);
     console.log(`[mail:dev] To: ${input.to}`);
     console.log(`[mail:dev] From: ${from}`);
     console.log(`[mail:dev] Subject: ${subject}`);
     console.log(`[mail:dev] ${input.inviteUrl}`);
-    return { ok: true };
+    return { ok: false, error: 'RESEND_API_KEY no configurada' };
   }
 
   try {

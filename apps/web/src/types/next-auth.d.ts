@@ -7,6 +7,9 @@ declare module 'next-auth' {
   interface User {
     id?: string;
     isSuperAdmin?: boolean;
+    /** Mirrors users.must_change_password so the middleware can force a
+     *  redirect to the change-password screen on the next request. */
+    mustChangePassword?: boolean;
   }
   interface Session {
     user: {
@@ -15,6 +18,7 @@ declare module 'next-auth' {
       name?: string | null;
       image?: string | null;
       isSuperAdmin: boolean;
+      mustChangePassword?: boolean;
     };
   }
 }
@@ -23,5 +27,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id?: string;
     isSuperAdmin?: boolean;
+    mustChangePassword?: boolean;
   }
 }

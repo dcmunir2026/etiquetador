@@ -34,12 +34,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // password; it must not be able to sign in.
         if (!user?.passwordHash) return null;
         if (!(await bcrypt.compare(password, user.passwordHash))) return null;
+        // Deactivated accounts (soft-deleted by a superadmin) cannot sign
+        // in any more — even with the correct password. The auth flow
+        // surfaces this as a generic credential failure on purpose.
+        if (user.deletedAt) return null;
 
         return {
           id: user.id,
           email: user.email,
           name: user.name ?? user.email,
           isSuperAdmin: user.isSuperAdmin,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),

@@ -2,8 +2,12 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ingestCorpus } from '@/app/actions/workflow';
+import { ingestCorpus, ingestPrefragmented } from '@/app/actions/workflow';
 import { columnLetter, guessMapping, parseDelimited, type ParsedTable } from '@/lib/csv';
+import {
+  groupPrefragmented, parsePrefragmented, prefragmentedStats,
+  type PrefragmentedDoc, type PrefragmentedGroup, type PrefragmentedStats,
+} from '@/lib/prefragmented';
 import { Kpi, ago, num } from './shared';
 
 type Upload = {
@@ -13,6 +17,14 @@ type Upload = {
 };
 type Config = { id: string; name: string; unit: string; maxChunkSize: number; overlap: number };
 
+/** A pre-fragmented JSON file, parsed and summarised for the preview. */
+type JsonCorpus = {
+  file: File;
+  doc: PrefragmentedDoc;
+  groups: PrefragmentedGroup[];
+  stats: PrefragmentedStats;
+};
+
 /** Corpus entry point (H1): parse, map columns, dedupe and segment. */
 export function UploadView({
   projectId, uploads, configs,
@@ -21,16 +33,24 @@ export function UploadView({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const jsonRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [table, setTable] = useState<ParsedTable | null>(null);
+  const [json, setJson] = useState<JsonCorpus | null>(null);
   const [mapping, setMapping] = useState({ answer: -1, conversationId: -1, question: -1 });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  function reset() {
+    setFile(null); setTable(null); setJson(null);
+  }
+
   async function onFile(f: File) {
-    setError(null); setNotice(null); setTable(null); setFile(f);
+    setError(null); setNotice(null); setTable(null); setJson(null); setFile(f);
+
+    if (/\.json$/i.test(f.name)) { await onJsonFile(f); return; }
 
     if (/\.(xlsx|xls)$/i.test(f.name)) {
       setError(
@@ -50,6 +70,14 @@ export function UploadView({
     }
     setTable(parsed);
     setMapping(guessMapping(parsed.headers));
+  }
+
+  /** Pre-fragmented corpus: no column mapping and no segmentation to apply. */
+  async function onJsonFile(f: File) {
+    const parsed = parsePrefragmented(await f.text());
+    if (!parsed.ok) { setError(parsed.error); setFile(null); return; }
+    const groups = groupPrefragmented(parsed.doc.pieces);
+    setJson({ file: f, doc: parsed.doc, groups, stats: prefragmentedStats(parsed.doc.pieces, groups) });
   }
 
   // Preview stats, computed the same way the server will.
@@ -96,7 +124,30 @@ export function UploadView({
     setBusy(false);
     if (!res.ok) { setError(res.error); return; }
     setNotice('Corpus cargado y segmentado.');
-    setFile(null); setTable(null);
+    reset();
+    router.refresh();
+  }
+
+  /** Store the JSON's fragments as they come, without re-cutting them. */
+  async function ingestJson() {
+    if (!json) return;
+    setBusy(true); setError(null); setNotice(null);
+
+    const res = await ingestPrefragmented({
+      projectId,
+      filename: json.file.name,
+      sizeBytes: json.file.size,
+      pieces: json.doc.pieces,
+      meta: { algoritmo: json.doc.algoritmo, rubrica: json.doc.rubrica },
+    });
+
+    setBusy(false);
+    if (!res.ok) { setError(res.error); return; }
+    const n = json.stats.fragments;
+    setNotice(n === 1
+      ? 'Se ha cargado 1 fragmento sin volver a segmentar.'
+      : `Se han cargado ${num(n)} fragmentos sin volver a segmentar.`);
+    reset();
     router.refresh();
   }
 
@@ -107,8 +158,9 @@ export function UploadView({
       <h1>Cargar corpus</h1>
       <p className="lead">
         Punto de entrada del corpus. Se trabaja siempre sobre una copia interna: el archivo original
-        no se modifica. Al cargar, el texto se parte en fragmentos usando la configuración de
-        segmentación del proyecto.
+        no se modifica. Al cargar un CSV, el texto se parte en fragmentos usando la configuración de
+        segmentación del proyecto; si el corpus ya viene fragmentado en JSON, los fragmentos se
+        guardan tal cual.
       </p>
 
       <div className="grid g-2">
@@ -122,13 +174,25 @@ export function UploadView({
               <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <h4>Suelta el archivo aquí</h4>
-            <p>o haz clic para seleccionar — CSV o TSV</p>
-            <button className="btn" type="button">Seleccionar archivo</button>
+            <p>o haz clic para seleccionar — CSV, TSV o JSON ya fragmentado</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button className="btn" type="button">Seleccionar CSV</button>
+              <button className="btn" type="button"
+                      onClick={(e) => { e.stopPropagation(); jsonRef.current?.click(); }}>
+                <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                Cargar JSON fragmentado
+              </button>
+            </div>
           </div>
-          <input ref={inputRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" style={{ display: 'none' }}
-                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+          <input ref={inputRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json" style={{ display: 'none' }}
+                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ''; }} />
+          <input ref={jsonRef} type="file" accept=".json,application/json" style={{ display: 'none' }}
+                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ''; }} />
 
-          {file && table && (
+          {file && (table || json) && (
             <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -138,12 +202,13 @@ export function UploadView({
                 <div>
                   <b>{file.name}</b><br />
                   <small style={{ color: 'var(--ink-3)' }}>
-                    {(file.size / 1024 / 1024).toFixed(1)} MB · {num(table.rows.length)} filas · {table.headers.length} columnas
+                    {(file.size / 1024 / 1024).toFixed(1)} MB · {table
+                      ? <>{num(table.rows.length)} filas · {table.headers.length} columnas</>
+                      : <>{num(json!.stats.fragments)} fragmentos · {num(json!.stats.answers)} respuestas</>}
                   </small>
                 </div>
               </div>
-              <button className="btn ghost" style={{ color: 'var(--bad)' }}
-                      onClick={() => { setFile(null); setTable(null); }}>Quitar</button>
+              <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={reset}>Quitar</button>
             </div>
           )}
 
@@ -159,40 +224,101 @@ export function UploadView({
           )}
         </div>
 
-        <div className="card">
-          <h3>
-            Selección de columnas
-            {table && <span className="count">{table.headers.length} detectadas</span>}
-          </h3>
-          {!table ? (
-            <div className="empty-state" style={{ margin: 0 }}>
-              <h4>Sin archivo</h4>
-              Carga un CSV para mapear sus columnas.
-            </div>
-          ) : (
+        {json ? (
+          <div className="card">
+            <h3>
+              Corpus ya fragmentado
+              <span className="count">{num(json.stats.fragments)} fragmentos</span>
+            </h3>
+            <p style={{ margin: '0 0 12px', fontSize: 12.5, color: 'var(--ink-3)' }}>
+              El archivo trae los cortes hechos, así que no hay columnas que mapear ni se aplica la
+              configuración de segmentación del proyecto. Los fragmentos se guardan tal cual y se
+              agrupan por respuesta para reconstruir el contexto que se muestra al anotar.
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <ColumnPicker label="Columna principal (pivote)" hint="El texto que se va a etiquetar."
-                            headers={table.headers} value={mapping.answer}
-                            onChange={(v) => setMapping({ ...mapping, answer: v })} required />
-              <ColumnPicker label="Identificador de pregunta" hint="Se usa para detectar duplicados."
-                            headers={table.headers} value={mapping.conversationId}
-                            onChange={(v) => setMapping({ ...mapping, conversationId: v })} />
-              <ColumnPicker label="Pregunta original" hint="Se muestra como contexto al anotar."
-                            headers={table.headers} value={mapping.question}
-                            onChange={(v) => setMapping({ ...mapping, question: v })} />
+              {json.groups[0]?.pieces.slice(0, 3).map((piece, i) => (
+                <div key={i} style={{ padding: '9px 12px', background: 'var(--surface-2)',
+                                      border: '1px solid var(--line)', borderRadius: 7, fontSize: 12.5 }}>
+                  <small style={{ color: 'var(--ink-3)' }}>
+                    Fragmento {i + 1} · {piece.words} palabras
+                    {piece.score !== null && <> · score {piece.score}/5</>}
+                    {piece.merged && <> · fusionado</>}
+                  </small>
+                  <div style={{ marginTop: 3 }}>
+                    {piece.text.length > 180 ? `${piece.text.slice(0, 180)}…` : piece.text}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+            {json.doc.algoritmo != null && (
+              <div style={{ marginTop: 12, fontSize: 12, color: 'var(--ink-3)' }}>
+                Se guardará también el bloque <b>algoritmo</b>
+                {json.doc.rubrica != null && <> y <b>rúbrica</b></>} del archivo como procedencia de la carga.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="card">
+            <h3>
+              Selección de columnas
+              {table && <span className="count">{table.headers.length} detectadas</span>}
+            </h3>
+            {!table ? (
+              <div className="empty-state" style={{ margin: 0 }}>
+                <h4>Sin archivo</h4>
+                Carga un CSV para mapear sus columnas, o un JSON ya fragmentado.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <ColumnPicker label="Columna principal (pivote)" hint="El texto que se va a etiquetar."
+                              headers={table.headers} value={mapping.answer}
+                              onChange={(v) => setMapping({ ...mapping, answer: v })} required />
+                <ColumnPicker label="Identificador de pregunta" hint="Se usa para detectar duplicados."
+                              headers={table.headers} value={mapping.conversationId}
+                              onChange={(v) => setMapping({ ...mapping, conversationId: v })} />
+                <ColumnPicker label="Pregunta original" hint="Se muestra como contexto al anotar."
+                              headers={table.headers} value={mapping.question}
+                              onChange={(v) => setMapping({ ...mapping, question: v })} />
+              </div>
+            )}
 
-          {stats && stats.duplicates > 0 && (
-            <div style={{ marginTop: 16, padding: '11px 13px', background: '#fdf6e3',
-                          borderLeft: '3px solid var(--warn)', borderRadius: '0 7px 7px 0',
-                          fontSize: 12.5, color: '#5a4400' }}>
-              <b>Detección de duplicados:</b> {stats.duplicates} filas repiten el identificador y se
-              descartarán al cargar.
-            </div>
-          )}
-        </div>
+            {stats && stats.duplicates > 0 && (
+              <div style={{ marginTop: 16, padding: '11px 13px', background: '#fdf6e3',
+                            borderLeft: '3px solid var(--warn)', borderRadius: '0 7px 7px 0',
+                            fontSize: 12.5, color: '#5a4400' }}>
+                <b>Detección de duplicados:</b> {stats.duplicates} filas repiten el identificador y se
+                descartarán al cargar.
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {json && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>Resultado del pre-procesado <span className="count">{num(json.stats.answers)} respuestas</span></h3>
+          <div className="grid g-4">
+            <Kpi label="Fragmentos" value={num(json.stats.fragments)} />
+            <Kpi label="Respuestas únicas" value={num(json.stats.answers)} />
+            <Kpi label="Respuestas duplicadas" value={num(json.stats.duplicates)} />
+            <Kpi label="Palabras medias" value={json.stats.avgWords} />
+          </div>
+          <div style={{ marginTop: 14, fontSize: 12.5, color: 'var(--ink-3)' }}>
+            {json.stats.merged === 1
+              ? '1 fragmento viene fusionado por el pipeline'
+              : `${num(json.stats.merged)} fragmentos vienen fusionados por el pipeline`}
+            {json.stats.avgScore !== null && <> · score medio {json.stats.avgScore}/5</>}
+            {json.doc.skipped > 0 && <> · {num(json.doc.skipped)} entradas sin texto descartadas</>}.{' '}
+            No se aplica la segmentación del proyecto: los cortes ya vienen hechos.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+            <button className="btn" onClick={reset}>Cancelar</button>
+            <button className="btn primary" onClick={ingestJson} disabled={busy}>
+              {busy ? 'Cargando…' : 'Cargar fragmentos →'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {stats && (
         <div className="card" style={{ marginTop: 16 }}>
@@ -209,7 +335,7 @@ export function UploadView({
             <a href="/proyecto/segmentacion" style={{ color: 'var(--primary-2)' }}>Cambiar segmentación</a>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-            <button className="btn" onClick={() => { setFile(null); setTable(null); }}>Cancelar</button>
+            <button className="btn" onClick={reset}>Cancelar</button>
             <button className="btn primary" onClick={ingest} disabled={busy || mapping.answer < 0}>
               {busy ? 'Cargando…' : 'Cargar y segmentar →'}
             </button>

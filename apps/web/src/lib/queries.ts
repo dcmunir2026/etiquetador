@@ -7,6 +7,40 @@
  */
 
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
+
+/**
+ * Status priority for the annotator's queue. Lower number = picked first.
+ * The annotator must stay on a package they are already working on (in_progress)
+ * — otherwise saving an answer would silently switch their context to a brand
+ * new package. New packages come next (assigned), then re-do after validation
+ * (returned). Submitted is out of the annotator's hands.
+ */
+const PACKAGE_QUEUE_PRIORITY: Record<string, number> = {
+  in_progress: 0,
+  assigned: 1,
+  returned: 2,
+  submitted: 3,
+};
+
+/**
+ * Sort an annotator's package assignments so the one they should work on next
+ * comes first. Ties are broken by package code so the order is deterministic.
+ */
+function orderByQueuePriority(
+  packageStatus: AnyPgColumn,
+  packageCode: AnyPgColumn,
+) {
+  return [
+    sql`case ${packageStatus}
+          when 'in_progress' then 0
+          when 'assigned'    then 1
+          when 'returned'    then 2
+          when 'submitted'   then 3
+          else 4 end`,
+    asc(packageCode),
+  ];
+}
 import { getDb } from '@/db/client';
 import {
   annotations, corpusUploads, dimensionDependencies, dimensionValues, dimensions,
@@ -15,7 +49,7 @@ import {
   qualCorrections, qualValidations, segmentationConfigs, taxonomies,
   taxonomyDimensions, teamMembers, teams, users,
 } from '@/db/schema';
-import type { CascadeDimension } from './cascade';
+import { isComplete, type CascadeDimension } from './cascade';
 import { computeDiscrepancies, fleissKappa, type RatingRow } from './metrics';
 
 // ─── Catalogue ───────────────────────────────────────────────────────
@@ -24,6 +58,11 @@ export type DimensionRow = CascadeDimension & {
   status: string;
   shortDescription: string | null;
   longDescription: string | null;
+  // scaleId is null for free-text dimensions (and pre-1.0 rows where the
+  // scale column had no default). Needed by the edit modal to preselect
+  // the right option in the scale <select>; without it the modal would
+  // have to fall back to a brittle "first matching kind" heuristic.
+  scaleId: string | null;
   scaleName: string | null;
   scaleKind: string | null;
   createdByName: string | null;
@@ -84,6 +123,7 @@ export async function getDimensionCatalog(): Promise<DimensionRow[]> {
       status: d.status,
       shortDescription: d.shortDescription,
       longDescription: d.longDescription,
+      scaleId: d.scaleId,
       scaleName: scale?.name ?? null,
       scaleKind: scale?.kind ?? null,
       values: valuesByDim.get(d.id) ?? [],
@@ -174,13 +214,23 @@ export async function getProjectDimensions(projectId: string): Promise<Dimension
     .from(projectTaxonomies).where(eq(projectTaxonomies.projectId, projectId))).map((r) => r.id);
   if (taxIds.length === 0) return [];
 
-  const dimIds = (await db.select({ id: taxonomyDimensions.dimensionId })
-    .from(taxonomyDimensions).where(inArray(taxonomyDimensions.taxonomyId, taxIds))).map((r) => r.id);
-  if (dimIds.length === 0) return [];
+  const links = await db.select({ id: taxonomyDimensions.dimensionId, order: taxonomyDimensions.order })
+    .from(taxonomyDimensions).where(inArray(taxonomyDimensions.taxonomyId, taxIds));
+  if (links.length === 0) return [];
+
+  // A dimension can reach the project through more than one taxonomy; the
+  // lowest position wins so the order stays stable whichever one it came by.
+  const orderOf = new Map<string, number>();
+  for (const l of links) {
+    const seen = orderOf.get(l.id);
+    if (seen === undefined || l.order < seen) orderOf.set(l.id, l.order);
+  }
 
   const all = await getDimensionCatalog();
-  const wanted = new Set(dimIds);
-  return all.filter((d) => wanted.has(d.id) && d.status === 'active');
+  return all
+    .filter((d) => orderOf.has(d.id) && d.status === 'active')
+    // Name breaks ties, so dimensions never reordered keep their old listing.
+    .sort((a, b) => (orderOf.get(a.id)! - orderOf.get(b.id)!) || a.name.localeCompare(b.name, 'es'));
 }
 
 // ─── Dashboard ───────────────────────────────────────────────────────
@@ -304,6 +354,7 @@ export type MemberRow = {
   role: string; isSuperAdmin: boolean; teamNames: string[];
   invitationState: InvitationState;
   pendingInviteExpiresAt: Date | null;
+  deletedAt: Date | null;
 };
 
 /**
@@ -385,6 +436,7 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
       teamNames: teamsByUser.get(u.id) ?? [],
       invitationState: state,
       pendingInviteExpiresAt: pendingExpiry,
+      deletedAt: u.deletedAt ?? null,
     };
   });
 }
@@ -628,6 +680,83 @@ export async function getFragmentBreakdown(teamId: string, fragmentId: string) {
 
 // ─── Tagging ─────────────────────────────────────────────────────────
 
+/**
+ * Which fragments of a package this user has left unfinished.
+ *
+ * Completeness follows the cascade, so it cannot be a COUNT in SQL: a
+ * dimension only counts when its gate opened. Shared by the annotation
+ * screen, the sidebar counter and the submit gate so the three agree.
+ */
+async function packageProgress(
+  pkgId: string, userId: string, dims: DimensionRow[],
+): Promise<{ answersByFragment: Map<string, Record<string, string>>; unfinished: number[] }> {
+  const db = getDb();
+  const cascadeDims: CascadeDimension[] = dims.map((d) => ({
+    id: d.id, name: d.name, kind: d.kind, values: d.values, dependency: d.dependency,
+  }));
+
+  const [links, saved] = await Promise.all([
+    db.select({ fragmentId: packageFragments.fragmentId })
+      .from(packageFragments).where(eq(packageFragments.packageId, pkgId))
+      .orderBy(asc(packageFragments.order)),
+    db.select({
+      fragmentId: annotations.fragmentId, dimensionId: annotations.dimensionId,
+      value: annotations.value, skipped: annotations.skipped,
+    }).from(annotations)
+      .where(and(eq(annotations.packageId, pkgId), eq(annotations.userId, userId))),
+  ]);
+
+  const answersByFragment = new Map<string, Record<string, string>>();
+  for (const a of saved) {
+    const bucket = answersByFragment.get(a.fragmentId) ?? {};
+    if (!a.skipped && a.value !== null) bucket[a.dimensionId] = a.value;
+    answersByFragment.set(a.fragmentId, bucket);
+  }
+
+  const unfinished: number[] = [];
+  for (const [i, link] of links.entries()) {
+    if (!isComplete(cascadeDims, answersByFragment.get(link.fragmentId) ?? {})) unfinished.push(i);
+  }
+  return { answersByFragment, unfinished };
+}
+
+/**
+ * Fragments finished out of the *next* package this user should work on, for
+ * the sidebar counter. Null when they have no actionable package in this
+ * project (no assignment, or every assignment is submitted / approved).
+ */
+export async function getTaggingProgress(
+  projectId: string, userId: string,
+): Promise<{ done: number; total: number } | null> {
+  const db = getDb();
+  if (!projectId || !userId) return null;
+
+  const [assigned] = await db.select({ packageId: packages.id })
+    .from(packageAssignments)
+    .innerJoin(packages, eq(packages.id, packageAssignments.packageId))
+    .where(and(
+      eq(packageAssignments.userId, userId),
+      eq(packages.projectId, projectId),
+      // Submitted assignments are out of the annotator's hands: they belong
+      // to the validator now. Returned packages flip the assignment back to
+      // in_progress in `returnPackageToTeam`, so listing it here too is
+      // enough — the CASE handles the package-level status.
+      inArray(packageAssignments.status, ['assigned', 'in_progress']),
+    ))
+    .orderBy(...orderByQueuePriority(packageAssignments.status, packages.code))
+    .limit(1);
+  if (!assigned) return null;
+
+  const dims = await getProjectDimensions(projectId);
+  const links = await db.select({ c: count() }).from(packageFragments)
+    .where(eq(packageFragments.packageId, assigned.packageId));
+  const total = links[0]?.c ?? 0;
+  if (total === 0) return { done: 0, total: 0 };
+
+  const { unfinished } = await packageProgress(assigned.packageId, userId, dims);
+  return { done: total - unfinished.length, total };
+}
+
 export type TaggingData = {
   package: PackageRow | null;
   fragment: (typeof fragments.$inferSelect) | null;
@@ -635,7 +764,12 @@ export type TaggingData = {
   total: number;
   answers: Record<string, string>;
   dimensions: DimensionRow[];
+  /** Fragments whose visible dimensions are all answered. */
   doneCount: number;
+  /** How many of the package's fragments are still unfinished. */
+  incompleteCount: number;
+  /** 1-based position of the first unfinished fragment, 0 when there is none. */
+  firstIncomplete: number;
 };
 
 /**
@@ -646,15 +780,27 @@ export async function getTaggingData(projectId: string, userId: string, fragment
   const db = getDb();
   const dims = await getProjectDimensions(projectId);
 
+  // Pick the package this user should work on next. Order by status priority
+  // (in_progress > assigned > returned) so that:
+  //  - a package the annotator already started stays on screen even after
+  //    the first save flips it from `assigned` to `in_progress`,
+  //  - sending a package automatically reveals the next actionable one,
+  //  - `submitted` packages (waiting on the validator) fall off the queue.
   const assigned = await db.select({ a: packageAssignments, p: packages })
     .from(packageAssignments)
     .innerJoin(packages, eq(packages.id, packageAssignments.packageId))
-    .where(and(eq(packageAssignments.userId, userId), eq(packages.projectId, projectId)))
+    .where(and(
+      eq(packageAssignments.userId, userId),
+      eq(packages.projectId, projectId),
+      inArray(packageAssignments.status, ['assigned', 'in_progress']),
+    ))
+    .orderBy(...orderByQueuePriority(packageAssignments.status, packages.code))
     .limit(1);
 
   const empty: TaggingData = {
     package: null, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
+    incompleteCount: 0, firstIncomplete: 0,
   };
   if (assigned.length === 0) return empty;
 
@@ -670,16 +816,15 @@ export async function getTaggingData(projectId: string, userId: string, fragment
   const pkg = allPackages.find((p) => p.id === pkgId) ?? null;
   if (fragLinks.length === 0) return { ...empty, package: pkg };
 
-  const answered = await db.select({ fragmentId: annotations.fragmentId })
-    .from(annotations)
-    .where(and(eq(annotations.packageId, pkgId), eq(annotations.userId, userId)));
-  const answeredSet = new Set(answered.map((a) => a.fragmentId));
+  // Progress is measured in finished fragments, not merely touched ones:
+  // saving writes a row per dimension, so "has annotations" says nothing
+  // about whether the annotator actually answered.
+  const { unfinished } = await packageProgress(pkgId, userId, dims);
 
-  // Default to the first unanswered fragment; honour an explicit index.
+  // Default to the first unfinished fragment; honour an explicit index.
   let idx = fragmentIndex;
   if (idx === undefined || idx < 0 || idx >= fragLinks.length) {
-    const firstPending = fragLinks.findIndex((l) => !answeredSet.has(l.f.id));
-    idx = firstPending === -1 ? 0 : firstPending;
+    idx = unfinished[0] ?? 0;
   }
 
   const link = fragLinks[idx];
@@ -696,7 +841,10 @@ export async function getTaggingData(projectId: string, userId: string, fragment
 
   return {
     package: pkg, fragment, position: idx + 1, total: fragLinks.length,
-    answers, dimensions: dims, doneCount: answeredSet.size,
+    answers, dimensions: dims,
+    doneCount: fragLinks.length - unfinished.length,
+    incompleteCount: unfinished.length,
+    firstIncomplete: unfinished.length > 0 ? unfinished[0]! + 1 : 0,
   };
 }
 

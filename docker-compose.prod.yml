@@ -1,0 +1,105 @@
+# Production stack for etiquetador.
+#
+# Brings up Postgres, runs migrations once, then starts the web image.
+# The web image is the only thing pulled from ghcr.io — postgres comes
+# from the official image on the host.
+#
+# Usage on the prod host (from inside ~/etiquetador/):
+#   IMAGE_OWNER=your-gh-user [IMAGE_TAG=<sha-or-empty>] \
+#     docker compose -f docker-compose.prod.yml up -d
+#
+# Compose automatically reads ./.env (no flag needed) when present, so the
+# env file is named `.env` for convenience. Rename with `mv .env.prod .env`
+# the first time you copy it to the server.
+#
+# IMAGE_TAG handling (defaults to :latest when empty):
+#   - IMAGE_TAG=93810f1-dirty-amd64-cjs   # pinned, reproducible, easy rollback
+#   - IMAGE_TAG=                          # always pull :latest (the latest
+#                                          #  release your pipeline pushed)
+# Set IMAGE_TAG explicitly whenever you want to lock a known-good image; leave
+# it blank when you want the server to follow whatever :latest points to.
+#
+# Required vars in .env (none of these are baked into the image):
+#   IMAGE_OWNER             — ghcr.io namespace (e.g. dcmunir2026)
+#   IMAGE_TAG               — optional; defaults to "latest"
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#   AUTH_SECRET             — openssl rand -base64 32
+#   AUTH_URL                — https://etiquetador.example.com (NO trailing slash)
+#   RESEND_API_KEY, MAIL_FROM — optional
+#
+# At the moment the app only depends on Postgres. Redis/MinIO/MeiliSearch
+# were inherited from an earlier scaffold but are not consumed by the
+# codebase — re-add them here when an integration actually needs them.
+
+name: etiquetador-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-etiquetador}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etiquetador}
+      POSTGRES_DB: ${POSTGRES_DB:-etiquetador}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-etiquetador}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [data]
+
+  migrate:
+    # Reuses the web image — it bundles the drizzle client + migrations
+    # runner at apps/web/scripts/migrate-runner.cjs. No persistent volume.
+    image: ghcr.io/${IMAGE_OWNER}/etiquetador-web:${IMAGE_TAG:-latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    networks: [data]
+    # Wrap the runner in a small shell script that resolves `postgres` and
+    # `drizzle-orm` from the pnpm store (copied to /node_modules/.pnpm by
+    # Dockerfile.web). The standalone output's traced node_modules does not
+    # include these because the runner is outside the Next bundle.
+    #
+    # Note: `$$` is the escape compose uses to emit a literal `$` to the
+    # shell command. We use plain `export` rather than `env -S` because
+    # Alpine ships BusyBox's env, which doesn't support `-S`.
+    command: ["sh", "-c", "export NODE_PATH=\"$$(ls -d /node_modules/.pnpm/postgres@*/node_modules 2>/dev/null | head -1):$$(ls -d /node_modules/.pnpm/drizzle-orm@*/node_modules 2>/dev/null | head -1)\"; exec node scripts/migrate-runner.cjs"]
+    # No restart: on success, exits 0 and the web service starts; on failure,
+    # exits non-zero and the web service is blocked by `service_completed_successfully`.
+
+  web:
+    image: ghcr.io/${IMAGE_OWNER}/etiquetador-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      # Inside the compose network, postgres listens on its service name
+      # and the standard container port 5432.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set in .env.prod}
+      AUTH_URL: ${AUTH_URL:?AUTH_URL must be set (e.g. https://etiquetador.example.com)}
+      AUTH_TRUST_HOST: "true"
+      NEXTAUTH_URL: ${AUTH_URL}
+      NEXTAUTH_SECRET: ${AUTH_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    networks: [data]
+
+volumes:
+  postgres_data:
+
+networks:
+  data:
+    name: etiquetador-data

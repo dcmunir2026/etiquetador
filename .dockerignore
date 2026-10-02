@@ -1,0 +1,60 @@
+# Git metadata
+.git
+.gitattributes
+.github
+
+# Dependencies (rebuilt inside the image)
+**/node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+**/.next
+**/.turbo
+**/out
+**/build
+**/dist
+**/coverage
+**/.nyc_output
+
+# Env files — never bake .env into the image. The image sets only safe
+# build-time vars; runtime secrets come from compose or `-e`.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Editor & OS
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+Thumbs.db
+
+# Logs
+**/*.log
+logs/
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TS incremental build cache
+**/*.tsbuildinfo
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# SQLite-era leftovers in packages/db (kept locally for debugging but
+# never for the image)
+packages/db/etiquetador.db
+packages/db/etiquetador.db-shm
+packages/db/etiquetador.db-wal
+*.db
+
+# Generic secrets
+*.pem
+
+# Documentation build artifacts (kept in repo but irrelevant to runtime)
+docs/.vitepress/cache
+docs/.vitepress/dist

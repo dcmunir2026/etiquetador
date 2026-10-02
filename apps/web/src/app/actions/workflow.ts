@@ -11,14 +11,20 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   annotations, auditLog, corpusUploads, dimensionValues, dimensions, fragments,
-  packageAssignments, packageFragments, packages, projectMembers, qualCorrections,
-  qualValidations, segmentationConfigs, teamMembers, teams, users,
+  packageAssignments, packageFragments, packages, projectMembers, projectTaxonomies,
+  qualCorrections, qualValidations, segmentationConfigs, taxonomyDimensions,
+  teamMembers, teams, users,
   type ConsensusMetric, type SegmentationUnit, type UserRole,
 } from '@/db/schema';
 import { authorize, requireUser } from '@/lib/session';
-import { buildCascade, flattenCascade, pruneAnswers, type CascadeDimension } from '@/lib/cascade';
+import {
+  buildCascade, flattenCascade, isComplete, pruneAnswers, type CascadeDimension,
+} from '@/lib/cascade';
 import { getProjectDimensions } from '@/lib/queries';
 import { segTokenize, segSlice, segCount } from '@/lib/segmentation';
+import {
+  groupPrefragmented, prefragmentedStats, MAX_PREFRAGMENTED, type PrefragmentedPiece,
+} from '@/lib/prefragmented';
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -173,6 +179,143 @@ export async function ingestCorpus(input: {
   await audit('corpus.ingest', 'corpus_upload', upload.id, input.projectId, { created, duplicates });
   revalidatePath('/', 'layout');
   return { ok: true, id: upload.id };
+}
+
+/** Rows written per insert when loading an already-fragmented file. */
+const FRAGMENT_CHUNK = 500;
+
+/**
+ * Register a corpus that arrives already fragmented (JSON from the spaCy
+ * pipeline) and store its fragments verbatim.
+ *
+ * Unlike `ingestCorpus`, nothing is cut here: the cuts came with the file, so
+ * the project's segmentation config is deliberately ignored. Fragments are
+ * regrouped into the answer they came from only to rebuild `sourceText` and
+ * the 1-of-N position shown while annotating.
+ */
+export async function ingestPrefragmented(input: {
+  projectId: string;
+  filename: string;
+  sizeBytes?: number;
+  pieces: PrefragmentedPiece[];
+  /** `algoritmo` / `rubrica` blocks of the file, kept as provenance. */
+  meta?: { algoritmo?: unknown; rubrica?: unknown };
+}): Promise<ActionResult> {
+  const gate = await authorize('upload', input.projectId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const db = getDb();
+  const user = await requireUser();
+
+  const pieces = (input.pieces ?? []).filter((p) => p?.text?.trim());
+  if (pieces.length === 0) return { ok: false, error: 'El archivo no contiene fragmentos utilizables.' };
+  if (pieces.length > MAX_PREFRAGMENTED) {
+    return { ok: false, error: `El archivo supera el máximo de ${MAX_PREFRAGMENTED} fragmentos por carga.` };
+  }
+
+  const groups = groupPrefragmented(pieces);
+  const stats = prefragmentedStats(pieces, groups);
+
+  const [upload] = await db.insert(corpusUploads).values({
+    projectId: input.projectId,
+    filename: input.filename,
+    sheetName: null,
+    sizeBytes: input.sizeBytes ?? 0,
+    rowCount: stats.answers + stats.duplicates,
+    uniqueCount: stats.answers,
+    duplicateCount: stats.duplicates,
+    columnMapping: JSON.stringify({
+      origen: 'json-prefragmentado',
+      campos: { texto: 'fragmento', id: 'id', pregunta: 'preguntaOriginal', hash: 'respuestaHash' },
+      algoritmo: input.meta?.algoritmo ?? null,
+      rubrica: input.meta?.rubrica ?? null,
+    }),
+    status: 'segmented',
+    uploadedBy: user.id,
+  }).returning();
+  if (!upload) return { ok: false, error: 'No se pudo registrar la carga.' };
+
+  const rows = groups.flatMap((group) =>
+    group.pieces.map((piece, i) => ({
+      projectId: input.projectId,
+      uploadId: upload.id,
+      conversationId: group.conversationId,
+      question: group.question,
+      sourceText: group.sourceText,
+      text: piece.text,
+      fragmentIndex: i + 1,
+      fragmentTotal: group.pieces.length,
+      charLength: piece.text.length,
+      tokenCount: segCount(piece.text, 'token'),
+    })),
+  );
+
+  for (let i = 0; i < rows.length; i += FRAGMENT_CHUNK) {
+    await db.insert(fragments).values(rows.slice(i, i + FRAGMENT_CHUNK));
+  }
+
+  const totalTokens = rows.reduce((sum, r) => sum + r.tokenCount, 0);
+  await db.update(corpusUploads).set({
+    avgTokens: rows.length ? Math.round(totalTokens / rows.length) : 0,
+    fragmentablePct: stats.answers ? Math.round((stats.splitAnswers / stats.answers) * 100) : 0,
+  }).where(eq(corpusUploads.id, upload.id));
+
+  await audit('corpus.ingest.prefragmented', 'corpus_upload', upload.id, input.projectId, {
+    created: rows.length, answers: stats.answers, duplicates: stats.duplicates,
+  });
+  revalidatePath('/', 'layout');
+  return { ok: true, id: upload.id };
+}
+
+// ─── Dimension order (dependency graph) ──────────────────────────────
+
+/**
+ * Persist the order the dimensions are listed in, as dragged on the
+ * dependency graph.
+ *
+ * The position lives on `taxonomy_dimensions`, so it belongs to the taxonomy
+ * rather than to the project: two projects sharing a taxonomy share its
+ * order. Every screen that reads `getProjectDimensions` — the graph and the
+ * annotation form — follows it.
+ *
+ * The hierarchy is untouched: which dimension gates which is a dependency,
+ * not a position, so dragging only moves siblings relative to each other.
+ */
+export async function reorderProjectDimensions(input: {
+  projectId: string; dimensionIds: string[];
+}): Promise<ActionResult> {
+  // Ordering drives what annotators see, so it is project configuration.
+  const gate = await authorize('dimensions', input.projectId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const db = getDb();
+
+  const ids = input.dimensionIds?.filter((id) => typeof id === 'string' && id) ?? [];
+  if (ids.length === 0) return { ok: false, error: 'No se ha recibido ningún orden que guardar.' };
+  if (new Set(ids).size !== ids.length) return { ok: false, error: 'El orden recibido repite dimensiones.' };
+
+  const taxIds = (await db.select({ id: projectTaxonomies.taxonomyId })
+    .from(projectTaxonomies).where(eq(projectTaxonomies.projectId, input.projectId))).map((r) => r.id);
+  if (taxIds.length === 0) return { ok: false, error: 'El proyecto no tiene taxonomías asignadas.' };
+
+  // Only reorder dimensions this project actually reaches.
+  const links = await db.select({ dimensionId: taxonomyDimensions.dimensionId })
+    .from(taxonomyDimensions).where(inArray(taxonomyDimensions.taxonomyId, taxIds));
+  const reachable = new Set(links.map((l) => l.dimensionId));
+  const unknown = ids.filter((id) => !reachable.has(id));
+  if (unknown.length > 0) {
+    return { ok: false, error: 'El orden incluye dimensiones que no pertenecen a este proyecto.' };
+  }
+
+  for (const [position, dimensionId] of ids.entries()) {
+    await db.update(taxonomyDimensions).set({ order: position })
+      .where(and(
+        inArray(taxonomyDimensions.taxonomyId, taxIds),
+        eq(taxonomyDimensions.dimensionId, dimensionId),
+      ));
+  }
+
+  await audit('dimensions.reorder', 'project', input.projectId, input.projectId, { count: ids.length });
+  revalidatePath('/', 'layout');
+  return { ok: true, id: input.projectId };
 }
 
 // ─── Teams & roles ───────────────────────────────────────────────────
@@ -435,6 +578,47 @@ export async function submitPackage(packageId: string): Promise<ActionResult> {
     .where(and(eq(packageAssignments.packageId, packageId), eq(packageAssignments.userId, user.id))).limit(1);
   if (!assignment) return { ok: false, error: 'No tienes este paquete asignado.' };
 
+  // A package is only finished when every fragment in it is. Checked here
+  // and not just on screen, so the rule holds however the call arrives.
+  const [pkgRow] = await db.select().from(packages).where(eq(packages.id, packageId)).limit(1);
+  if (!pkgRow) return { ok: false, error: 'Paquete no encontrado.' };
+
+  const dims = await getProjectDimensions(pkgRow.projectId);
+  const cascadeDims: CascadeDimension[] = dims.map((d) => ({
+    id: d.id, name: d.name, kind: d.kind, values: d.values, dependency: d.dependency,
+  }));
+
+  const links = await db.select({ fragmentId: packageFragments.fragmentId, order: packageFragments.order })
+    .from(packageFragments).where(eq(packageFragments.packageId, packageId))
+    .orderBy(asc(packageFragments.order));
+
+  const saved = await db.select({
+    fragmentId: annotations.fragmentId, dimensionId: annotations.dimensionId,
+    value: annotations.value, skipped: annotations.skipped,
+  }).from(annotations)
+    .where(and(eq(annotations.packageId, packageId), eq(annotations.userId, user.id)));
+
+  const answersByFragment = new Map<string, Record<string, string>>();
+  for (const a of saved) {
+    const bucket = answersByFragment.get(a.fragmentId) ?? {};
+    if (!a.skipped && a.value !== null) bucket[a.dimensionId] = a.value;
+    answersByFragment.set(a.fragmentId, bucket);
+  }
+
+  const pending: number[] = [];
+  for (const [i, link] of links.entries()) {
+    if (!isComplete(cascadeDims, answersByFragment.get(link.fragmentId) ?? {})) pending.push(i + 1);
+  }
+  if (pending.length > 0) {
+    const first = pending[0];
+    return {
+      ok: false,
+      error: pending.length === 1
+        ? `Queda 1 fragmento sin etiquetar por completo (el ${first}). Complétalo antes de enviar el paquete.`
+        : `Quedan ${pending.length} fragmentos sin etiquetar por completo. El primero es el ${first}.`,
+    };
+  }
+
   await db.update(packageAssignments).set({
     status: 'submitted', version: assignment.version + 1, submittedAt: new Date(),
   }).where(eq(packageAssignments.id, assignment.id));
@@ -568,4 +752,126 @@ export async function correctQualFragment(input: {
   await audit('qual.correct', 'qual_validation', input.validationId, undefined, { count: changed.length });
   revalidatePath('/', 'layout');
   return { ok: true, id: input.validationId };
+}
+
+// ─── User soft-delete ──────────────────────────────────────────────────
+
+/**
+ * Mark a user as deactivated. Only superadmins can do this. The user
+ * row stays so that annotations, package assignments and team memberships
+ * keep their referential integrity; the next login attempt is rejected
+ * by `lib/auth.ts` because `deleted_at IS NOT NULL`.
+ *
+ * Refuses to delete yourself (no last-admin lockout) and the only other
+ * superadmin, if any (we'd need a separate confirm for that, but the
+ * caller can still proceed if it's intentional).
+ */
+export async function deactivateUser(userId: string): Promise<ActionResult> {
+  const gate = await authorize('taxonomies'); // superadmin only (see permissions.ts)
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  if (!userId) return { ok: false, error: 'Falta el usuario a desactivar.' };
+
+  const db = getDb();
+  const me = gate.user;
+
+  if (userId === me.id) {
+    return { ok: false, error: 'No puedes desactivarte a ti mismo.' };
+  }
+
+  const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!target) return { ok: false, error: 'Usuario no encontrado.' };
+  if (target.deletedAt) {
+    return { ok: true, id: userId }; // already inactive — no-op
+  }
+
+  await db.update(users)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  await audit('user.deactivate', 'user', userId, undefined, { name: target.name, email: target.email });
+
+  revalidatePath('/', 'layout');
+  return { ok: true, id: userId };
+}
+
+/**
+ * Reverse of `deactivateUser`: clear the soft-delete tombstone so the
+ * account can sign in again. Only superadmins can reactivate. Reactivating
+ * yourself is allowed (handy when another admin deactivated you by
+ * accident); we still audit it for traceability.
+ *
+ * `password_hash`, `must_change_password`, project role and team
+ * memberships are all preserved — we only flip `deleted_at` back to NULL.
+ */
+export async function reactivateUser(userId: string): Promise<ActionResult> {
+  const gate = await authorize('taxonomies'); // superadmin only (see permissions.ts)
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  if (!userId) return { ok: false, error: 'Falta el usuario a reactivar.' };
+
+  const db = getDb();
+
+  const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!target) return { ok: false, error: 'Usuario no encontrado.' };
+  if (!target.deletedAt) {
+    return { ok: true, id: userId }; // already active — no-op
+  }
+
+  await db.update(users)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  await audit('user.reactivate', 'user', userId, undefined, { name: target.name, email: target.email });
+
+  revalidatePath('/', 'layout');
+  return { ok: true, id: userId };
+}
+
+/**
+ * Reset an existing account to the default password (`etiquetador` or
+ * whatever `DEV_PASSWORD` resolves to). Only superadmins can do this.
+ * The user is allowed to flip themselves in this help-loop (the admin
+ * may have forgotten their own password and locked themselves out).
+ *
+ * The flag `must_change_password` is set so the recipient is forced
+ * through the change-password flow on next sign-in — they won't be
+ * able to use the default past the first session.
+ *
+ * NOTE: Auth.js sessions are issued as JWTs that don't include the
+ * password hash, so existing sessions for the affected user stay
+ * valid until they expire or the user signs out. To immediately
+ * invalidate them, the user must log out (the admin can ask them to).
+ * A future enhancement would be a server-side JWT revocation list,
+ * but that's out of scope for this action.
+ *
+ * Returns the new default password so the admin can communicate it to
+ * the person (since the recipient has no email-based password recovery
+ * flow yet).
+ */
+export async function resetPasswordToDefault(userId: string): Promise<ActionResult & { defaultPassword?: string }> {
+  const gate = await authorize('taxonomies'); // superadmin only
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  if (!userId) return { ok: false, error: 'Falta el usuario.' };
+
+  const db = getDb();
+  const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!target) return { ok: false, error: 'Usuario no encontrado.' };
+  if (target.deletedAt) {
+    return { ok: false, error: 'No puedes reiniciar la contraseña de una persona desactivada. Reactívala primero.' };
+  }
+
+  const defaultPassword = process.env.DEV_PASSWORD || 'etiquetador';
+  const passwordHash = await bcrypt.hash(defaultPassword, 10);
+  await db.update(users)
+    .set({ passwordHash, mustChangePassword: true, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  await audit('user.password.reset_to_default', 'user', userId, undefined, {
+    name: target.name, email: target.email,
+  });
+
+  revalidatePath('/', 'layout');
+  return { ok: true, id: userId, defaultPassword };
 }

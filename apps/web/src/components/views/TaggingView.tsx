@@ -4,7 +4,10 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaggingData } from '@/lib/queries';
 import { saveAnnotations, submitPackage } from '@/app/actions/workflow';
-import { buildCascade, flattenCascade, pruneAnswers, type AnswerMap, type CascadeDimension } from '@/lib/cascade';
+import {
+  buildCascade, flattenCascade, missingAnswers, pruneAnswers,
+  type AnswerMap, type CascadeDimension,
+} from '@/lib/cascade';
 import { EmptyState, dimColor } from './shared';
 
 /**
@@ -22,6 +25,7 @@ export function TaggingView({
   const [answers, setAnswers] = useState<AnswerMap>(data.answers);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showMissing, setShowMissing] = useState(false);
 
   const dims: CascadeDimension[] = useMemo(
     () => data.dimensions.map((d) => ({
@@ -36,6 +40,11 @@ export function TaggingView({
   const answeredCount = nodes.filter(
     (n) => n.visibility === 'visible' && (answers[n.dim.id] ?? '') !== '',
   ).length;
+
+  // What the cascade still asks for. Highlighted only after an attempt to
+  // move on, so the form does not scold before anyone has tried anything.
+  const missing = useMemo(() => missingAnswers(dims, answers), [dims, answers]);
+  const missingIds = useMemo(() => new Set(missing.map((d) => d.id)), [missing]);
 
   if (!data.fragment || !data.package) {
     return (
@@ -58,9 +67,39 @@ export function TaggingView({
     if (next[dimId] === '') delete next[dimId];
     setAnswers(pruneAnswers(dims, next));
     setNotice(null);
+    if (missingAnswers(dims, next).length === 0) setShowMissing(false);
+  }
+
+  /** What is still unanswered, phrased for the annotator. */
+  function missingNotice(): string {
+    return missing.length === 1
+      ? `Falta etiquetar «${missing[0]!.name}». Lo marcado se ha guardado.`
+      : `Faltan ${missing.length} dimensiones por etiquetar: ${missing.map((d) => d.name).join(', ')}. Lo marcado se ha guardado.`;
+  }
+
+  /** Persist the current fragment. Returns false when the write failed. */
+  async function persist(): Promise<boolean> {
+    const res = await saveAnnotations({
+      projectId, fragmentId: frag.id, packageId: data.package!.id,
+      answers: answers as Record<string, string>,
+    });
+    if (!res.ok) { setNotice(res.error); return false; }
+    return true;
   }
 
   async function save(goNext: boolean) {
+    // Save whatever is answered even when we are about to refuse to move on:
+    // being told off should never cost the annotator the work already done.
+    if (goNext && missing.length > 0) {
+      setSaving(true);
+      const ok = await persist();
+      setSaving(false);
+      if (!ok) return;
+      setShowMissing(true);
+      setNotice(missingNotice());
+      return;
+    }
+
     setSaving(true);
     setNotice(null);
     const res = await saveAnnotations({
@@ -78,15 +117,49 @@ export function TaggingView({
   }
 
   async function finish() {
+    if (missing.length > 0) { await save(true); return; }
+
     setSaving(true);
+    setNotice(null);
+    // Persist this fragment first: its answers may only exist on screen, and
+    // submitting would otherwise throw away the work being sent.
+    if (!(await persist())) { setSaving(false); return; }
+
     const res = await submitPackage(data.package!.id);
     setSaving(false);
-    setNotice(res.ok ? 'Paquete enviado a validación.' : res.error);
-    router.refresh();
+    if (!res.ok) { setNotice(res.error); return; }
+
+    // Submission succeeded. The submitted package is now out of the user's
+    // queue, so the loader will surface the next actionable one. Drop the
+    // ?fragment=N query param to let getTaggingData pick the new first
+    // unfinished fragment; if there is no next package the EmptyState takes
+    // over.
+    setNotice('Paquete enviado a validación.');
+    router.push(`/etiquetar`);
   }
 
-  function goTo(pos: number) {
-    if (pos < 1 || pos > data.total) return;
+  /**
+   * Move to another fragment.
+   *
+   * Navigation goes through here too, so the same rule applies as to
+   * "Guardar y siguiente": the current answers are always persisted first,
+   * and moving *forward* is refused while anything is unanswered. Going back
+   * stays free — revisiting an earlier fragment is not skipping work.
+   */
+  async function goTo(pos: number) {
+    if (pos < 1 || pos > data.total || pos === data.position) return;
+
+    setSaving(true);
+    const ok = await persist();
+    setSaving(false);
+    if (!ok) return;
+
+    if (pos > data.position && missing.length > 0) {
+      setShowMissing(true);
+      setNotice(missingNotice());
+      return;
+    }
+    setNotice(null);
     startTransition(() => router.push(`/etiquetar?fragment=${pos}`));
   }
 
@@ -118,27 +191,10 @@ export function TaggingView({
               Contexto completo
             </h3>
             <div className="context-box">
-              {frag.question && (<><b>Pregunta del periodista:</b> {frag.question}{'\n\n'}</>)}
+              {frag.question && (<><b>Pregunta:</b> {frag.question}{'\n\n'}</>)}
               <span className="badge-frag">Fragmento {frag.fragmentIndex} de {frag.fragmentTotal}</span>
               {'\n\n'}
               {frag.sourceText ?? frag.text}
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: '14px 16px', marginTop: 14 }}>
-            <h3>Metadatos</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '6px 12px', fontSize: 12.5 }}>
-              <span style={{ color: 'var(--ink-3)' }}>Conversación</span>
-              <code style={{ wordBreak: 'break-all' }}>{frag.conversationId ?? '—'}</code>
-              <span style={{ color: 'var(--ink-3)' }}>Variante</span><span>{frag.variant}</span>
-              <span style={{ color: 'var(--ink-3)' }}>Longitud</span>
-              <span>{frag.charLength} chars · {frag.tokenCount} tokens</span>
-              <span style={{ color: 'var(--ink-3)' }}>Éxito API</span>
-              <span>
-                <span className={`tag ${frag.apiSuccess ? 'status-done' : 'status-blocked'}`}>
-                  {frag.apiSuccess ? 'OK' : 'Error'}
-                </span>
-              </span>
             </div>
           </div>
 
@@ -167,7 +223,9 @@ export function TaggingView({
               const d = node.dim;
               const skipped = node.visibility === 'skipped';
               const waiting = node.visibility === 'pending-parent';
-              const borderColor = skipped ? '#d1d5db' : waiting ? '#e8d49c' : d.dependency ? '#a13d3d' : '#1c8a4a';
+              const pending = showMissing && missingIds.has(d.id);
+              const borderColor = pending ? 'var(--bad)'
+                : skipped ? '#d1d5db' : waiting ? '#e8d49c' : d.dependency ? '#a13d3d' : '#1c8a4a';
 
               return (
                 <div key={d.id} className="dim"
@@ -179,6 +237,8 @@ export function TaggingView({
                          ? 'repeating-linear-gradient(45deg,#fafaf7,#fafaf7 8px,#f6f4ed 8px,#f6f4ed 16px)'
                          : undefined,
                        borderLeft: `3px solid ${borderColor}`,
+                       border: pending ? '1px solid var(--bad)' : undefined,
+                       borderLeftWidth: 3,
                        borderRadius: 6,
                        padding: '12px 14px',
                      }}>
@@ -197,6 +257,12 @@ export function TaggingView({
                         <span style={{ background: '#fdf3da', color: '#8a6300', fontSize: 10.5,
                                        padding: '2px 8px', borderRadius: 9, fontWeight: 500 }}>
                           ⏳ espera respuesta del padre
+                        </span>
+                      )}
+                      {pending && (
+                        <span style={{ background: '#fbe6e6', color: '#8a1a1c', fontSize: 10.5,
+                                       padding: '2px 8px', borderRadius: 9, fontWeight: 600 }}>
+                          sin etiquetar
                         </span>
                       )}
                     </span>
@@ -239,7 +305,10 @@ export function TaggingView({
 
           <div className="card" style={{ padding: 14, marginTop: 14 }}>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
-              {notice && <span style={{ fontSize: 12.5, color: 'var(--ink-3)', marginRight: 'auto' }}>{notice}</span>}
+              {notice && (
+                <span style={{ fontSize: 12.5, marginRight: 'auto', fontWeight: showMissing ? 600 : 400,
+                               color: showMissing ? 'var(--bad)' : 'var(--ink-3)' }}>{notice}</span>
+              )}
               <button className="btn" onClick={() => save(false)} disabled={saving}>
                 {saving ? 'Guardando…' : 'Guardar'}
               </button>
@@ -255,6 +324,17 @@ export function TaggingView({
             </div>
             <p style={{ fontSize: 11.5, color: 'var(--ink-4)', margin: '10px 0 0', textAlign: 'right' }}>
               Las dimensiones marcadas SKIPPED se guardan como salto explícito, no como vacío.
+              {data.incompleteCount > 0 && (
+                <>
+                  <br />
+                  Quedan <b style={{ color: 'var(--ink-2)' }}>{data.incompleteCount}</b> de {data.total} fragmentos
+                  sin completar;{' '}
+                  <button className="btn ghost" style={{ padding: 0, fontSize: 11.5, color: 'var(--primary-2)' }}
+                          onClick={() => goTo(data.firstIncomplete)}>
+                    ir al primero (nº {data.firstIncomplete}) →
+                  </button>
+                </>
+              )}
             </p>
           </div>
         </div>
