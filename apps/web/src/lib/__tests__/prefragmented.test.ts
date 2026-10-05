@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  groupPrefragmented, joinFragments, parsePrefragmented, prefragmentedStats,
+  csvLooksPrefragmented, groupPrefragmented, joinFragments,
+  parsePrefragmented, parsePrefragmentedCsv, prefragmentedStats,
 } from '../prefragmented';
 
 const piece = (over: Record<string, unknown> = {}) => ({
@@ -114,5 +115,73 @@ describe('joinFragments', () => {
     expect(joinFragments(['Uno.', 'Dos.'])).toBe('Uno. Dos.');
     expect(joinFragments(['Uno.\n', 'Dos.'])).toBe('Uno.\nDos.');
     expect(joinFragments([])).toBe('');
+  });
+});
+
+describe('csvLooksPrefragmented', () => {
+  it('detects the three required columns regardless of order', () => {
+    expect(csvLooksPrefragmented(['pregunta', 'fragmento', 'fragmento_anterior', 'fragmento_posterior']))
+      .toBe(true);
+    expect(csvLooksPrefragmented(['id', 'fragmento_anterior', 'fragmento', 'posterior', 'pregunta']))
+      .toBe(true);
+  });
+
+  it('rejects headers missing any of the three required columns', () => {
+    expect(csvLooksPrefragmented(['pregunta', 'fragmento', 'fragmento_anterior'])).toBe(false);
+    expect(csvLooksPrefragmented(['id', 'question', 'anterior', 'posterior'])).toBe(false);
+  });
+});
+
+describe('parsePrefragmentedCsv', () => {
+  const headers = ['pregunta', 'fragmento', 'fragmento_anterior', 'fragmento_posterior'];
+
+  it('returns one piece per row with a stable per-row hash', () => {
+    const res = parsePrefragmentedCsv(headers, [
+      ['¿Qué es el PIB?', 'El PIB es el producto interno.', '', ''],
+      ['¿Qué es el PIB?', 'Mide el valor de la producción.', 'El PIB es el producto interno.', ''],
+    ]);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.doc.pieces).toHaveLength(2);
+    expect(res.doc.pieces[0]).toMatchObject({
+      text: 'El PIB es el producto interno.',
+      question: '¿Qué es el PIB?',
+      turn: 0,
+      merged: false,
+      score: null,
+    });
+    // The hash is derived from pregunta+fragmento, so each row has its own.
+    expect(res.doc.pieces[0]!.hash).not.toBeNull();
+    expect(res.doc.pieces[0]!.hash).not.toEqual(res.doc.pieces[1]!.hash);
+    // Words counted from the response itself.
+    expect(res.doc.pieces[0]!.words).toBe(6);
+  });
+
+  it('skips rows with empty fragments and reports the count', () => {
+    const res = parsePrefragmentedCsv(headers, [
+      ['Pregunta A', 'Texto válido.', '', ''],
+      ['Pregunta B', '   ', '', ''],
+      ['', '', '', ''],
+    ]);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.doc.pieces).toHaveLength(1);
+    expect(res.doc.skipped).toBe(2);
+  });
+
+  it('rejects when the fragmento column is missing', () => {
+    const res = parsePrefragmentedCsv(
+      ['id', 'question', 'anterior', 'posterior'],
+      [['a', 'b', '', '']],
+    );
+    expect(res).toMatchObject({ ok: false });
+  });
+
+  it('rejects when every row is empty', () => {
+    const res = parsePrefragmentedCsv(headers, [
+      ['a', '   ', '', ''],
+      ['b', '', '', ''],
+    ]);
+    expect(res).toMatchObject({ ok: false });
   });
 });

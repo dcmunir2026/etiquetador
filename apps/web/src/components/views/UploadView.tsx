@@ -2,10 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ingestCorpus, ingestPrefragmented } from '@/app/actions/workflow';
+import { ingestCorpus, ingestPrefragmented, ingestPrefragmentedCsv } from '@/app/actions/workflow';
 import { columnLetter, guessMapping, parseDelimited, type ParsedTable } from '@/lib/csv';
 import {
-  groupPrefragmented, parsePrefragmented, prefragmentedStats,
+  csvLooksPrefragmented, groupPrefragmented, parsePrefragmented, parsePrefragmentedCsv,
+  prefragmentedStats,
   type PrefragmentedDoc, type PrefragmentedGroup, type PrefragmentedStats,
 } from '@/lib/prefragmented';
 import { Kpi, ago, num } from './shared';
@@ -17,12 +18,14 @@ type Upload = {
 };
 type Config = { id: string; name: string; unit: string; maxChunkSize: number; overlap: number };
 
-/** A pre-fragmented JSON file, parsed and summarised for the preview. */
+/** A pre-fragmented file (JSON or CSV), parsed and summarised for the preview. */
 type JsonCorpus = {
   file: File;
   doc: PrefragmentedDoc;
   groups: PrefragmentedGroup[];
   stats: PrefragmentedStats;
+  /** Where the corpus came from — drives the ingestor and the audit trail. */
+  origen: 'json' | 'csv';
 };
 
 /** Corpus entry point (H1): parse, map columns, dedupe and segment. */
@@ -68,6 +71,21 @@ export function UploadView({
       setFile(null);
       return;
     }
+
+    // The same CSV is read two different ways: when the columns look
+    // pre-fragmented we treat each row as a fragment; otherwise it goes
+    // through the column-mapping flow that segments answers on ingest.
+    if (csvLooksPrefragmented(parsed.headers)) {
+      const prepped = parsePrefragmentedCsv(parsed.headers, parsed.rows);
+      if (!prepped.ok) { setError(prepped.error); setFile(null); return; }
+      const groups = groupPrefragmented(prepped.doc.pieces);
+      setJson({
+        file: f, doc: prepped.doc, groups, origen: 'csv',
+        stats: prefragmentedStats(prepped.doc.pieces, groups),
+      });
+      return;
+    }
+
     setTable(parsed);
     setMapping(guessMapping(parsed.headers));
   }
@@ -77,7 +95,10 @@ export function UploadView({
     const parsed = parsePrefragmented(await f.text());
     if (!parsed.ok) { setError(parsed.error); setFile(null); return; }
     const groups = groupPrefragmented(parsed.doc.pieces);
-    setJson({ file: f, doc: parsed.doc, groups, stats: prefragmentedStats(parsed.doc.pieces, groups) });
+    setJson({
+      file: f, doc: parsed.doc, groups, origen: 'json',
+      stats: prefragmentedStats(parsed.doc.pieces, groups),
+    });
   }
 
   // Preview stats, computed the same way the server will.
@@ -133,20 +154,28 @@ export function UploadView({
     if (!json) return;
     setBusy(true); setError(null); setNotice(null);
 
-    const res = await ingestPrefragmented({
-      projectId,
-      filename: json.file.name,
-      sizeBytes: json.file.size,
-      pieces: json.doc.pieces,
-      meta: { algoritmo: json.doc.algoritmo, rubrica: json.doc.rubrica },
-    });
+    const res = json.origen === 'csv'
+      ? await ingestPrefragmentedCsv({
+          projectId,
+          filename: json.file.name,
+          sizeBytes: json.file.size,
+          pieces: json.doc.pieces,
+        })
+      : await ingestPrefragmented({
+          projectId,
+          filename: json.file.name,
+          sizeBytes: json.file.size,
+          pieces: json.doc.pieces,
+          meta: { algoritmo: json.doc.algoritmo, rubrica: json.doc.rubrica },
+        });
 
     setBusy(false);
     if (!res.ok) { setError(res.error); return; }
     const n = json.stats.fragments;
+    const verb = json.origen === 'csv' ? 'desde el CSV fragmentado' : 'sin volver a segmentar';
     setNotice(n === 1
-      ? 'Se ha cargado 1 fragmento sin volver a segmentar.'
-      : `Se han cargado ${num(n)} fragmentos sin volver a segmentar.`);
+      ? `Se ha cargado 1 fragmento ${verb}.`
+      : `Se han cargado ${num(n)} fragmentos ${verb}.`);
     reset();
     router.refresh();
   }

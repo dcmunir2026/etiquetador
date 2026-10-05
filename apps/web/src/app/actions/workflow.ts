@@ -201,12 +201,60 @@ export async function ingestPrefragmented(input: {
   /** `algoritmo` / `rubrica` blocks of the file, kept as provenance. */
   meta?: { algoritmo?: unknown; rubrica?: unknown };
 }): Promise<ActionResult> {
+  return ingestPrefragmentedImpl({
+    projectId: input.projectId,
+    filename: input.filename,
+    sizeBytes: input.sizeBytes ?? 0,
+    pieces: input.pieces ?? [],
+    origen: 'json-prefragmentado',
+    campos: { texto: 'fragmento', id: 'id', pregunta: 'preguntaOriginal', hash: 'respuestaHash' },
+    meta: input.meta,
+    auditAction: 'corpus.ingest.prefragmented',
+  });
+}
+
+/**
+ * CSV variant of `ingestPrefragmented`. Reuses the same insert + audit
+ * pipeline; only the `origen` label and the column mapping differ so the
+ * loader can tell how the corpus arrived later.
+ */
+export async function ingestPrefragmentedCsv(input: {
+  projectId: string;
+  filename: string;
+  sizeBytes?: number;
+  pieces: PrefragmentedPiece[];
+}): Promise<ActionResult> {
+  return ingestPrefragmentedImpl({
+    projectId: input.projectId,
+    filename: input.filename,
+    sizeBytes: input.sizeBytes ?? 0,
+    pieces: input.pieces ?? [],
+    origen: 'csv-prefragmentado',
+    campos: { texto: 'fragmento', id: 'respuestaHash', pregunta: 'pregunta', hash: 'respuestaHash' },
+    meta: undefined,
+    auditAction: 'corpus.ingest.prefragmented_csv',
+  });
+}
+
+async function ingestPrefragmentedImpl(input: {
+  projectId: string;
+  filename: string;
+  sizeBytes: number;
+  pieces: PrefragmentedPiece[];
+  /** Tag written to `corpus_uploads.columnMapping.origen` for provenance. */
+  origen: string;
+  /** Column map persisted alongside the upload so the loader can re-run. */
+  campos: Record<string, string>;
+  meta?: { algoritmo?: unknown; rubrica?: unknown };
+  /** Audit log action. Lets the CSV path leave a distinct trace. */
+  auditAction: 'corpus.ingest.prefragmented' | 'corpus.ingest.prefragmented_csv';
+}): Promise<ActionResult> {
   const gate = await authorize('upload', input.projectId);
   if (!gate.ok) return { ok: false, error: gate.error };
   const db = getDb();
   const user = await requireUser();
 
-  const pieces = (input.pieces ?? []).filter((p) => p?.text?.trim());
+  const pieces = input.pieces.filter((p) => p?.text?.trim());
   if (pieces.length === 0) return { ok: false, error: 'El archivo no contiene fragmentos utilizables.' };
   if (pieces.length > MAX_PREFRAGMENTED) {
     return { ok: false, error: `El archivo supera el máximo de ${MAX_PREFRAGMENTED} fragmentos por carga.` };
@@ -219,13 +267,13 @@ export async function ingestPrefragmented(input: {
     projectId: input.projectId,
     filename: input.filename,
     sheetName: null,
-    sizeBytes: input.sizeBytes ?? 0,
+    sizeBytes: input.sizeBytes,
     rowCount: stats.answers + stats.duplicates,
     uniqueCount: stats.answers,
     duplicateCount: stats.duplicates,
     columnMapping: JSON.stringify({
-      origen: 'json-prefragmentado',
-      campos: { texto: 'fragmento', id: 'id', pregunta: 'preguntaOriginal', hash: 'respuestaHash' },
+      origen: input.origen,
+      campos: input.campos,
       algoritmo: input.meta?.algoritmo ?? null,
       rubrica: input.meta?.rubrica ?? null,
     }),
@@ -259,7 +307,7 @@ export async function ingestPrefragmented(input: {
     fragmentablePct: stats.answers ? Math.round((stats.splitAnswers / stats.answers) * 100) : 0,
   }).where(eq(corpusUploads.id, upload.id));
 
-  await audit('corpus.ingest.prefragmented', 'corpus_upload', upload.id, input.projectId, {
+  await audit(input.auditAction, 'corpus_upload', upload.id, input.projectId, {
     created: rows.length, answers: stats.answers, duplicates: stats.duplicates,
   });
   revalidatePath('/', 'layout');

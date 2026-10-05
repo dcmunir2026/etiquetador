@@ -154,6 +154,115 @@ export function parsePrefragmented(source: string): PrefragmentedParse {
   };
 }
 
+/**
+ * Headers we look for in a pre-fragmented CSV. Each entry is the
+ * canonical name plus common Spanish variants — the file is allowed to
+ * use the column the user wrote by hand.
+ */
+const CSV_HEADER_CANDIDATES: Record<'pregunta' | 'fragmento' | 'anterior' | 'posterior', string[]> = {
+  pregunta: ['pregunta', 'question'],
+  fragmento: ['fragmento', 'fragment', 'texto', 'text'],
+  anterior: ['fragmento_anterior', 'anterior', 'previous', 'prev'],
+  posterior: ['fragmento_posterior', 'posterior', 'next'],
+};
+
+type CsvColumn = keyof typeof CSV_HEADER_CANDIDATES;
+
+function locateHeader(headers: string[], candidates: string[]): number {
+  const norm = headers.map((h) => h.trim().toLowerCase());
+  for (const cand of candidates) {
+    const i = norm.indexOf(cand);
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+/**
+ * Detect whether a CSV with these headers should be treated as
+ * pre-fragmented (i.e. fragments are already cut) or as raw answers
+ * to be segmented by the project config. We only look at the header
+ * to avoid reading the body twice.
+ */
+export function csvLooksPrefragmented(headers: string[]): boolean {
+  return locateHeader(headers, CSV_HEADER_CANDIDATES.fragmento) !== -1
+    && locateHeader(headers, CSV_HEADER_CANDIDATES.anterior) !== -1
+    && locateHeader(headers, CSV_HEADER_CANDIDATES.posterior) !== -1;
+}
+
+/**
+ * Build a stable hash for a row. Used to group consecutive fragments of
+ * the same answer when the file does not carry an explicit id. Mirrors
+ * the hash the JSON ingestor expects in `respuestaHash`.
+ */
+function rowHash(pregunta: string, fragmento: string): string {
+  // djb2 — short, deterministic, no crypto needed; the value is only
+  // used to deduplicate within the same upload, never to authenticate.
+  let h = 5381;
+  const text = pregunta + '\u0000' + fragmento;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return 'csv-' + (h >>> 0).toString(16);
+}
+
+/**
+ * Read a CSV file that arrives with one fragment per row.
+ *
+ * Expected columns: `pregunta`, `fragmento`, plus optional
+ * `fragmento_anterior` / `fragmento_posterior` (kept as-is for future
+ * use; the ingestor stores them in `sourceText` together with the
+ * current fragment). The response itself is the row id — every
+ * fragment of the same answer shares it so downstream grouping works
+ * the same as for the JSON path.
+ */
+export function parsePrefragmentedCsv(
+  headers: string[],
+  rows: string[][],
+): PrefragmentedParse {
+  const idx = {
+    pregunta: locateHeader(headers, CSV_HEADER_CANDIDATES.pregunta),
+    fragmento: locateHeader(headers, CSV_HEADER_CANDIDATES.fragmento),
+    anterior: locateHeader(headers, CSV_HEADER_CANDIDATES.anterior),
+    posterior: locateHeader(headers, CSV_HEADER_CANDIDATES.posterior),
+  };
+  if (idx.fragmento === -1) {
+    return { ok: false, error: 'Falta la columna «fragmento» en el CSV.' };
+  }
+
+  const pieces: PrefragmentedPiece[] = [];
+  let skipped = 0;
+
+  for (const [i, row] of rows.entries()) {
+    const text = (row[idx.fragmento] ?? '').trim();
+    if (!text) { skipped++; continue; }
+
+    const pregunta = idx.pregunta !== -1 ? (row[idx.pregunta] ?? '').trim() : '';
+    // One hash per row, derived from pregunta+fragmento: rows that
+    // share both collapse into the same answer during grouping, the
+    // way `respuestaHash` does for the JSON path.
+    const hash = rowHash(pregunta, text);
+
+    pieces.push({
+      conversationId: hash,
+      turn: 0,
+      index: i,
+      question: pregunta || null,
+      text,
+      words: countWords(text),
+      score: null,
+      merged: false,
+      hash,
+    });
+  }
+
+  if (pieces.length === 0) {
+    return { ok: false, error: 'El CSV no trae ningún fragmento con texto.' };
+  }
+
+  return {
+    ok: true,
+    doc: { pieces, skipped, algoritmo: null, rubrica: null },
+  };
+}
+
 /** Rebuild an answer from its fragments, keeping the original spacing. */
 export function joinFragments(parts: string[]): string {
   return parts.reduce((acc, part, i) => {
