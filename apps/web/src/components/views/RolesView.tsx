@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { MemberRow, TeamRow } from '@/lib/queries';
+import type { CandidateRow, MemberRow, TeamRow } from '@/lib/queries';
+import { searchCandidatesForProject } from '@/lib/queries';
 import { createTeam, deactivateUser, reactivateUser, resetPasswordToDefault, setMemberRole, setTeamMembers } from '@/app/actions/workflow';
-import { inviteMember, resendInvitation } from '@/app/actions/invitations';
+import {
+  addExistingMemberToProject, inviteNewMemberToProject, resendInvitation,
+} from '@/app/actions/invitations';
 import { Avatar, Kpi } from './shared';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -29,7 +32,7 @@ export function RolesView({
   projectId: string; members: MemberRow[]; teams: TeamRow[];
 }) {
   const router = useRouter();
-  const [inviting, setInviting] = useState(false);
+  const [addMode, setAddMode] = useState<'search' | 'email' | null>(null);
   const [editingTeam, setEditingTeam] = useState<TeamRow | null>(null);
   const [creatingTeam, setCreatingTeam] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState<MemberRow | null>(null);
@@ -144,7 +147,7 @@ export function RolesView({
           Personas
           <span className="count">{members.filter((m) => !m.deletedAt).length}</span>
           <button className="btn success" style={{ marginLeft: 'auto' }}
-                  onClick={() => setInviting(true)}>
+                  onClick={() => setAddMode('search')}>
             + Añadir persona
           </button>
         </h3>
@@ -228,11 +231,17 @@ export function RolesView({
         ))}
       </div>
 
-      {inviting && (
-        <InviteDialog projectId={projectId} teams={teams}
-                      onClose={() => setInviting(false)}
-                      onDone={() => { setInviting(false); router.refresh(); }}
-                      onDefaultPassword={(email, password) => setDefaultPwNotice({ email, password })} />
+      {addMode === 'search' && (
+        <AddMemberDialog projectId={projectId} teams={teams}
+                          onSwitchToEmail={() => setAddMode('email')}
+                          onClose={() => setAddMode(null)}
+                          onDone={() => { setAddMode(null); router.refresh(); }} />
+      )}
+      {addMode === 'email' && (
+        <InviteNewDialog projectId={projectId} teams={teams}
+                         onClose={() => setAddMode(null)}
+                         onDone={() => { setAddMode(null); router.refresh(); }}
+                         onDefaultPassword={(email, password) => setDefaultPwNotice({ email, password })} />
       )}
       {creatingTeam && (
         <TeamDialog projectId={projectId}
@@ -273,7 +282,176 @@ export function RolesView({
   );
 }
 
-function InviteDialog({ projectId, teams, onClose, onDone, onDefaultPassword }: {
+/**
+ * Add an existing user to the project. Typeahead over the global user
+ * table; selecting a candidate reveals the role/team picker and the
+ * Add button. No email is sent — the recipient is already a known
+ * collaborator being shared across projects. The "Invitar a alguien
+ * nuevo por email" link at the bottom hands off to the legacy email
+ * flow when the person isn't in the directory yet.
+ */
+function AddMemberDialog({ projectId, teams, onClose, onDone, onSwitchToEmail }: {
+  projectId: string; teams: TeamRow[]; onClose: () => void; onDone: () => void;
+  onSwitchToEmail: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<CandidateRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<CandidateRow | null>(null);
+  const [role, setRole] = useState('annotator');
+  const [teamId, setTeamId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFetchedRef = useRef<string>('');
+
+  // Debounce the typeahead so we don't hit the server on every keystroke.
+  // We also keep a ref of the last query we successfully fetched, so a
+  // slower older request that resolves after a newer one can't overwrite
+  // the newer results.
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setLoading(false);
+      lastFetchedRef.current = '';
+      return;
+    }
+    setLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      const captured = trimmed;
+      const rows = await searchCandidatesForProject(projectId, captured);
+      // Drop the response if the user kept typing after we fired.
+      if (lastFetchedRef.current !== captured && lastFetchedRef.current === '') {
+        // First fetch for this query — accept.
+      }
+      lastFetchedRef.current = captured;
+      setResults(rows);
+      setLoading(false);
+      // If the currently selected candidate no longer appears in the
+      // fresh results (e.g. the user kept typing past their name), drop
+      // the selection so the Save button disables.
+      if (selected && !rows.some((r) => r.id === selected.id)) setSelected(null);
+    }, 250);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // We deliberately exclude `selected` from deps — the closure reads the
+    // current value but the effect should re-run only on query input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, projectId]);
+
+  async function save() {
+    if (!selected) return;
+    setSaving(true);
+    setError(null);
+    const res = await addExistingMemberToProject({
+      projectId,
+      userId: selected.id,
+      role: role as never,
+      teamId: teamId || undefined,
+    });
+    setSaving(false);
+    if (!res.ok) { setError(res.error); return; }
+    onDone();
+  }
+
+  return (
+    <Overlay title="Añadir persona al proyecto"
+             subtitle="Busca una persona existente y elige su rol. No se envía correo."
+             onClose={onClose}
+             onSave={selected ? save : () => {}}
+             saving={saving}
+             error={error}
+             saveLabel={selected ? 'Añadir al proyecto' : 'Selecciona una persona'}>
+      <div className="wiz-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+        <label>Buscar por nombre o email</label>
+        <input type="search" autoFocus placeholder="ej. ana o ana@epdata.es"
+               value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+
+      <div className="picker-list" style={{ maxHeight: 260, marginTop: 6 }}>
+        {!query.trim() && (
+          <div style={{ padding: '14px 12px', fontSize: 12.5, color: 'var(--ink-3)' }}>
+            Empieza a escribir para buscar personas que aún no están en el proyecto.
+          </div>
+        )}
+        {query.trim() && loading && (
+          <div style={{ padding: '14px 12px', fontSize: 12.5, color: 'var(--ink-3)' }}>Buscando…</div>
+        )}
+        {query.trim() && !loading && results.length === 0 && (
+          <div style={{ padding: '14px 12px', fontSize: 12.5, color: 'var(--ink-3)' }}>
+            Nadie coincide con «{query.trim()}». Si es una persona nueva, puedes
+            <button type="button" className="btn-mini" style={{ marginLeft: 6 }}
+                    onClick={onSwitchToEmail}>invitarla por email</button>.
+          </div>
+        )}
+        {results.map((c) => {
+          const isSelected = selected?.id === c.id;
+          return (
+            <button type="button" key={c.id}
+                    className={`picker-row ${isSelected ? 'is-assigned' : ''}`}
+                    onClick={() => { setSelected(c); setRole('annotator'); setTeamId(''); }}
+                    title={c.email}>
+              <Avatar name={c.name} color={c.color} />
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div><b>{c.name}</b> <small style={{ color: 'var(--ink-3)' }}>{c.email}</small></div>
+                <small style={{ color: 'var(--ink-3)' }}>
+                  {c.projects.length === 0
+                    ? 'Sin otros proyectos'
+                    : `Ya está en: ${c.projects.map((p) => `${p.name} (${ROLE_LABELS[p.role] ?? p.role})`).join(', ')}`}
+                </small>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selected && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--surface-2)',
+                      borderRadius: 7, border: '1px solid var(--line)' }}>
+          <div style={{ marginBottom: 8 }}>
+            <b>{selected.name}</b> · <small style={{ color: 'var(--ink-3)' }}>{selected.email}</small>
+          </div>
+          <div className="wiz-row">
+            <label>Rol</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              {Object.entries(ROLE_LABELS).filter(([k]) => k !== 'superadmin').map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div className="wiz-row">
+            <label>Equipo (opcional)</label>
+            <select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+              <option value="">— sin equipo —</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 12, fontSize: 12, color: 'var(--ink-3)',
+                    borderTop: '1px solid var(--line-soft)', paddingTop: 10 }}>
+        ¿La persona es nueva?{' '}
+        <button type="button" className="btn-mini" onClick={onSwitchToEmail}>
+          Invitar a alguien nuevo por email →
+        </button>
+      </div>
+    </Overlay>
+  );
+}
+
+/**
+ * Email-only invite for people who don't exist yet. Kept narrow on
+ * purpose — anyone in the user table goes through `AddMemberDialog`
+ * above. If the server detects the email is already registered (race
+ * condition between the typeahead and the submit), we surface the
+ * error verbatim; the admin can dismiss the dialog and use the search
+ * flow instead.
+ */
+function InviteNewDialog({ projectId, teams, onClose, onDone, onDefaultPassword }: {
   projectId: string; teams: TeamRow[]; onClose: () => void; onDone: () => void;
   onDefaultPassword?: (email: string, password: string) => void;
 }) {
@@ -287,27 +465,29 @@ function InviteDialog({ projectId, teams, onClose, onDone, onDefaultPassword }: 
   async function save() {
     setSaving(true);
     setError(null);
-    const res = await inviteMember({ projectId, email, name, role: role as never, teamId: teamId || undefined });
+    const res = await inviteNewMemberToProject({
+      projectId, email, name, role: role as never, teamId: teamId || undefined,
+    });
     setSaving(false);
     if (!res.ok) { setError(res.error); return; }
     if (res.usedDefaultPassword && res.defaultPassword) {
-      // Notify the parent so it can show a green banner with the
-      // credentials. The dialog still closes via onDone.
       onDefaultPassword?.(email, res.defaultPassword);
     }
     onDone();
   }
 
   return (
-    <Overlay title="Invitar persona" subtitle="Se añade al proyecto y, opcionalmente, a un equipo."
-             onClose={onClose} onSave={save} saving={saving} error={error} saveLabel="Invitar">
+    <Overlay title="Invitar persona nueva" subtitle="Le enviaremos un enlace para que se dé de alta."
+             onClose={onClose} onSave={save} saving={saving} error={error} saveLabel="Enviar invitación">
       <div className="wiz-row">
         <label>Email <span style={{ color: '#c0392b' }}>*</span></label>
-        <input type="email" placeholder="persona@epdata.es" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input type="email" placeholder="persona@epdata.es" value={email}
+               onChange={(e) => setEmail(e.target.value)} autoFocus />
       </div>
       <div className="wiz-row">
         <label>Nombre</label>
-        <input type="text" placeholder="Nombre y apellidos" value={name} onChange={(e) => setName(e.target.value)} />
+        <input type="text" placeholder="Nombre y apellidos" value={name}
+               onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="wiz-row">
         <label>Rol</label>
@@ -324,7 +504,6 @@ function InviteDialog({ projectId, teams, onClose, onDone, onDefaultPassword }: 
           {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
-     
     </Overlay>
   );
 }

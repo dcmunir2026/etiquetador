@@ -53,7 +53,7 @@ function publicOrigin(): string {
   return 'http://localhost:3000';
 }
 
-export async function inviteMember(input: {
+export async function inviteNewMemberToProject(input: {
   projectId: string;
   email: string;
   name?: string;
@@ -70,32 +70,36 @@ export async function inviteMember(input: {
   const [project] = await db.select().from(projects).where(eq(projects.id, input.projectId)).limit(1);
   if (!project) return { ok: false, error: 'Proyecto no encontrado.' };
 
-  // Create the user if they don't exist; do NOT set a password — the
-  // email link is the only path into the account.
-  let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user) {
-    [user] = await db.insert(users).values({
-      email,
-      name: input.name?.trim() || email.split('@')[0]!,
-      isSuperAdmin: false,
-      passwordHash: null,
-    }).returning();
-    if (!user) return { ok: false, error: 'No se pudo crear el usuario.' };
+  // This action is only for people who don't exist yet. Existing users
+  // must be shared via the typeahead (`addExistingMemberToProject`):
+  // emailing them a magic link would silently overwrite their password
+  // when they redeem it. Catch the case before we touch anything.
+  const [existing] = await db.select({ id: users.id }).from(users)
+    .where(eq(users.email, email)).limit(1);
+  if (existing) {
+    return {
+      ok: false,
+      error: 'Esta persona ya existe. Búscala en el listado para añadirla al proyecto.',
+    };
   }
 
-  // Add to the project (or update role). Membership is granted at
-  // invite time — the link just sets the password for new users.
-  const [member] = await db.select().from(projectMembers)
-    .where(and(eq(projectMembers.projectId, input.projectId), eq(projectMembers.userId, user.id)))
-    .limit(1);
-  if (!member) {
-    await db.insert(projectMembers).values({
-      projectId: input.projectId, userId: user.id, role: input.role,
-    });
-  } else if (member.role !== input.role) {
-    await db.update(projectMembers).set({ role: input.role })
-      .where(eq(projectMembers.id, member.id));
-  }
+  // Create the user with no password — the email link is the only path
+  // into the account. If the email send fails later, the fallback handler
+  // seeds the default password so the admin can deliver them by hand.
+  const [user] = await db.insert(users).values({
+    email,
+    name: input.name?.trim() || email.split('@')[0]!,
+    isSuperAdmin: false,
+    passwordHash: null,
+  }).returning();
+  if (!user) return { ok: false, error: 'No se pudo crear el usuario.' };
+
+  // Membership is granted at invite time — the link just sets the password.
+  // `onConflictDoNothing` makes the action safe against the admin double-
+  // clicking or two browser tabs racing the same submit.
+  await db.insert(projectMembers).values({
+    projectId: input.projectId, userId: user.id, role: input.role,
+  }).onConflictDoNothing();
 
   // Attach to a team if requested. `team_members` is the join table
   // between users and teams; we just insert a row with `role:
@@ -176,12 +180,78 @@ export async function inviteMember(input: {
   await db.insert(auditLog).values({
     actorId: gate.user.id,
     projectId: input.projectId,
-    action: 'member.invite',
+    action: 'member.invite.new',
     targetType: 'user',
     targetId: user.id,
     metadata: JSON.stringify({
       email, role: input.role, expiresAt: expiresAt.toISOString(),
       teamId: input.teamId ?? null,
+    }),
+  });
+
+  revalidatePath('/', 'layout');
+  return { ok: true, id: user.id };
+}
+
+/**
+ * Add a user who already exists (has signed in, has a password) to a
+ * project. No email is sent and no token is minted: the recipient is
+ * already a known collaborator being shared across projects.
+ *
+ * This is the path the new-member typeahead uses. The membership upsert
+ * is `onConflictDoNothing` so a double-click or two racing tabs won't
+ * raise a unique-violation.
+ */
+export async function addExistingMemberToProject(input: {
+  projectId: string;
+  userId: string;
+  role: UserRole;
+  teamId?: string;
+}): Promise<ActionResult> {
+  const gate = await authorize('roles', input.projectId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const db = getDb();
+
+  const [user] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+  if (!user) return { ok: false, error: 'Usuario no encontrado.' };
+  if (user.deletedAt) return { ok: false, error: 'Este usuario está desactivado.' };
+
+  await db.insert(projectMembers).values({
+    projectId: input.projectId, userId: user.id, role: input.role,
+  }).onConflictDoNothing();
+
+  // Same team-handling as the invite path: validate the team belongs to
+  // the project, skip if already a member. The unique index on
+  // (team_id, user_id) would otherwise raise.
+  if (input.teamId) {
+    const [team] = await db.select({ id: teams.id, projectId: teams.projectId })
+      .from(teams)
+      .where(eq(teams.id, input.teamId))
+      .limit(1);
+    if (!team || team.projectId !== input.projectId) {
+      return { ok: false, error: 'El equipo seleccionado no pertenece a este proyecto.' };
+    }
+    const [existingMembership] = await db.select({ userId: teamMembers.userId })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.userId, user.id)))
+      .limit(1);
+    if (!existingMembership) {
+      await db.insert(teamMembers).values({
+        teamId: input.teamId,
+        userId: user.id,
+        role: 'annotator',
+      });
+    }
+  }
+
+  await db.insert(auditLog).values({
+    actorId: gate.user.id,
+    projectId: input.projectId,
+    action: 'member.add_existing',
+    targetType: 'user',
+    targetId: user.id,
+    metadata: JSON.stringify({
+      email: user.email, role: input.role, teamId: input.teamId ?? null,
     }),
   });
 
