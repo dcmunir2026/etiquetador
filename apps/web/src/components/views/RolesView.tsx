@@ -644,11 +644,21 @@ function Overlay({ title, subtitle, children, onClose, onSave, saving, error, sa
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,23,30,0.45)', zIndex: 60,
                   backdropFilter: 'blur(2px)', overflowY: 'auto' }}>
-      <div className="picker-card" style={{ marginTop: 40, textAlign: 'left', maxWidth: 540 }}>
+      <div className="picker-card" style={{
+        // Cap the panel to the viewport so a long body (lots of teams /
+        // many role checkboxes + the superadmin toggle) never pushes the
+        // Save/Cancel footer off-screen. flex column + the body div scrolls,
+        // the footer stays pinned at the bottom of the card.
+        marginTop: 40, textAlign: 'left', maxWidth: 540,
+        maxHeight: 'calc(100vh - 80px)',
+        display: 'flex', flexDirection: 'column',
+      }}>
         <h2 style={{ textAlign: 'center' }}>{title}</h2>
         <p className="lead" style={{ textAlign: 'center' }}>{subtitle}</p>
-        {children}
-        {error && <div style={{ fontSize: 12.5, color: 'var(--bad)', marginTop: 10 }}>{error}</div>}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          {children}
+          {error && <div style={{ fontSize: 12.5, color: 'var(--bad)', marginTop: 10 }}>{error}</div>}
+        </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16,
                       paddingTop: 14, borderTop: '1px solid var(--line-soft)' }}>
           <button className="btn" onClick={onClose}>Cancelar</button>
