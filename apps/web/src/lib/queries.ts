@@ -351,7 +351,12 @@ export type InvitationState = 'accepted' | 'pending' | 'no_password' | 'never';
 
 export type MemberRow = {
   id: string; name: string; email: string; color: string | null;
-  role: string; isSuperAdmin: boolean; teamNames: string[];
+  /** All roles the person carries in this project. A user can wear more
+   *  than one hat (e.g. annotator + validador_cualitativo); the UI shows
+   *  one chip per role. Superadmin is intentionally not in this list — it
+   *  is the global `users.is_super_admin` flag, surfaced separately. */
+  roles: string[];
+  isSuperAdmin: boolean; teamNames: string[];
   invitationState: InvitationState;
   pendingInviteExpiresAt: Date | null;
   deletedAt: Date | null;
@@ -370,6 +375,10 @@ export type MemberRow = {
  *   - `never`      — has a password but never went through the invite
  *                    flow (e.g. seeded user). The default for active
  *                    accounts that joined before invitations existed.
+ *
+ * A user can have multiple roles in the project; we aggregate the
+ * `project_members` rows by user before joining the invitation/team data
+ * so each MemberRow carries the full set of roles for that person.
  */
 export async function getProjectMembers(projectId: string): Promise<MemberRow[]> {
   const db = getDb();
@@ -378,6 +387,17 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
     .innerJoin(users, eq(users.id, projectMembers.userId))
     .where(eq(projectMembers.projectId, projectId))
     .orderBy(asc(users.name));
+
+  // Roll every (userId → role) into one entry per person. The user table
+  // is sorted by name above, so the first role we see is the first row
+  // of that person — we keep insertion order to make the chip rendering
+  // match the order the admin set in the dialog.
+  const rolesByUser = new Map<string, string[]>();
+  for (const { m, u } of rows) {
+    const bucket = rolesByUser.get(u.id) ?? [];
+    bucket.push(m.role);
+    rolesByUser.set(u.id, bucket);
+  }
 
   const userIds = rows.map((r) => u_safe_id(r));
   const tokenRows = userIds.length === 0
@@ -414,15 +434,18 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
   }
 
   const now = Date.now();
-  return rows.map(({ m, u }) => {
+  // Deduplicate users: one MemberRow per person. `rows` carries one entry
+  // per role, so without this we'd render duplicate rows.
+  const seen = new Set<string>();
+  const out: MemberRow[] = [];
+  for (const { u } of rows) {
+    if (seen.has(u.id)) continue;
+    seen.add(u.id);
+
     const latest = latestByUser.get(u.id);
     let state: InvitationState;
     let pendingExpiry: Date | null = null;
     if (u.passwordHash) {
-      // Has a password ⇒ they completed some sign-in path.
-      // If they ever redeemed an invite, call it accepted; otherwise
-      // they were seeded or signed up by another route (treat as "never"
-      // — no invitation is currently in flight).
       state = latest?.usedAt ? 'accepted' : 'never';
     } else if (latest && !latest.usedAt && latest.expiresAt.getTime() > now) {
       state = 'pending';
@@ -430,15 +453,17 @@ export async function getProjectMembers(projectId: string): Promise<MemberRow[]>
     } else {
       state = 'no_password';
     }
-    return {
+    out.push({
       id: u.id, name: u.name ?? u.email, email: u.email, color: u.avatarColor,
-      role: m.role, isSuperAdmin: u.isSuperAdmin,
+      roles: rolesByUser.get(u.id) ?? [],
+      isSuperAdmin: u.isSuperAdmin,
       teamNames: teamsByUser.get(u.id) ?? [],
       invitationState: state,
       pendingInviteExpiresAt: pendingExpiry,
       deletedAt: u.deletedAt ?? null,
-    };
-  });
+    });
+  }
+  return out;
 }
 
 // Local helper: keeps the destructuring above compact and typed.
@@ -1149,6 +1174,9 @@ export type CandidateRow = {
   name: string;
   email: string;
   color: string | null;
-  /** Other projects the candidate is already in. Empty if they're a brand-new user. */
-  projects: { id: string; name: string; role: string }[];
+  /** Other projects the candidate is already in. Empty if they're a brand-new user.
+   *  `roles` aggregates every role they carry in that project, so a person
+   *  who is both annotator and validador_cualitativo in the same project
+   *  shows up as one entry with two roles, not two entries. */
+  projects: { id: string; name: string; roles: string[] }[];
 };

@@ -7,7 +7,7 @@
 
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, count, notInArray } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   annotations, auditLog, corpusUploads, dimensionValues, dimensions, fragments,
@@ -435,15 +435,141 @@ export async function resetPassword(projectId: string, userId: string, password:
   return { ok: true, id: userId };
 }
 
-export async function setMemberRole(projectId: string, userId: string, role: UserRole): Promise<ActionResult> {
+/**
+ * Replace the full set of roles a member carries in a project. A user
+ * can wear more than one (the unique index on `project_members` is on
+ * `(project_id, user_id, role)`), so this is an upsert-and-delete
+ * operation rather than a column update.
+ *
+ * 'superadmin' is rejected silently — it is the global flag on
+ * `users.is_super_admin`, never a value of `project_members.role`.
+ * Refuses to write an empty set so a member always has at least one
+ * role; deactivate the user instead if you want to drop them entirely.
+ */
+export async function setMemberRoles(
+  projectId: string, userId: string, roles: UserRole[],
+): Promise<ActionResult> {
+  const gate = await authorize('roles', projectId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  // Drop 'superadmin' defensively. The Edit dialog already filters it
+  // out, but a hand-crafted POST should not be able to lift the target
+  // to platform admin via this path.
+  const deduped = Array.from(new Set(
+    roles.filter((r): r is Exclude<UserRole, 'superadmin'> => r !== 'superadmin'),
+  ));
+  if (deduped.length === 0) {
+    return { ok: false, error: 'Un miembro del proyecto debe tener al menos un rol.' };
+  }
+
+  const db = getDb();
+  const previous = await db.select({ role: projectMembers.role })
+    .from(projectMembers)
+    .where(and(
+      eq(projectMembers.projectId, projectId),
+      eq(projectMembers.userId, userId),
+    ));
+  const prevSet = new Set(previous.map((r) => r.role));
+
+  // Replace the full set: drop what shouldn't be there, insert what should.
+  // `onConflictDoNothing` makes the insert idempotent — racing clicks end
+  // up with the same end state. The unique constraint on (projectId, userId,
+  // role) means a duplicate role can never appear regardless.
+  await db.delete(projectMembers)
+    .where(and(
+      eq(projectMembers.projectId, projectId),
+      eq(projectMembers.userId, userId),
+      notInArray(projectMembers.role, deduped),
+    ));
+  for (const role of deduped) {
+    await db.insert(projectMembers).values({
+      projectId, userId, role,
+    }).onConflictDoNothing();
+  }
+
+  await audit('member.roles.set', 'user', userId, projectId, {
+    previous: [...prevSet],
+    next: deduped,
+  });
+  revalidatePath('/', 'layout');
+  return { ok: true, id: userId };
+}
+
+/**
+ * Replace the full set of teams a member belongs to within a project.
+ *
+ * Iterates every team in the project and brings `team_members` in line
+ * with `teamIds`: deletes rows for teams not in the set, inserts rows
+ * for teams in the set. Teams outside the project are ignored, so an
+ * admin can't accidentally drop someone into a different project's team.
+ */
+export async function setMemberTeams(
+  projectId: string, userId: string, teamIds: string[],
+): Promise<ActionResult> {
   const gate = await authorize('roles', projectId);
   if (!gate.ok) return { ok: false, error: gate.error };
   const db = getDb();
-  await db.update(projectMembers).set({ role })
-    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
-  await audit('member.role.set', 'user', userId, projectId, { role });
+
+  const projectTeamRows = await db.select({ id: teams.id })
+    .from(teams).where(eq(teams.projectId, projectId));
+  const validIds = new Set(projectTeamRows.map((t) => t.id));
+  const filtered = teamIds.filter((id) => validIds.has(id));
+
+  await db.delete(teamMembers)
+    .where(and(eq(teamMembers.userId, userId),
+                inArray(teamMembers.teamId, [...validIds])));
+  for (const teamId of filtered) {
+    await db.insert(teamMembers).values({ teamId, userId, role: 'annotator' });
+  }
+  await audit('member.teams.set', 'user', userId, projectId, { teamIds: filtered });
   revalidatePath('/', 'layout');
   return { ok: true, id: userId };
+}
+
+/**
+ * Toggle `is_super_admin` on the target user. Only callable by an
+ * existing superadmin; refuses to leave the system with zero active
+ * superadmins (the caller could lock everyone else out of the platform
+ * otherwise).
+ */
+export async function setUserSuperAdmin(
+  targetUserId: string, isSuperAdmin: boolean,
+): Promise<ActionResult> {
+  const actor = await requireUser();
+  if (!actor.isSuperAdmin) {
+    return { ok: false, error: 'Solo un superadministrador puede conceder o quitar el flag de superadmin.' };
+  }
+  const db = getDb();
+
+  const [target] = await db.select({ id: users.id, isSuperAdmin: users.isSuperAdmin, email: users.email, deletedAt: users.deletedAt })
+    .from(users).where(eq(users.id, targetUserId)).limit(1);
+  if (!target) return { ok: false, error: 'Usuario no encontrado.' };
+  if (target.deletedAt) {
+    return { ok: false, error: 'No se puede modificar un usuario desactivado. Reactívalo primero.' };
+  }
+  if (target.isSuperAdmin === isSuperAdmin) return { ok: true, id: targetUserId };
+
+  // Demoting: refuse if this would leave the platform with zero active
+  // superadmins. Self-demote counts against this — if you're the last
+  // one, you can't remove yourself.
+  if (target.isSuperAdmin && !isSuperAdmin) {
+    const [stats] = await db.select({ n: count() }).from(users)
+      .where(and(eq(users.isSuperAdmin, true), isNull(users.deletedAt)));
+    const activeCount = stats?.n ?? 0;
+    if (activeCount <= 1) {
+      return { ok: false, error: 'No puedes quitar el flag al último superadministrador activo.' };
+    }
+  }
+
+  await db.update(users).set({ isSuperAdmin, updatedAt: new Date() })
+    .where(eq(users.id, targetUserId));
+  await audit(
+    isSuperAdmin ? 'user.superadmin.grant' : 'user.superadmin.revoke',
+    'user', targetUserId, undefined,
+    { actorEmail: actor.email, targetEmail: target.email },
+  );
+  revalidatePath('/', 'layout');
+  return { ok: true, id: targetUserId };
 }
 
 // ─── Package split (H8) ──────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { getSessionContext } from '@/lib/session';
 import { getDb } from '@/db/client';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { canRead, canWrite } from '@/lib/permissions';
+import { canReadForRoles, canWriteForRoles } from '@/lib/permissions';
 import { REQUIRES_PROJECT } from '@/lib/views';
 import {
   getDashboard, getDimensionCatalog, getFragmentSample, getKappaData, getMirrorComparison,
@@ -43,7 +43,7 @@ export type ViewSearchParams = {
  */
 export async function renderView(view: string, searchParams: ViewSearchParams = {}) {
   const db = getDb();
-  const { user, role, activeProject, projects: allProjects } = await getSessionContext();
+  const { user, role, roles, activeProject, projects: allProjects } = await getSessionContext();
 
   // Pick a project before anything project-scoped can be judged: the role
   // itself only exists relative to a project.
@@ -51,10 +51,10 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
     return <ProjectGate projects={allProjects} view={view} />;
   }
 
-  if (!canRead(view, role)) return forbidden(view, role);
+  if (!canReadForRoles(view, roles)) return forbidden(view, role);
 
   const projectId = activeProject?.id ?? '';
-  const readOnly = !canWrite(view, role);
+  const readOnly = !canWriteForRoles(view, roles);
 
   switch (view) {
     case 'dashboard': {
@@ -95,7 +95,14 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
 
     case 'roles': {
       const [members, teams] = await Promise.all([getProjectMembers(projectId), getTeams(projectId)]);
-      return <RolesView projectId={projectId} members={members} teams={teams} />;
+      return (
+        <RolesView
+          projectId={projectId}
+          members={members}
+          teams={teams}
+          currentUserIsSuperAdmin={user?.isSuperAdmin ?? false}
+        />
+      );
     }
 
     case 'paquetes': {
@@ -165,7 +172,7 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
           sampleAnswers={tagging.answers}
           // Ordering drives the annotation form too, so it follows the
           // project-configuration permission, not this screen's.
-          canReorder={canWrite('dimensions', role)}
+          canReorder={canWriteForRoles('dimensions', roles)}
         />
       );
     }

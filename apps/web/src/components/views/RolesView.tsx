@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CandidateRow, MemberRow, TeamRow } from '@/lib/queries';
-import { createTeam, deactivateUser, reactivateUser, resetPasswordToDefault, setMemberRole, setTeamMembers } from '@/app/actions/workflow';
+import {
+  createTeam, deactivateUser, reactivateUser, resetPasswordToDefault,
+  setMemberRoles, setMemberTeams, setTeamMembers, setUserSuperAdmin,
+} from '@/app/actions/workflow';
 import {
   addExistingMemberToProject, inviteNewMemberToProject,
   resendInvitation, searchCandidatesForProject,
@@ -13,28 +16,36 @@ import { Avatar, Kpi } from './shared';
 const ROLE_LABELS: Record<string, string> = {
   superadmin: 'Superadministrador',
   projectadmin: 'Administrador de proyecto',
+  validador_cualitativo: 'Validador cualitativo',
+  validador_cuantitativo: 'Validador cuantitativo',
   annotator: 'Etiquetador',
-  validator: 'Validador',
   viewer: 'Observador',
 };
 
 const ROLE_CLASS: Record<string, string> = {
   superadmin: 'sesgo-estadistico',
   projectadmin: 'sesgo-demografico',
+  validador_cualitativo: 'sesgo-religion',
+  validador_cuantitativo: 'sesgo-religion',
   annotator: 'sesgo-semiotica',
-  validator: 'sesgo-religion',
   viewer: 'sesgo-genero',
 };
 
 export function RolesView({
-  projectId, members, teams,
+  projectId, members, teams, currentUserIsSuperAdmin,
 }: {
   projectId: string; members: MemberRow[]; teams: TeamRow[];
+  /** Whether the viewer is a superadmin — gates the superadmin toggle in
+   *  the edit dialog and the corresponding server action. The action
+   *  re-checks server-side, but hiding the control in the UI is enough to
+   *  prevent accidents. */
+  currentUserIsSuperAdmin: boolean;
 }) {
   const router = useRouter();
   const [addMode, setAddMode] = useState<'search' | 'email' | null>(null);
   const [editingTeam, setEditingTeam] = useState<TeamRow | null>(null);
   const [creatingTeam, setCreatingTeam] = useState(false);
+  const [editingMember, setEditingMember] = useState<MemberRow | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<MemberRow | null>(null);
   const [confirmReactivate, setConfirmReactivate] = useState<MemberRow | null>(null);
   const [confirmReset, setConfirmReset] = useState<MemberRow | null>(null);
@@ -42,13 +53,6 @@ export function RolesView({
   const [defaultPwNotice, setDefaultPwNotice] = useState<{ email: string; password: string } | null>(null);
 
   const packaged = teams.filter((t) => t.members.length >= 2).length;
-
-  async function changeRole(userId: string, role: string) {
-    setBusy(userId);
-    await setMemberRole(projectId, userId, role as never);
-    setBusy(null);
-    router.refresh();
-  }
 
   async function resend(userId: string) {
     setBusy(userId);
@@ -91,7 +95,7 @@ export function RolesView({
         <Kpi label="Equipos" value={teams.length}
              delta={`${packaged} listos · ${teams.length - packaged} sin suficientes miembros`} />
         <Kpi label="Personas en el proyecto" value={members.length}
-             delta={`${members.filter((m) => m.role === 'annotator').length} etiquetadores`} />
+             delta={`${members.filter((m) => m.roles.includes('annotator')).length} etiquetadores`} />
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
@@ -160,21 +164,24 @@ export function RolesView({
               <Avatar name={m.name} color={m.color} />
               <div className="meta">
                 <b>{m.name}</b>
-                <small>{ROLE_LABELS[m.role] ?? m.role}</small>
+                <small>{m.isSuperAdmin ? 'Superadministrador' : 'En el proyecto'}</small>
               </div>
             </div>
             <div style={{ color: 'var(--ink-2)' }}>{m.email}</div>
             <div>
               {m.isSuperAdmin ? (
                 <span className="tag sesgo-estadistico">Superadministrador</span>
+              ) : m.roles.length === 0 ? (
+                <small style={{ color: 'var(--ink-3)' }}>—</small>
               ) : (
-                <select value={m.role} disabled={busy === m.id || !!m.deletedAt} onChange={(e) => changeRole(m.id, e.target.value)}
-                        style={{ padding: '3px 8px', border: '1px solid var(--line)', borderRadius: 6,
-                                 fontSize: 12, background: 'var(--surface-2)' }}>
-                  {Object.entries(ROLE_LABELS).filter(([k]) => k !== 'superadmin').map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {m.roles.map((r) => (
+                    <span key={r} className={`tag ${ROLE_CLASS[r] ?? ''}`}
+                          title={ROLE_LABELS[r] ?? r}>
+                      {ROLE_LABELS[r] ?? r}
+                    </span>
                   ))}
-                </select>
+                </div>
               )}
             </div>
             <div><small style={{ color: 'var(--ink-3)' }}>{m.teamNames.join(', ') || '—'}</small></div>
@@ -192,6 +199,17 @@ export function RolesView({
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                {!m.deletedAt && (
+                  <button
+                    className="btn-mini"
+                    style={{ color: 'var(--primary-2)' }}
+                    disabled={busy === m.id}
+                    title="Editar rol, equipos y permisos de plataforma"
+                    onClick={() => setEditingMember(m)}
+                  >
+                    Editar
+                  </button>
+                )}
                 {m.deletedAt ? (
                   <button
                     className="btn-mini"
@@ -276,6 +294,16 @@ export function RolesView({
             if (password) setDefaultPwNotice({ email: confirmReset.email, password });
             router.refresh();
           }}
+        />
+      )}
+      {editingMember && (
+        <EditMemberDialog
+          member={editingMember}
+          projectId={projectId}
+          teams={teams}
+          currentUserIsSuperAdmin={currentUserIsSuperAdmin}
+          onClose={() => setEditingMember(null)}
+          onDone={() => { setEditingMember(null); router.refresh(); }}
         />
       )}
     </div>
@@ -400,7 +428,9 @@ function AddMemberDialog({ projectId, teams, onClose, onDone, onSwitchToEmail }:
                 <small style={{ color: 'var(--ink-3)' }}>
                   {c.projects.length === 0
                     ? 'Sin otros proyectos'
-                    : `Ya está en: ${c.projects.map((p) => `${p.name} (${ROLE_LABELS[p.role] ?? p.role})`).join(', ')}`}
+                    : `Ya está en: ${c.projects.map((p) =>
+                        `${p.name} (${p.roles.map((r) => ROLE_LABELS[r] ?? r).join(', ')})`,
+                      ).join('; ')}`}
                 </small>
               </div>
             </button>
@@ -583,7 +613,7 @@ function TeamMembersDialog({ team, members, onClose, onDone }: {
               <Avatar name={m.name} color={m.color} size={34} />
               <div className="meta" style={{ flex: 1 }}>
                 <b>{m.name}</b>
-                <small>{m.email} · {ROLE_LABELS[m.role] ?? m.role}</small>
+                <small>{m.email} · {ROLE_LABELS[m.roles[0] ?? ''] ?? '—'}</small>
               </div>
               {on ? <span className="av-extra">✓ En el equipo</span> : <span className="btn-mini">Añadir</span>}
             </div>
@@ -825,6 +855,207 @@ function ResetPasswordDialog({ member, onClose, onDone }: {
           <button className="btn" style={{ background: '#b58300', color: '#fff' }}
                   onClick={confirm} disabled={saving}>
             {saving ? 'Reiniciando…' : 'Reiniciar a contraseña por defecto'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Edita una persona en bloque: rol dentro del proyecto, equipos en los
+ * que participa, y (solo si el viewer es superadmin) el flag global de
+ * superadmin. Cada cambio se envía a su action correspondiente y los
+ * errores se concatenan — si varios fallan a la vez se muestran todos.
+ */
+function EditMemberDialog({ member, projectId, teams, currentUserIsSuperAdmin, onClose, onDone }: {
+  member: MemberRow;
+  projectId: string;
+  teams: TeamRow[];
+  currentUserIsSuperAdmin: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  // Compute the initial team set from the current `teams` prop. The
+  // team membership is the only authoritative source for "which teams
+  // does this person belong to right now", and we only need the IDs to
+  // diff against the user's edits.
+  const originalTeamIds = teams
+    .filter((t) => t.members.some((m) => m.id === member.id))
+    .map((t) => t.id);
+
+  // Roles in the project. `superadmin` is excluded — it is the global
+  // `users.is_super_admin` flag, toggled in the panel below.
+  const ROLE_CHOICES = Object.keys(ROLE_LABELS).filter((k) => k !== 'superadmin');
+
+  const [pickedRoles, setPickedRoles] = useState<string[]>(
+    member.roles.filter((r) => r !== 'superadmin'),
+  );
+  const [pickedTeamIds, setPickedTeamIds] = useState<string[]>(originalTeamIds);
+  // Initialize the superadmin toggle from the target's current flag, but
+  // only let them change it if the viewer is also a superadmin.
+  const [superadmin, setSuperadmin] = useState<boolean>(member.isSuperAdmin);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleRole(roleKey: string) {
+    setPickedRoles((cur) =>
+      cur.includes(roleKey) ? cur.filter((r) => r !== roleKey) : [...cur, roleKey],
+    );
+  }
+
+  function toggleTeam(teamId: string) {
+    setPickedTeamIds((cur) =>
+      cur.includes(teamId) ? cur.filter((id) => id !== teamId) : [...cur, teamId],
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    const errors: string[] = [];
+
+    // Diff as sets so order changes don't count as a change.
+    const rolesChanged =
+      pickedRoles.length !== member.roles.filter((r) => r !== 'superadmin').length
+      || pickedRoles.some((r) => !member.roles.includes(r));
+    const teamsChanged =
+      pickedTeamIds.length !== originalTeamIds.length
+      || pickedTeamIds.some((id) => !originalTeamIds.includes(id));
+    const superadminChanged =
+      currentUserIsSuperAdmin && superadmin !== member.isSuperAdmin;
+
+    if (rolesChanged) {
+      const res = await setMemberRoles(projectId, member.id, pickedRoles as never);
+      if (!res.ok) errors.push(`Roles: ${res.error}`);
+    }
+    if (teamsChanged) {
+      const res = await setMemberTeams(projectId, member.id, pickedTeamIds);
+      if (!res.ok) errors.push(`Equipos: ${res.error}`);
+    }
+    if (superadminChanged) {
+      const res = await setUserSuperAdmin(member.id, superadmin);
+      if (!res.ok) errors.push(`Superadmin: ${res.error}`);
+    }
+
+    setSaving(false);
+    if (errors.length > 0) {
+      setError(errors.join('\n'));
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,23,30,0.45)', zIndex: 70,
+                  backdropFilter: 'blur(2px)', overflowY: 'auto' }}>
+      <div className="picker-card" style={{ marginTop: 40, textAlign: 'left', maxWidth: 540 }}>
+        <h2 style={{ textAlign: 'center' }}>Editar persona</h2>
+        <p className="lead" style={{ textAlign: 'center' }}>
+          Cambia los roles, los equipos y los permisos de plataforma.
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                      background: 'var(--surface-2)', borderRadius: 7, border: '1px solid var(--line)',
+                      marginBottom: 14 }}>
+          <Avatar name={member.name} color={member.color} size={42} />
+          <div style={{ minWidth: 0 }}>
+            <b style={{ display: 'block' }}>{member.name}</b>
+            <small style={{ color: 'var(--ink-3)' }}>{member.email}</small>
+          </div>
+        </div>
+
+        <div className="wiz-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          <label>Roles en este proyecto</label>
+          <small style={{ color: 'var(--ink-3)', marginBottom: 6, display: 'block' }}>
+            Una persona puede llevar varios roles a la vez — por ejemplo,
+            etiquetador y validador cualitativo. El servidor rechaza guardar
+            si dejas la lista vacía.
+          </small>
+          <div className="picker-list" style={{ maxHeight: 180, overflowY: 'auto' }}>
+            {ROLE_CHOICES.map((key) => {
+              const on = pickedRoles.includes(key);
+              return (
+                <label key={key}
+                       className={`picker-row${on ? ' is-assigned' : ''}`}
+                       style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input type="checkbox" checked={on} onChange={() => toggleRole(key)} />
+                  <div style={{ flex: 1 }}>
+                    <span className={`tag ${ROLE_CLASS[key] ?? ''}`} style={{ marginRight: 8 }}>
+                      {ROLE_LABELS[key]}
+                    </span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="wiz-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          <label>Equipos</label>
+          {teams.length === 0 ? (
+            <small style={{ color: 'var(--ink-3)' }}>
+              Este proyecto no tiene equipos todavía. Crea uno primero si quieres asignar a esta persona.
+            </small>
+          ) : (
+            <div className="picker-list" style={{ maxHeight: 180, overflowY: 'auto' }}>
+              {teams.map((t) => {
+                const on = pickedTeamIds.includes(t.id);
+                return (
+                  <label key={t.id}
+                         className={`picker-row${on ? ' is-assigned' : ''}`}
+                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="checkbox" checked={on} onChange={() => toggleTeam(t.id)} />
+                    <div style={{ flex: 1 }}>
+                      <b>{t.name}</b>
+                      <small style={{ color: 'var(--ink-3)', display: 'block' }}>
+                        {t.members.length === 0
+                          ? 'sin miembros'
+                          : `${t.members.length} miembros · ${t.consensusMetric}`}
+                      </small>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {currentUserIsSuperAdmin && (
+          <div style={{ marginTop: 14, padding: '12px 14px',
+                        background: member.isSuperAdmin ? '#fdf3da' : 'var(--surface-2)',
+                        border: '1px solid var(--line)', borderRadius: 7 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input type="checkbox" checked={superadmin}
+                     onChange={(e) => setSuperadmin(e.target.checked)}
+                     style={{ marginTop: 3 }} />
+              <div>
+                <b>Superadministrador de la plataforma</b>
+                <small style={{ display: 'block', color: 'var(--ink-3)', marginTop: 2 }}>
+                  Acceso total: ve todos los proyectos, puede ascender o degradar a cualquier
+                  persona, y bypassa las restricciones de rol por proyecto. Solo lo concede
+                  otro superadmin. Si lo quitas a la última persona con este flag, la
+                  plataforma se queda sin administradores — el servidor lo rechaza.
+                </small>
+              </div>
+            </label>
+          </div>
+        )}
+
+        {error && (
+          <div role="alert" style={{ marginTop: 12, padding: '9px 12px', background: '#fbe6e6',
+                                     border: '1px solid #e8c5c5', borderLeft: '3px solid var(--bad)',
+                                     borderRadius: '0 6px 6px 0', fontSize: 12.5, color: '#5a2222',
+                                     whiteSpace: 'pre-line' }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16,
+                      paddingTop: 14, borderTop: '1px solid var(--line-soft)' }}>
+          <button className="btn" onClick={onClose} disabled={saving}>Cancelar</button>
+          <button className="btn primary" onClick={save} disabled={saving}>
+            {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
         </div>
       </div>

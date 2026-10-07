@@ -103,5 +103,66 @@ export function landingViewFor(role: Role | null): string {
   return preference.find((v) => canRead(v, role)) ?? 'dashboard';
 }
 
+// ─── Multi-role support ──────────────────────────────────────────────
+//
+// A person can wear several hats in the same project (the unique index on
+// `project_members` is on (projectId, userId, role), not (projectId, userId)).
+// Each row below preserves the existing single-role API for callers that
+// only care about one label, and adds the multi-role versions the gate and
+// the UI use.
+
+/** Higher = more privilege. Used to pick the "primary" role for display. */
+const ROLE_PRIVILEGE: Record<Role, number> = {
+  superadmin: 5,
+  projectadmin: 4,
+  validador_cuantitativo: 3,
+  validador_cualitativo: 2,
+  annotator: 1,
+  viewer: 0,
+};
+
+/**
+ * The role we surface when a person has several. Best privilege wins, ties
+ * keep the first in the array. Returns null for an empty array — callers
+ * treat that as "no access at all".
+ */
+export function pickPrimaryRole(roles: Role[]): Role | null {
+  return roles.reduce<Role | null>((best, cur) =>
+    best === null || ROLE_PRIVILEGE[cur] > ROLE_PRIVILEGE[best] ? cur : best,
+  null);
+}
+
+/** Effective access for someone with N roles: the best per view wins. */
+export function accessForRoles(view: string, roles: Role[]): Access {
+  let best: Access = 'none';
+  for (const r of roles) {
+    const a = MATRIX[view]?.[r] ?? 'none';
+    if (a === 'write') return 'write';
+    if (a === 'read' && best === 'none') best = 'read';
+  }
+  return best;
+}
+
+/** Can this combination of roles open the screen at all? */
+export function canReadForRoles(view: string, roles: Role[]): boolean {
+  return accessForRoles(view, roles) !== 'none';
+}
+
+/** Can this combination of roles perform the screen's actions? */
+export function canWriteForRoles(view: string, roles: Role[]): boolean {
+  return accessForRoles(view, roles) === 'write';
+}
+
+/** Views this combination of roles may open, in no particular order. */
+export function readableViewsForRoles(roles: Role[]): string[] {
+  return Object.keys(MATRIX).filter((v) => canReadForRoles(v, roles));
+}
+
+/** Landing view: first entry in the preference list the roles can actually read. */
+export function landingViewForRoles(roles: Role[]): string {
+  const preference = ['dashboard', 'tagging', 'quant-validation', 'validacion', 'reporte', 'taxonomies'];
+  return preference.find((v) => canReadForRoles(v, roles)) ?? 'dashboard';
+}
+
 /** Every view named in the matrix — used to assert it stays in sync. */
 export const PERMISSIONED_VIEWS = Object.keys(MATRIX);

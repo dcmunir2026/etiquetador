@@ -536,11 +536,19 @@ export async function searchCandidatesForProject(
     .innerJoin(projects, eq(projects.id, projectMembers.projectId))
     .where(inArray(projectMembers.userId, ids));
 
-  const byUser = new Map<string, { id: string; name: string; role: string }[]>();
+  // Group by (userId, projectId) so a person who wears several roles in the
+  // same project shows up once with all of them. The Typeahead row stays
+  // one entry per project, matching how it renders.
+  const byUser = new Map<string, { id: string; name: string; roles: string[] }[]>();
   for (const m of memberships) {
-    const bucket = byUser.get(m.userId) ?? [];
-    bucket.push({ id: m.projectId, name: m.projectName, role: m.role });
-    byUser.set(m.userId, bucket);
+    const list = byUser.get(m.userId) ?? [];
+    let entry = list.find((p) => p.id === m.projectId);
+    if (!entry) {
+      entry = { id: m.projectId, name: m.projectName, roles: [] };
+      list.push(entry);
+    }
+    entry.roles.push(m.role);
+    byUser.set(m.userId, list);
   }
 
   return matches.map((m) => ({

@@ -1,7 +1,7 @@
 'use client';
 
 import { logoutAction } from '@/app/(auth)/login/actions';
-import { canRead, ROLE_LABELS, type Role } from '@/lib/permissions';
+import { canReadForRoles, ROLE_LABELS, type Role } from '@/lib/permissions';
 import type { ShellUser } from './Shell';
 
 const NAV: Array<{ section: string; items: Array<{ id: string; label: string; icon: JSX.Element; lock?: boolean; badge?: string; trailing?: JSX.Element }> }> = [
@@ -62,21 +62,31 @@ const LOCK_SVG = (
 );
 
 export function Sidebar({
-  currentView, onNavigate, user, role, project, taggingProgress = null,
+  currentView, onNavigate, user, role, roles, project, taggingProgress = null,
 }: {
   currentView: string;
   onNavigate: (v: string) => void;
   user: ShellUser;
+  /** Primary role for the footer label. */
   role: Role | null;
+  /** Every role this user has in the active project. Drives the nav
+   *  filter — a person who is both annotator and validador_cualitativo
+   *  sees all the screens either role opens. */
+  roles: Role[];
   project?: { name: string } | null;
   /** Finished fragments out of the assigned package; null when there is none. */
   taggingProgress?: { done: number; total: number } | null;
 }) {
   const initials = user.name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase();
 
-  // Hide what this role cannot open, and drop a section left empty by that.
+  // Hide what none of the user's hats can open, and drop a section left
+  // empty by that. With several roles the filter is the union — anyone
+  // whose set touches the view keeps it.
   const sections = NAV
-    .map((section) => ({ ...section, items: section.items.filter((it) => canRead(it.id, role)) }))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((it) => canReadForRoles(it.id, roles)),
+    }))
     .filter((section) => section.items.length > 0);
 
   return (
@@ -123,7 +133,9 @@ export function Sidebar({
               {user.name}
             </div>
             <small style={{ opacity: 0.75 }}>
-              {role ? ROLE_LABELS[role] : 'Sin rol en este proyecto'}
+              {roles.length > 1
+                ? roles.map((r) => ROLE_LABELS[r]).join(' · ')
+                : role ? ROLE_LABELS[role] : 'Sin rol en este proyecto'}
             </small>
           </div>
         </div>

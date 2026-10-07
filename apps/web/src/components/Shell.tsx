@@ -14,10 +14,15 @@ export type ShellUser = {
 };
 
 export function Shell({
-  user, role, projects, activeProject, taggingProgress = null, children,
+  user, role, roles, projects, activeProject, taggingProgress = null, children,
 }: {
   user: ShellUser;
+  /** Primary role (best privilege wins when the user wears several hats).
+   *  Used for display / landing only; permission decisions use `roles`. */
   role: Role | null;
+  /** Every role the user carries in the active project. The sidebar and
+   *  permission helpers use this list, not `role`. */
+  roles: Role[];
   projects: Project[];
   activeProject: Project | null;
   /** Fragments finished out of the user's package, for the sidebar badge. */
@@ -58,6 +63,7 @@ export function Shell({
         onNavigate={navigate}
         user={user}
         role={role}
+        roles={roles}
         project={activeProject}
         taggingProgress={taggingProgress}
       />

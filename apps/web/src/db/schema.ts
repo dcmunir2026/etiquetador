@@ -129,7 +129,11 @@ export const projectMembers = pgTable(
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    uniqueMember: uniqueIndex('project_members_unique').on(t.projectId, t.userId),
+    // `(projectId, userId, role)` lets a person wear multiple hats in the
+    // same project — e.g. an annotator who is also a validator. The unique
+    // constraint lives on the triple, so adding / removing roles is just
+    // upserting rows; no separate join table needed.
+    uniqueMember: uniqueIndex('project_members_unique').on(t.projectId, t.userId, t.role),
   }),
 );
 
