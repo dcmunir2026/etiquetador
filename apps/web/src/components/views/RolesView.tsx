@@ -1033,9 +1033,7 @@ function EditMemberDialog({ member, projectId, teams, currentUserIsSuperAdmin, o
                 <b>Superadministrador de la plataforma</b>
                 <small style={{ display: 'block', color: 'var(--ink-3)', marginTop: 2 }}>
                   Acceso total: ve todos los proyectos, puede ascender o degradar a cualquier
-                  persona, y bypassa las restricciones de rol por proyecto. Solo lo concede
-                  otro superadmin. Si lo quitas a la última persona con este flag, la
-                  plataforma se queda sin administradores — el servidor lo rechaza.
+                  persona.
                 </small>
               </div>
             </label>
