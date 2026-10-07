@@ -542,8 +542,8 @@ function TeamDialog({ projectId, onClose, onDone }: {
   projectId: string; onClose: () => void; onDone: () => void;
 }) {
   const [name, setName] = useState('');
-  const [groupSize, setGroupSize] = useState(3);
-  const [metric, setMetric] = useState('fleiss');
+  const [groupSize, setGroupSize] = useState(2);
+  const [metric, setMetric] = useState('unanimous');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
