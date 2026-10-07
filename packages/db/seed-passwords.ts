@@ -41,9 +41,9 @@ await db.update(schema.users)
   .where(and(isNotNull(schema.users.passwordHash), isNull(schema.users.emailVerifiedAt)));
 
 // ─── Make every role exercisable ─────────────────────────────────────
-// The seed only produced superadmin, annotator and validator. Promote one
-// person to project admin and add an observer so the matrix can be tested
-// end to end.
+// The seed only produced superadmin, annotator and the qualitative
+// validator. Promote one person to project admin and add an observer so
+// the matrix can be tested end to end.
 
 const [q3] = await db.select().from(schema.projects).where(eq(schema.projects.slug, 'epdata-2026q3'));
 if (!q3) throw new Error('Project epdata-2026q3 not found.');

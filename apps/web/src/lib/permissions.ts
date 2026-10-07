@@ -10,13 +10,14 @@
  * changes the sidebar, the route guard and the server actions at once.
  */
 
-export const ROLES = ['superadmin', 'projectadmin', 'validator', 'annotator', 'viewer'] as const;
+export const ROLES = ['superadmin', 'projectadmin', 'validador_cualitativo', 'validador_cuantitativo', 'annotator', 'viewer'] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   superadmin: 'Superadministrador',
   projectadmin: 'Administrador de proyecto',
-  validator: 'Validador',
+  validador_cualitativo: 'Validador cualitativo',
+  validador_cuantitativo: 'Validador cuantitativo',
   annotator: 'Etiquetador',
   viewer: 'Observador',
 };
@@ -32,14 +33,18 @@ export type Access = 'write' | 'read' | 'none';
  */
 const MATRIX: Record<string, Partial<Record<Role, Access>>> = {
   // Always reachable — the landing screen lists the projects you belong to.
-  dashboard: { superadmin: 'write', projectadmin: 'write', validator: 'read', annotator: 'read', viewer: 'read' },
+  dashboard: { superadmin: 'write', projectadmin: 'write',
+               validador_cualitativo: 'read', validador_cuantitativo: 'read',
+               annotator: 'read', viewer: 'read' },
 
   // Corpus ingestion is an administrative act.
   upload: { superadmin: 'write', projectadmin: 'write' },
 
   // The global catalogue: only the super admin may create, edit or archive.
-  taxonomies: { superadmin: 'write', projectadmin: 'read', validator: 'read' },
-  'taxonomy-groups': { superadmin: 'write', projectadmin: 'read', validator: 'read' },
+  taxonomies: { superadmin: 'write', projectadmin: 'read',
+                validador_cualitativo: 'read', validador_cuantitativo: 'read' },
+  'taxonomy-groups': { superadmin: 'write', projectadmin: 'read',
+                       validador_cualitativo: 'read', validador_cuantitativo: 'read' },
 
   // Project configuration.
   dimensions: { superadmin: 'write', projectadmin: 'write', annotator: 'read' },
@@ -50,18 +55,21 @@ const MATRIX: Record<string, Partial<Record<Role, Access>>> = {
   // Annotation is the annotator's job; admins keep access to test the flow.
   tagging: { superadmin: 'write', annotator: 'write' },
 
-  // Agreement and validation belong to validators and admins.
-  discrepancias: { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
-  'discrepancias-equipos': { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
-  'quant-validation': { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
-  validacion: { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
+  // Agreement and validation belong to validators and admins. Each
+  // specific validator only sees their own write target; they share the
+  // disagreement list.
+  discrepancias: { superadmin: 'write', projectadmin: 'write',
+                   validador_cualitativo: 'write', validador_cuantitativo: 'write',
+                   viewer: 'read' },
+  'quant-validation': { superadmin: 'write', projectadmin: 'write', validador_cuantitativo: 'write' },
+  validacion:          { superadmin: 'write', projectadmin: 'write', validador_cualitativo: 'write' },
 
   // The dependency graph explains the cascade, so annotators need it too.
-  'graph-deps': { superadmin: 'write', projectadmin: 'write', validator: 'write', annotator: 'read', viewer: 'read' },
+  'graph-deps': { superadmin: 'write', projectadmin: 'write', annotator: 'read', viewer: 'read' },
 
   // Closing artefacts.
-  reporte: { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
-  kappa: { superadmin: 'write', projectadmin: 'write', validator: 'write', viewer: 'read' },
+  reporte: { superadmin: 'write', projectadmin: 'write', viewer: 'read' },
+  kappa:   { superadmin: 'write', projectadmin: 'write', viewer: 'read' },
 };
 
 export function accessTo(view: string, role: Role | null): Access {

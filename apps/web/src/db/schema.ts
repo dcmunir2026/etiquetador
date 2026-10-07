@@ -59,7 +59,7 @@ export type SegmentationUnit = (typeof SEGMENTATION_UNITS)[number];
 export const DIMENSION_KINDS = ['category', 'intensity', 'flag', 'free-text'] as const;
 export type DimensionKind = (typeof DIMENSION_KINDS)[number];
 
-export const USER_ROLES = ['superadmin', 'projectadmin', 'annotator', 'validator', 'viewer'] as const;
+export const USER_ROLES = ['superadmin', 'projectadmin', 'annotator', 'validador_cualitativo', 'validador_cuantitativo', 'viewer'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // ─── USERS ───────────────────────────────────────────────────────────

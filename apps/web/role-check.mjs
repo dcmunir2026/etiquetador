@@ -4,7 +4,7 @@ const PASSWORD = 'etiquetador';
 const PEOPLE = [
   ['Marta R.',        'marta@etiquetador.local',    'superadmin'],
   ['Carlos Antúnez',  'carlos.antunez@epdata.es',   'projectadmin'],
-  ['Sara Velasco',    'sara.velasco@unir.es',       'validator'],
+  ['Sara Velasco',    'sara.velasco@unir.es',       'validador_cualitativo'],
   ['Pedro Gómez',     'pedro.gomez@unir.es',        'annotator'],
   ['Rosa Iglesias',   'observador@epdata.es',       'viewer'],
 ];
@@ -12,7 +12,7 @@ const PEOPLE = [
 const BLOCKED = {
   superadmin: null,
   projectadmin: '/etiquetar',
-  validator: '/proyecto/roles',
+  validador_cualitativo: '/proyecto/roles',
   annotator: '/validacion-cuantitativa',
   viewer: '/proyecto/paquetes',
 };

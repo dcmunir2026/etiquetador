@@ -239,7 +239,7 @@ for (const name of Object.keys(userIds)) {
     .where(eq(schema.projectMembers.userId, uid));
   if (existingMemberships.some(m => m.projectId === q3.id)) continue;
   const role: schema.UserRole = uid === marta.id ? 'projectadmin'
-    : ['Carlos Antúnez', 'Sara Velasco', 'Javier Moreno'].includes(name) ? 'validator'
+    : ['Carlos Antúnez', 'Sara Velasco', 'Javier Moreno'].includes(name) ? 'validador_cualitativo'
     : 'annotator';
   await db.insert(schema.projectMembers).values({ projectId: q3.id, userId: uid, role });
 }
