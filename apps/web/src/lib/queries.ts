@@ -6,7 +6,7 @@
  * than stored, so they never drift from the underlying data.
  */
 
-import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 /**
@@ -1152,77 +1152,3 @@ export type CandidateRow = {
   /** Other projects the candidate is already in. Empty if they're a brand-new user. */
   projects: { id: string; name: string; role: string }[];
 };
-
-/**
- * Search the global user table for people who could be added to a project.
- *
- * Excludes users that are already in `projectId`, soft-deleted accounts,
- * and anyone whose name/email doesn't match the query. The result also
- * carries the projects each candidate is already in, so the admin sees
- * who they're about to share with the rest of the org.
- *
- * Empty queries return `[]` — there's no "show all users" mode here, the
- * admin has to type something first.
- */
-export async function searchCandidatesForProject(
-  projectId: string,
-  query: string,
-  limit = 20,
-): Promise<CandidateRow[]> {
-  const q = query.trim();
-  if (!q) return [];
-  const like = `%${q.toLowerCase()}%`;
-  const db = getDb();
-
-  // People who match by name or email, are not soft-deleted, and are not
-  // already a member of this project. `leftJoin` on project_members with
-  // `isNull(projectMembers.id)` is the canonical "rows whose join missed".
-  const matches = await db.select({
-    id: users.id,
-    name: users.name,
-    email: users.email,
-    color: users.avatarColor,
-  })
-    .from(users)
-    .leftJoin(projectMembers, and(
-      eq(projectMembers.projectId, projectId),
-      eq(projectMembers.userId, users.id),
-    ))
-    .where(and(
-      isNull(users.deletedAt),
-      isNull(projectMembers.id),
-      or(ilike(users.name, like), ilike(users.email, like)),
-    ))
-    .orderBy(asc(users.name))
-    .limit(limit);
-
-  if (matches.length === 0) return [];
-
-  // Pull the project list per candidate in one round-trip — avoids N+1
-  // when the admin searches a common name like "Ana".
-  const ids = matches.map((m) => m.id);
-  const memberships = await db.select({
-    userId: projectMembers.userId,
-    projectId: projects.id,
-    projectName: projects.name,
-    role: projectMembers.role,
-  })
-    .from(projectMembers)
-    .innerJoin(projects, eq(projects.id, projectMembers.projectId))
-    .where(inArray(projectMembers.userId, ids));
-
-  const byUser = new Map<string, { id: string; name: string; role: string }[]>();
-  for (const m of memberships) {
-    const bucket = byUser.get(m.userId) ?? [];
-    bucket.push({ id: m.projectId, name: m.projectName, role: m.role });
-    byUser.set(m.userId, bucket);
-  }
-
-  return matches.map((m) => ({
-    id: m.id,
-    name: m.name ?? m.email,
-    email: m.email,
-    color: m.color,
-    projects: byUser.get(m.id) ?? [],
-  }));
-}

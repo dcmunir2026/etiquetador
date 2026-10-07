@@ -51,9 +51,7 @@ export function TaggingView({
       <div className="page">
         <h1>Etiquetar fragmento</h1>
         <EmptyState title="No tienes fragmentos asignados">
-          Necesitas un paquete asignado en este proyecto. Ve a{' '}
-          <a href="/proyecto/paquetes" style={{ color: 'var(--primary-2)' }}>Paquetes</a> para dividir el
-          corpus y asignarlo a tu equipo.
+          Necesitas un paquete asignado en este proyecto.
         </EmptyState>
       </div>
     );

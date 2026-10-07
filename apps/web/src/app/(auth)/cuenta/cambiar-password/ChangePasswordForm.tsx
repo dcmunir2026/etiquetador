@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { changePasswordAction, type ChangePasswordResult } from './actions';
+import { useState, useTransition, type FormEvent } from 'react';
+import { changePasswordAction } from './actions';
 
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
+function SubmitButton({ label, pending }: { label: string; pending: boolean }) {
   return (
     <button className="btn primary" type="submit" disabled={pending}
             style={{ width: '100%', justifyContent: 'center', padding: 10 }}>
@@ -15,34 +13,38 @@ function SubmitButton({ label }: { label: string }) {
 }
 
 export function ChangePasswordForm({ forced }: { forced: boolean }) {
+  // We can't use useFormState here: on success changePasswordAction calls
+  // redirect(), which throws NEXT_REDIRECT. When that throw bubbles up
+  // through useFormState's reducer, React receives no return value and
+  // the form's state ends up undefined — the submit button stays
+  // disabled forever and a second click does nothing. We hit that bug
+  // once already; the comment in actions.ts:34-37 documents the same.
+  //
+  // useTransition is the React 18 pattern for "submit a server action
+  // that may navigate". React catches the NEXT_REDIRECT throw inside
+  // the transition and lets Next.js's router pick it up, while still
+  // reporting isPending so the button can disable itself. Errors that
+  // the action returns explicitly are surfaced via local useState.
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  // Direct server action call. We do NOT use `useFormState` here because
-  // the action calls `redirect()` on success (throws NEXT_REDIRECT),
-  // which is incompatible with the reducer shape expected by
-  // useFormState — the resulting `state` is undefined and crashes the
-  // form render. We track our own error state instead and surface
-  // validation failures returned by the action.
-  async function handle(formData: FormData) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     setError(null);
-    let res: ChangePasswordResult | undefined;
-    try {
-      res = await changePasswordAction(formData);
-    } catch {
-      // Server actions call `redirect()` on success, which throws
-      // NEXT_REDIRECT — Next.js handles that and navigates the page
-      // away. Any other throw is unexpected; the browser is about to
-      // navigate or the page is broken — either way, leaving the form
-      // alone is the safest response.
-      return;
-    }
-    if (res && typeof res === 'object' && 'error' in res && res.error) {
-      setError(res.error);
-    }
+    startTransition(async () => {
+      const result = await changePasswordAction(formData);
+      // Success path: changePasswordAction never returns — redirect()
+      // throws and the transition absorbs it. If we got here with a
+      // result, the action returned { error } and we surface it.
+      if (result && 'error' in result) {
+        setError(result.error);
+      }
+    });
   }
 
   return (
-    <form action={handle}>
+    <form onSubmit={handleSubmit}>
       <input type="hidden" name="forced" value={forced ? 'true' : 'false'} />
 
       {forced && (
@@ -71,7 +73,7 @@ export function ChangePasswordForm({ forced }: { forced: boolean }) {
         </div>
       )}
 
-      <SubmitButton label={forced ? 'Cambiar y entrar' : 'Guardar contraseña'} />
+      <SubmitButton label={forced ? 'Cambiar y entrar' : 'Guardar contraseña'} pending={isPending} />
     </form>
   );
 }

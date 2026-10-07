@@ -68,7 +68,7 @@ services:
     # Note: `$$` is the escape compose uses to emit a literal `$` to the
     # shell command. We use plain `export` rather than `env -S` because
     # Alpine ships BusyBox's env, which doesn't support `-S`.
-    command: ["sh", "-c", "export NODE_PATH=\"$$(ls -d /node_modules/.pnpm/postgres@*/node_modules 2>/dev/null | head -1):$$(ls -d /node_modules/.pnpm/drizzle-orm@*/node_modules 2>/dev/null | head -1)\"; exec node scripts/migrate-runner.cjs"]
+    command: ["sh", "-c", "cd /app && export NODE_PATH=\"$$(ls -d /node_modules/.pnpm/postgres@*/node_modules 2>/dev/null | head -1):$$(ls -d /node_modules/.pnpm/drizzle-orm@*/node_modules 2>/dev/null | head -1)\"; exec node scripts/migrate-runner.cjs"]
     # No restart: on success, exits 0 and the web service starts; on failure,
     # exits non-zero and the web service is blocked by `service_completed_successfully`.
 

@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CandidateRow, MemberRow, TeamRow } from '@/lib/queries';
-import { searchCandidatesForProject } from '@/lib/queries';
 import { createTeam, deactivateUser, reactivateUser, resetPasswordToDefault, setMemberRole, setTeamMembers } from '@/app/actions/workflow';
 import {
-  addExistingMemberToProject, inviteNewMemberToProject, resendInvitation,
+  addExistingMemberToProject, inviteNewMemberToProject,
+  resendInvitation, searchCandidatesForProject,
 } from '@/app/actions/invitations';
 import { Avatar, Kpi } from './shared';
 
