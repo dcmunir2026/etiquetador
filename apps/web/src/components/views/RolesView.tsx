@@ -643,46 +643,38 @@ function Overlay({ title, subtitle, children, onClose, onSave, saving, error, sa
 }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,23,30,0.45)', zIndex: 60,
-                  backdropFilter: 'blur(2px)', overflowY: 'auto',
-                  // dvh tracks the visible viewport on mobile (handles the
-                  // collapsing URL bar); vh is the fallback for older Safari.
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                  backdropFilter: 'blur(2px)', overflowY: 'auto' }}>
       <div className="picker-card" style={{
-        // Cap the panel so a long body (lots of teams + many role checkboxes
-        // + the superadmin toggle) never pushes the Save/Cancel footer off
-        // the screen. `min(... 640px)` keeps it a comfortable size on tall
-        // desktops; the vh/dvh expressions ensure it still fits on shorter
-        // windows and on phones. flex column + the body div scrolls, the
-        // footer stays pinned at the bottom of the card.
-        marginTop: 'max(24px, env(safe-area-inset-top, 0px))',
-        marginBottom: 24,
-        textAlign: 'left', maxWidth: 540,
-        maxHeight: 'min(640px, calc(100vh - 80px), calc(100dvh - 80px))',
+        // Cap the panel to the viewport so a long body (lots of teams /
+        // many role checkboxes + the superadmin toggle) never pushes the
+        // Save/Cancel footer off-screen. dvh tracks the visible viewport on
+        // mobile (handles the collapsing URL bar); vh is the fallback for
+        // older Safari. flex column + the body div scrolls, the footer
+        // stays pinned at the bottom of the card.
+        marginTop: 40, textAlign: 'left', maxWidth: 540,
+        maxHeight: 'calc(100vh - 80px), calc(100dvh - 80px)',
         display: 'flex', flexDirection: 'column',
-        flexShrink: 0,
-        width: 'min(540px, calc(100vw - 32px))',
       }}>
         <h2 style={{ textAlign: 'center' }}>{title}</h2>
         <p className="lead" style={{ textAlign: 'center' }}>{subtitle}</p>
-        <div style={{ flex: '1 1 0', overflowY: 'auto', minHeight: 0,
-                      // Make the scrollable region visually distinct so the
-                      // user knows there is more to see when it overflows.
-                      paddingRight: 4 }}>
+        <div style={{
+          // flex-basis: auto so the body sizes to its content when the card
+          // is auto-height (short dialogs like New team / Add person keep
+          // their natural layout). flex-grow: 1 only kicks in when the
+          // card hits its viewport cap, at which point the body fills the
+          // remaining space and scrolls. min-height: 0 lets it actually
+          // shrink below its content height when it needs to scroll.
+          flex: '1 1 auto', overflowY: 'auto', minHeight: 0,
+          paddingRight: 4,
+        }}>
           {children}
           {error && <div style={{ fontSize: 12.5, color: 'var(--bad)', marginTop: 10 }}>{error}</div>}
         </div>
         <div style={{
           display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16,
           paddingTop: 14, borderTop: '1px solid var(--line-soft)',
-          // Never let the footer shrink — it always shows.
+          // Never let the footer shrink — it always shows at the bottom.
           flexShrink: 0,
-          // The picker-card has 28px vertical padding; cancelling it here so
-          // the footer hugs the bottom edge of the card with the divider
-          // hugging the top of the buttons instead of floating inside the
-          // padded area.
-          marginLeft: -32, marginRight: -32, marginBottom: -28,
-          paddingLeft: 32, paddingRight: 32, paddingBottom: 28,
-          background: 'var(--surface)',
         }}>
           <button className="btn" onClick={onClose}>Cancelar</button>
           <button className="btn primary" onClick={onSave} disabled={saving}>
@@ -1000,11 +992,7 @@ function EditMemberDialog({ member, projectId, teams, currentUserIsSuperAdmin, o
 
         <div className="wiz-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
           <label>Roles en este proyecto</label>
-          <small style={{ color: 'var(--ink-3)', marginBottom: 6, display: 'block' }}>
-            Una persona puede llevar varios roles a la vez — por ejemplo,
-            etiquetador y validador cualitativo. El servidor rechaza guardar
-            si dejas la lista vacía.
-          </small>
+          
           <div className="picker-list" style={{ maxHeight: 180, overflowY: 'auto' }}>
             {ROLE_CHOICES.map((key) => {
               const on = pickedRoles.includes(key);
