@@ -59,7 +59,12 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
   switch (view) {
     case 'dashboard': {
       const data = await getDashboard();
-      return <DashboardView data={data} />;
+      return (
+        <DashboardView
+          data={data}
+          currentUserIsSuperAdmin={user?.isSuperAdmin ?? false}
+        />
+      );
     }
 
     case 'upload': {
@@ -202,7 +207,12 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
 
     default: {
       const data = await getDashboard();
-      return <DashboardView data={data} />;
+      return (
+        <DashboardView
+          data={data}
+          currentUserIsSuperAdmin={user?.isSuperAdmin ?? false}
+        />
+      );
     }
   }
 }
