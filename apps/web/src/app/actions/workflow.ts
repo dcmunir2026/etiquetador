@@ -832,6 +832,59 @@ export async function returnPackageToTeam(packageId: string, reason?: string): P
   return { ok: true, id: packageId };
 }
 
+/**
+ * Hard-delete a single package, unassigning it from its team.
+ *
+ * Useful when the project admin generated packages with the wrong
+ * split and wants to free the fragments back to the unpackaged pool
+ * so they can be re-divided. The package row goes, and the cascade
+ * on the child FKs handles the rest:
+ *  - `package_fragments` (cascade)  → link rows gone, fragments
+ *    themselves untouched. They show up again as "Sin empaquetar"
+ *    on the next generate.
+ *  - `package_assignments` (cascade) → per-annotator rows gone. Anyone
+ *    currently mid-annotation loses this package from their queue.
+ *  - `annotations.packageId` (set null) → the annotations themselves
+ *    are preserved, just unlinked from the deleted package. Same for
+ *    `qual_validations` / `quant_validations`. This is deliberate:
+ *    annotations are the valuable data, the package is just a
+ *    grouping; we don't want a "redo the split" to lose work.
+ *
+ * Gated on the `paquetes` view (superadmin or projectadmin of the
+ * active project), and we re-verify the package actually belongs to
+ * that project before touching it — a stale cookie shouldn't let one
+ * project's admin nuke another's package.
+ */
+export async function unassignPackage(packageId: string): Promise<ActionResult> {
+  const gate = await authorize('paquetes');
+  if (!gate.ok) return { ok: false, error: gate.error };
+  if (!packageId) return { ok: false, error: 'Falta el paquete a desasignar.' };
+
+  const db = getDb();
+  const [pkg] = await db.select().from(packages).where(eq(packages.id, packageId)).limit(1);
+  if (!pkg) return { ok: false, error: 'Paquete no encontrado.' };
+
+  // Defense in depth: the `paquetes` permission is scoped to the
+  // *active* project via the cookie, but a stale cookie could still
+  // point at a project the user no longer administers. Re-check the
+  // package's projectId against the active one before deleting.
+  const { getActiveProjectId } = await import('@/lib/session');
+  const activeId = await getActiveProjectId();
+  if (activeId && pkg.projectId !== activeId) {
+    return { ok: false, error: 'Este paquete no pertenece al proyecto activo.' };
+  }
+
+  await db.delete(packages).where(eq(packages.id, packageId));
+
+  await audit('package.unassign', 'package', packageId, pkg.projectId, {
+    code: pkg.code,
+    teamId: pkg.teamId,
+    fragmentCount: pkg.version,
+  });
+  revalidatePath('/', 'layout');
+  return { ok: true, id: packageId };
+}
+
 // ─── Qualitative validation (H18-H19) ────────────────────────────────
 
 /** Draw a fresh random sample of a team's fragments for review. */

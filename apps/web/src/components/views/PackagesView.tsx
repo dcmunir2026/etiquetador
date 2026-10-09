@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PackageRow, TeamRow } from '@/lib/queries';
-import { generatePackages } from '@/app/actions/workflow';
+import { generatePackages, unassignPackage } from '@/app/actions/workflow';
 import { Kpi, StatusTag, num } from './shared';
 
 const SIZE_LABEL: Record<number, string> = { 2: 'dúo', 3: 'trío', 4: 'cuarteto', 5: 'quinteto' };
@@ -22,6 +22,7 @@ export function PackagesView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [unassigning, setUnassigning] = useState<PackageRow | null>(null);
 
   const packagedFragments = packages.reduce((a, p) => a + p.fragmentCount, 0);
   const unpackaged = Math.max(0, fragmentTotal - packagedFragments);
@@ -146,7 +147,7 @@ export function PackagesView({
           <thead>
             <tr>
               <th>Paquete</th><th>Fragmentos</th><th>Grupo</th>
-              <th>Asignaciones</th><th>Estado</th><th>Versión</th>
+              <th>Asignaciones</th><th>Estado</th><th>Versión</th><th />
             </tr>
           </thead>
           <tbody>
@@ -177,15 +178,128 @@ export function PackagesView({
                     {p.returnCount > 0 && ` · ${p.returnCount} reenvío${p.returnCount > 1 ? 's' : ''}`}
                   </small>
                 </td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button
+                    type="button"
+                    className="btn-mini"
+                    title={`Desasignar ${p.code}`}
+                    aria-label={`Desasignar ${p.code}`}
+                    style={{ color: 'var(--bad)' }}
+                    onClick={() => setUnassigning(p)}
+                  >
+                    Desasignar
+                  </button>
+                </td>
               </tr>
             ))}
             {packages.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: 'var(--ink-3)' }}>
+              <tr><td colSpan={7} style={{ padding: 30, textAlign: 'center', color: 'var(--ink-3)' }}>
                 Todavía no hay paquetes. Configura la división y pulsa «Dividir y asignar».
               </td></tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {unassigning && (
+        <UnassignPackageDialog
+          pkg={unassigning}
+          onClose={() => setUnassigning(null)}
+          onDone={() => {
+            setUnassigning(null);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Confirmation dialog for hard-deleting a single package.
+ *
+ * The button stays disabled until the user retypes the package's display
+ * code (e.g. `PK-A-001`) exactly — the package code is short, unique
+ * within the project, and already on screen, so it's a comfortable
+ * "are you sure" check without needing a long project name. The server
+ * still re-checks the package's projectId matches the active project
+ * before touching anything.
+ */
+function UnassignPackageDialog({ pkg, onClose, onDone }: {
+  pkg: PackageRow;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const matches = typed.trim() === pkg.code;
+
+  async function confirm() {
+    if (!matches) return;
+    setBusy(true);
+    setError(null);
+    const res = await unassignPackage(pkg.id);
+    setBusy(false);
+    if (!res.ok) { setError(res.error); return; }
+    onDone();
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,23,30,0.45)', zIndex: 60,
+                  backdropFilter: 'blur(2px)', overflowY: 'auto' }}>
+      <div className="picker-card" style={{ marginTop: 80, textAlign: 'left', maxWidth: 520 }}>
+        <h2 style={{ textAlign: 'center' }}>Desasignar paquete</h2>
+        <p className="lead" style={{ textAlign: 'center' }}>
+          Esta acción es <b>permanente</b> y no se puede deshacer.
+        </p>
+
+        <div style={{ background: '#fdecea', border: '1px solid #f5c2c0', borderLeft: '3px solid #c0392b',
+                      padding: '12px 14px', borderRadius: '0 6px 6px 0', marginBottom: 14,
+                      fontSize: 13, color: '#7b1f1a' }}>
+          Vas a desasignar el paquete <b>{pkg.code}</b> ({pkg.teamName ?? 'sin equipo'},
+          {' '}{pkg.fragmentCount} fragmento{pkg.fragmentCount === 1 ? '' : 's'},
+          {' '}{pkg.assignments.length} asignación{pkg.assignments.length === 1 ? '' : 'es'}).
+          <br /><br />
+          Los fragmentos vuelven al pool <i>Sin empaquetar</i> y las anotaciones
+          y validaciones ya registradas se conservan (con el paquete desvinculado).
+        </div>
+
+        <div className="wiz-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          <label>
+            Para confirmar, escribe el código del paquete: <code>{pkg.code}</code>
+          </label>
+          <input
+            type="text"
+            value={typed}
+            onChange={(e) => { setTyped(e.target.value); setError(null); }}
+            placeholder={pkg.code}
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+
+        {error && (
+          <div style={{ fontSize: 12.5, color: 'var(--bad)', marginTop: 10 }}>{error}</div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16,
+                      paddingTop: 14, borderTop: '1px solid var(--line-soft)' }}>
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={confirm}
+            disabled={!matches || busy}
+            style={{ background: matches ? 'var(--bad)' : undefined, borderColor: matches ? 'var(--bad)' : undefined }}
+          >
+            {busy ? 'Desasignando…' : 'Desasignar paquete'}
+          </button>
+        </div>
       </div>
     </div>
   );
