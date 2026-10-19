@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/session';
+import { getBuildInfo } from '@/lib/version';
 import { LoginForm } from './LoginForm';
 
 export const metadata: Metadata = { title: 'Entrar — Etiquetador' };
@@ -16,6 +17,7 @@ export default async function LoginPage({
   if (await getCurrentUser()) redirect('/');
 
   const justChanged = searchParams.reason === 'password-changed';
+  const build = getBuildInfo();
 
   return (
     <div className="login-wrap">
@@ -46,6 +48,12 @@ export default async function LoginPage({
             Las cuentas las crea un administrador desde <b>Roles y equipos</b>.
           </p>
         </div>
+        <p style={{
+          textAlign: 'center', fontSize: 11.5, color: 'var(--ink-4)',
+          marginTop: 14, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        }}>
+          v{build.app} · {build.sha}
+        </p>
       </div>
     </div>
   );
