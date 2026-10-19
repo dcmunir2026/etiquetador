@@ -800,6 +800,12 @@ export type TaggingData = {
   incompleteCount: number;
   /** 1-based position of the first unfinished fragment, 0 when there is none. */
   firstIncomplete: number;
+  /**
+   * 1-based positions within this package where annotators still disagree.
+   * Empty unless the package has been returned at least once; the supervisor
+   * uses these to tell the annotator where to focus the re-review.
+   */
+  discrepantIndexes: number[];
 };
 
 /**
@@ -830,7 +836,7 @@ export async function getTaggingData(projectId: string, userId: string, fragment
   const empty: TaggingData = {
     package: null, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
-    incompleteCount: 0, firstIncomplete: 0,
+    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
   };
   if (assigned.length === 0) return empty;
 
@@ -844,7 +850,25 @@ export async function getTaggingData(projectId: string, userId: string, fragment
       .orderBy(asc(packageFragments.order)),
   ]);
   const pkg = allPackages.find((p) => p.id === pkgId) ?? null;
-  if (fragLinks.length === 0) return { ...empty, package: pkg };
+
+  // For returned packages, surface the fragments where annotators still
+  // disagree so the annotator knows what to re-review. We only compute
+  // this when there's been at least one return: before that, the package
+  // is mid-progress and this view has no business pointing at fragments
+  // the supervisor hasn't acted on yet.
+  let discrepantIndexes: number[] = [];
+  if (pkg && pkg.teamId && (pkg.returnCount > 0 || pkg.status === 'returned')) {
+    const idToIndex = new Map(fragLinks.map((l, i) => [l.f.id, i + 1]));
+    const fragIdsInPkg = new Set(idToIndex.keys());
+    const allDiscrepant = await getTeamDiscrepantFragments(pkg.teamId);
+    discrepantIndexes = allDiscrepant
+      .filter((d) => fragIdsInPkg.has(d.fragmentId))
+      .map((d) => idToIndex.get(d.fragmentId)!)
+      .filter((n): n is number => Number.isFinite(n))
+      .sort((a, b) => a - b);
+  }
+
+  if (fragLinks.length === 0) return { ...empty, package: pkg, discrepantIndexes };
 
   // Progress is measured in finished fragments, not merely touched ones:
   // saving writes a row per dimension, so "has annotations" says nothing
@@ -858,7 +882,7 @@ export async function getTaggingData(projectId: string, userId: string, fragment
   }
 
   const link = fragLinks[idx];
-  if (!link) return { ...empty, package: pkg };
+  if (!link) return { ...empty, package: pkg, discrepantIndexes };
   const fragment = link.f;
   const existing = await db.select()
     .from(annotations)
@@ -875,6 +899,7 @@ export async function getTaggingData(projectId: string, userId: string, fragment
     doneCount: fragLinks.length - unfinished.length,
     incompleteCount: unfinished.length,
     firstIncomplete: unfinished.length > 0 ? unfinished[0]! + 1 : 0,
+    discrepantIndexes,
   };
 }
 

@@ -27,6 +27,13 @@ export function TaggingView({
   const [notice, setNotice] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
 
+  // Filter Anterior/Siguiente to discrepant fragments when the package has
+  // been returned. Default on for returned packages — the annotator came
+  // here to fix the disagreements, not browse the corpus again.
+  const [onlyDiscrepant, setOnlyDiscrepant] = useState(
+    () => (data.package?.returnCount ?? 0) > 0 || data.package?.status === 'returned',
+  );
+
   const dims: CascadeDimension[] = useMemo(
     () => data.dimensions.map((d) => ({
       id: d.id, name: d.name, kind: d.kind, values: d.values,
@@ -45,6 +52,16 @@ export function TaggingView({
   // move on, so the form does not scold before anyone has tried anything.
   const missing = useMemo(() => missingAnswers(dims, answers), [dims, answers]);
   const missingIds = useMemo(() => new Set(missing.map((d) => d.id)), [missing]);
+
+  // Derived state for the discrepant-only navigation mode. Computed before
+  // any early return so the hooks stay unconditional.
+  const discrepantOrder = data.discrepantIndexes;
+  const discrepantSet = useMemo(() => new Set(discrepantOrder), [discrepantOrder]);
+  const currentIsDiscrepant = discrepantSet.has(data.position);
+  const filteredIdx = useMemo(
+    () => (currentIsDiscrepant ? discrepantOrder.indexOf(data.position) : -1),
+    [currentIsDiscrepant, discrepantOrder, data.position],
+  );
 
   if (!data.fragment || !data.package) {
     return (
@@ -161,6 +178,41 @@ export function TaggingView({
     startTransition(() => router.push(`/etiquetar?fragment=${pos}`));
   }
 
+  const filterActive = onlyDiscrepant && discrepantOrder.length > 0;
+
+  // Anterior/Siguiente under the filter: walk the discrepant list.
+  // When the filter is off, fall through to plain +1/-1.
+  function step(delta: number) {
+    if (!filterActive) { void goTo(data.position + delta); return; }
+    if (currentIsDiscrepant) {
+      const target = discrepantOrder[filteredIdx + delta];
+      if (target !== undefined) void goTo(target);
+      return;
+    }
+    // We are on a non-discrepant fragment: jump to the closest discrepant.
+    const target = delta > 0
+      ? discrepantOrder.find((p) => p > data.position)
+      : [...discrepantOrder].reverse().find((p) => p < data.position);
+    if (target !== undefined) void goTo(target);
+  }
+
+  const canPrev = !filterActive
+    ? data.position > 1
+    : currentIsDiscrepant
+      ? filteredIdx > 0
+      : discrepantOrder.some((p) => p < data.position);
+  const canNext = !filterActive
+    ? data.position < data.total
+    : currentIsDiscrepant
+      ? filteredIdx < discrepantOrder.length - 1
+      : discrepantOrder.some((p) => p > data.position);
+
+  const counterLabel = filterActive
+    ? currentIsDiscrepant
+      ? `${data.position} / ${data.total} · discrep. ${filteredIdx + 1}/${discrepantOrder.length}`
+      : `${data.position} / ${data.total} · no discrepante`
+    : `${data.position} / ${data.total}`;
+
   return (
     <div className="page">
       <div className="et-head">
@@ -182,6 +234,55 @@ export function TaggingView({
         </div>
       </div>
 
+      {(() => {
+        const wasReturned = data.package.returnCount > 0 || data.package.status === 'returned';
+        if (!wasReturned) return null;
+        const round = Math.max(1, data.package.version);
+        const motivo = data.package.notes?.trim();
+        return (
+          <div
+            data-testid="returned-banner"
+            style={{
+              marginBottom: 14, padding: '12px 14px',
+              background: '#fdf6e3', border: '1px solid #e7d99a',
+              borderLeft: '3px solid var(--warn)', borderRadius: '0 8px 8px 0',
+              fontSize: 13, color: '#7d6c4f', lineHeight: 1.5,
+            }}>
+            <div style={{ fontWeight: 600 }}>
+              ⚠ Paquete devuelto por el supervisor (ronda {round})
+              {data.package.returnCount > 1 && ` · ${data.package.returnCount}ª devolución`}.
+            </div>
+            {motivo && (
+              <div style={{ marginTop: 4 }}>
+                Motivo: <i>"{motivo}"</i>
+              </div>
+            )}
+            {data.discrepantIndexes.length > 0 ? (
+              <div style={{ marginTop: 6 }}>
+                {data.discrepantIndexes.length === 1 ? '1 fragmento discrepante.' :
+                  `${data.discrepantIndexes.length} fragmentos discrepantes.`}
+                {' '}
+                <button
+                  onClick={() => goTo(data.discrepantIndexes[0]!)}
+                  disabled={pending}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    color: 'var(--primary-2)', textDecoration: 'underline',
+                    cursor: pending ? 'wait' : 'pointer', font: 'inherit',
+                  }}>
+                  Ir al primero (nº {data.discrepantIndexes[0]}) →
+                </button>
+                {' '}— usa «Solo discrepantes» en Navegación para saltar sólo entre ellos.
+              </div>
+            ) : (
+              <div style={{ marginTop: 6, color: 'var(--ink-3)' }}>
+                No quedan fragmentos discrepantes — puedes reenviar el paquete cuando termines de revisarlo.
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="et-grid">
         <div>
           <div className="card" style={{ padding: '14px 16px' }}>
@@ -198,14 +299,34 @@ export function TaggingView({
 
           <div className="card" style={{ padding: '14px 16px', marginTop: 14 }}>
             <h3>Navegación</h3>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button className="btn" onClick={() => goTo(data.position - 1)} disabled={data.position <= 1 || pending}>
-                ← Anterior
-              </button>
-              <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>{data.position} / {data.total}</span>
-              <button className="btn" onClick={() => goTo(data.position + 1)} disabled={data.position >= data.total || pending}>
-                Siguiente →
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label
+                title={discrepantOrder.length === 0
+                  ? 'No hay fragmentos discrepantes para filtrar'
+                  : 'Restringe Anterior/Siguiente a los fragmentos con discrepancia'}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 12.5, color: 'var(--ink-2)',
+                  cursor: discrepantOrder.length > 0 ? 'pointer' : 'not-allowed',
+                  opacity: discrepantOrder.length > 0 ? 1 : 0.5,
+                }}>
+                <input
+                  type="checkbox"
+                  checked={onlyDiscrepant && discrepantOrder.length > 0}
+                  onChange={(e) => setOnlyDiscrepant(e.target.checked)}
+                  disabled={discrepantOrder.length === 0}
+                />
+                Solo discrepantes ({discrepantOrder.length})
+              </label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="btn" onClick={() => step(-1)} disabled={!canPrev || pending}>
+                  ← Anterior
+                </button>
+                <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>{counterLabel}</span>
+                <button className="btn" onClick={() => step(1)} disabled={!canNext || pending}>
+                  Siguiente →
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -316,7 +437,9 @@ export function TaggingView({
                 </button>
               ) : (
                 <button className="btn primary" onClick={finish} disabled={saving}>
-                  Enviar paquete →
+                  {data.package.returnCount > 0
+                    ? `Reenviar paquete (ronda ${Math.max(1, data.package.version)}) →`
+                    : 'Enviar paquete →'}
                 </button>
               )}
             </div>
