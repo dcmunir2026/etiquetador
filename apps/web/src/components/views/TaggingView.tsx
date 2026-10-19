@@ -11,11 +11,13 @@ import {
 import { copyText } from '@/lib/clipboard';
 import { EmptyState, dimColor } from './shared';
 
-/** Validates the shape of a pasted ID before we bother the server with it. */
+/** Validates the shape of a pasted ID or position before we bother the
+ *  server with it. Numeric-only inputs are allowed: they map to the same
+ *  1-based position path that `?fragment=N` already accepts. */
 function isLikelyId(value: string): boolean {
   const s = value.trim();
   if (!s) return false;
-  if (/^\d+$/.test(s)) return false; // numeric → not an ID, position path
+  if (/^\d+$/.test(s)) return true;
   if (/^t_[a-z0-9_]+$/i.test(s)) return true;
   if (/^[A-Za-z0-9_\-.]+$/.test(s)) return true;
   if (/^[A-Za-z0-9_\-.]+#\d+$/.test(s)) return true;
@@ -423,7 +425,7 @@ export function TaggingView({
                         submitJump();
                       }
                     }}
-                    placeholder="ej. ABC-456#2"
+                    placeholder="ej. ABC-456#2 o 5"
                     spellCheck={false}
                     autoComplete="off"
                     style={{
@@ -445,7 +447,7 @@ export function TaggingView({
                   <span style={{ fontSize: 11.5, color: 'var(--bad)' }}>{jumpError}</span>
                 )}
                 <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
-                  Formatos: <code>convId#n</code>, <code>convId</code> (primer frag.)
+                  Formatos: <code>convId#n</code>, <code>convId</code> (1er frag.), <code>N</code> (posición)
                 </span>
               </div>
             </div>
