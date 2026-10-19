@@ -48,13 +48,17 @@ export default async function LoginPage({
             Las cuentas las crea un administrador desde <b>Roles y equipos</b>.
           </p>
         </div>
-        <p style={{
-          textAlign: 'center', fontSize: 11.5, color: 'var(--ink-4)',
-          marginTop: 14, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-        }}>
-          v{build.app} · {build.sha}
-        </p>
       </div>
+      <p style={{
+        position: 'fixed', right: 16, bottom: 12,
+        fontSize: 11.5, color: 'var(--ink-4)',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        margin: 0, padding: 0,
+        background: 'rgba(255,255,255,0.7)', borderRadius: 4,
+        backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+      }}>
+        v{build.app} · {build.sha}
+      </p>
     </div>
   );
 }
