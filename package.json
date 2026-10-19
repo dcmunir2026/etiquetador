@@ -1,6 +1,6 @@
 {
   "name": "etiquetador",
-  "version": "0.1.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Multi-project data labeling platform with centralized administration.",
   "license": "UNLICENSED",
