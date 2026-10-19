@@ -8,7 +8,19 @@ import {
   buildCascade, flattenCascade, missingAnswers, pruneAnswers,
   type AnswerMap, type CascadeDimension,
 } from '@/lib/cascade';
+import { copyText } from '@/lib/clipboard';
 import { EmptyState, dimColor } from './shared';
+
+/** Validates the shape of a pasted ID before we bother the server with it. */
+function isLikelyId(value: string): boolean {
+  const s = value.trim();
+  if (!s) return false;
+  if (/^\d+$/.test(s)) return false; // numeric → not an ID, position path
+  if (/^t_[a-z0-9_]+$/i.test(s)) return true;
+  if (/^[A-Za-z0-9_\-.]+$/.test(s)) return true;
+  if (/^[A-Za-z0-9_\-.]+#\d+$/.test(s)) return true;
+  return false;
+}
 
 /**
  * The annotation screen. Dimensions render as a cascade: a child only
@@ -33,6 +45,12 @@ export function TaggingView({
   const [onlyDiscrepant, setOnlyDiscrepant] = useState(
     () => (data.package?.returnCount ?? 0) > 0 || data.package?.status === 'returned',
   );
+
+  // Jump-to-ID: text typed in the Navegación card.
+  const [jumpInput, setJumpInput] = useState('');
+  const [jumpError, setJumpError] = useState<string | null>(null);
+  // Copy-button feedback. null = nothing to show, "ok" / "fail" = brief state.
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
 
   const dims: CascadeDimension[] = useMemo(
     () => data.dimensions.map((d) => ({
@@ -213,6 +231,35 @@ export function TaggingView({
       : `${data.position} / ${data.total} · no discrepante`
     : `${data.position} / ${data.total}`;
 
+  /** Submit the jump-to-ID input. Persists first, then routes. */
+  function submitJump() {
+    const value = jumpInput.trim();
+    if (!value) { setJumpError('Escribe un ID.'); return; }
+    if (!isLikelyId(value)) {
+      setJumpError('Formato no válido. Usa `<convId>#<n>`, `<convId>`, o el ID opaco.');
+      return;
+    }
+    setJumpError(null);
+    // Same persist-first contract as goTo/step so we never lose work.
+    void (async () => {
+      setSaving(true);
+      const ok = await persist();
+      setSaving(false);
+      if (!ok) return;
+      setJumpInput('');
+      startTransition(() => router.push(`/etiquetar?fragment=${encodeURIComponent(value)}`));
+    })();
+  }
+
+  /** Copy the current fragment's mentionable ID. */
+  async function copyFragmentId() {
+    const id = data.fragmentIdentity.displayId;
+    if (!id) return;
+    const ok = await copyText(id);
+    setCopied(ok ? 'ok' : 'fail');
+    setTimeout(() => setCopied(null), 1500);
+  }
+
   return (
     <div className="page">
       <div className="et-head">
@@ -295,6 +342,36 @@ export function TaggingView({
               {'\n\n'}
               {frag.sourceText ?? frag.text}
             </div>
+            {data.fragmentIdentity.displayId && (
+              <div style={{
+                marginTop: 10, paddingTop: 10,
+                borderTop: '1px solid var(--line-soft)',
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontSize: 12, color: 'var(--ink-3)',
+              }}>
+                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                  ID
+                </span>
+                <code style={{
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  fontSize: 12, color: 'var(--ink-1)',
+                  background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 4,
+                }}>
+                  {data.fragmentIdentity.displayId}
+                </code>
+                <button
+                  type="button"
+                  onClick={copyFragmentId}
+                  title="Copiar ID"
+                  style={{
+                    background: 'none', border: '1px solid var(--line)',
+                    borderRadius: 4, padding: '3px 8px', cursor: 'pointer',
+                    fontSize: 11.5, color: 'var(--ink-2)',
+                  }}>
+                  {copied === 'ok' ? 'Copiado ✓' : copied === 'fail' ? 'Falló' : 'Copiar'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="card" style={{ padding: '14px 16px', marginTop: 14 }}>
@@ -326,6 +403,50 @@ export function TaggingView({
                 <button className="btn" onClick={() => step(1)} disabled={!canNext || pending}>
                   Siguiente →
                 </button>
+              </div>
+              <div style={{
+                marginTop: 4, paddingTop: 10,
+                borderTop: '1px solid var(--line-soft)',
+                display: 'flex', flexDirection: 'column', gap: 4,
+              }}>
+                <label style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>
+                  Saltar a un ID
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    value={jumpInput}
+                    onChange={(e) => { setJumpInput(e.target.value); setJumpError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitJump();
+                      }
+                    }}
+                    placeholder="ej. ABC-456#2"
+                    spellCheck={false}
+                    autoComplete="off"
+                    style={{
+                      flex: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      fontSize: 12, padding: '6px 8px',
+                      border: `1px solid ${jumpError ? 'var(--bad)' : 'var(--line)'}`,
+                      borderRadius: 4, background: 'var(--surface-2)', color: 'var(--ink-1)',
+                    }}
+                  />
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={submitJump}
+                    disabled={saving || pending || !jumpInput.trim()}>
+                    Ir →
+                  </button>
+                </div>
+                {jumpError && (
+                  <span style={{ fontSize: 11.5, color: 'var(--bad)' }}>{jumpError}</span>
+                )}
+                <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
+                  Formatos: <code>convId#n</code>, <code>convId</code> (primer frag.)
+                </span>
               </div>
             </div>
           </div>

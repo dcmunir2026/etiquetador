@@ -85,6 +85,14 @@ export function DiscrepanciasView({
               <tr key={`${r.fragmentId}-${r.dimension}-${r.index}`}>
                 <td>{String(r.index).padStart(3, '0')}</td>
                 <td style={{ fontSize: 12.5, color: 'var(--ink-2)', maxWidth: 380 }}>
+                  {r.displayId && (
+                    <div style={{
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      fontSize: 11.5, color: 'var(--ink-3)', marginBottom: 3,
+                    }}>
+                      {r.displayId}
+                    </div>
+                  )}
                   “{r.text.slice(0, 150)}{r.text.length > 150 ? '…' : ''}”
                 </td>
                 <td><b style={{ fontSize: 12.5 }}>{r.dimension}</b></td>

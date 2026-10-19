@@ -139,8 +139,22 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
     }
 
     case 'tagging': {
-      const idx = searchParams.fragment ? Number(searchParams.fragment) - 1 : undefined;
-      const data = await getTaggingData(projectId, user?.id ?? '', Number.isFinite(idx) ? idx : undefined);
+      // `?fragment=` may carry a 1-based position ("5") or a mentionable
+      // ID ("ABC-456#2"). Numbers keep the old behaviour exactly;
+      // anything else is resolved inside getTaggingData against the
+      // user's active package.
+      const raw = searchParams.fragment;
+      let posParam: number | undefined;
+      let lookup: string | undefined;
+      if (typeof raw === 'string' && raw.length) {
+        if (/^\d+$/.test(raw)) {
+          const n = Number(raw) - 1;
+          if (Number.isFinite(n)) posParam = n;
+        } else {
+          lookup = raw;
+        }
+      }
+      const data = await getTaggingData(projectId, user?.id ?? '', posParam, lookup);
       // Keyed by fragment: moving to another fragment only changes a search
       // param, so without this React keeps the same component instance and
       // its answers state — one fragment's labels would show up, and save,

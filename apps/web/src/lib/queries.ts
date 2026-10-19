@@ -806,13 +806,64 @@ export type TaggingData = {
    * uses these to tell the annotator where to focus the re-review.
    */
   discrepantIndexes: number[];
+  /**
+   * Stable, mentionable identity for the current fragment.
+   * `displayId` is the canonical `<conversationId>#<fragmentIndex>` string
+   * the annotator can copy-paste into chat; `null` when the fragment
+   * has no `conversationId` (legacy uploads).
+   */
+  fragmentIdentity: {
+    conversationId: string | null;
+    fragmentIndex: number;
+    fragmentTotal: number;
+    displayId: string | null;
+  };
 };
+
+/**
+ * Pure helper that interprets what the user pasted/typed in the jump field
+ * (or sent via `?fragment=`). Returns the lookup kind so callers can apply
+ * it to the appropriate index. Numbers and empty strings return `null` —
+ * the URL-only path uses `fragmentIndex` for those.
+ */
+export function parseFragmentLookup(raw: string | undefined | null):
+  | { kind: 'convIdx'; conversationId: string; fragmentIndex: number }
+  | { kind: 'conv'; conversationId: string }
+  | { kind: 'id'; fragmentId: string }
+  | null {
+  if (!raw) return null;
+  const s = raw.trim();
+  if (!s) return null;
+  // Number-only path is handled by the URL `fragmentIndex` parameter; we
+  // don't need to treat it here.
+  if (/^\d+$/.test(s)) return null;
+  // Opaque fragment id (e.g. `t_mj3l2g_a8c1`).
+  if (/^t_[a-z0-9_]+$/i.test(s)) return { kind: 'id', fragmentId: s };
+  // `convId#fragIdx` — only split on the *last* `#` so conversation IDs
+  // that themselves contain `#` (rare but possible) stay intact on the left.
+  const hash = s.lastIndexOf('#');
+  if (hash > 0 && hash < s.length - 1) {
+    const left = s.slice(0, hash);
+    const tail = s.slice(hash + 1);
+    if (/^\d+$/.test(tail) && /^[A-Za-z0-9_\-.]+$/.test(left)) {
+      return { kind: 'convIdx', conversationId: left, fragmentIndex: Number(tail) };
+    }
+  }
+  // Bare conversationId — we'll jump to its first fragment in the package.
+  if (/^[A-Za-z0-9_\-.]+$/.test(s)) return { kind: 'conv', conversationId: s };
+  return null;
+}
 
 /**
  * The next fragment this user should annotate in a project, plus whatever
  * they already answered for it.
  */
-export async function getTaggingData(projectId: string, userId: string, fragmentIndex?: number): Promise<TaggingData> {
+export async function getTaggingData(
+  projectId: string,
+  userId: string,
+  fragmentIndex?: number,
+  fragmentLookup?: string,
+): Promise<TaggingData> {
   const db = getDb();
   const dims = await getProjectDimensions(projectId);
 
@@ -833,10 +884,14 @@ export async function getTaggingData(projectId: string, userId: string, fragment
     .orderBy(...orderByQueuePriority(packageAssignments.status, packages.code))
     .limit(1);
 
+  const emptyIdentity = {
+    conversationId: null, fragmentIndex: 0, fragmentTotal: 0, displayId: null,
+  };
   const empty: TaggingData = {
     package: null, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
     incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
+    fragmentIdentity: emptyIdentity,
   };
   if (assigned.length === 0) return empty;
 
@@ -868,7 +923,9 @@ export async function getTaggingData(projectId: string, userId: string, fragment
       .sort((a, b) => a - b);
   }
 
-  if (fragLinks.length === 0) return { ...empty, package: pkg, discrepantIndexes };
+  if (fragLinks.length === 0) {
+    return { ...empty, package: pkg, discrepantIndexes, fragmentIdentity: emptyIdentity };
+  }
 
   // Progress is measured in finished fragments, not merely touched ones:
   // saving writes a row per dimension, so "has annotations" says nothing
@@ -881,8 +938,31 @@ export async function getTaggingData(projectId: string, userId: string, fragment
     idx = unfinished[0] ?? 0;
   }
 
+  // Resolve an ID-style lookup against the package's fragments. This must
+  // happen AFTER `idx` is bounded but BEFORE we read fragLinks[idx], so
+  // both URL and `?fragment=` paths reach the same `link` line below.
+  const lookup = parseFragmentLookup(fragmentLookup);
+  if (lookup) {
+    let resolved: number | undefined;
+    if (lookup.kind === 'id') {
+      resolved = fragLinks.findIndex((l) => l.f.id === lookup.fragmentId);
+    } else if (lookup.kind === 'convIdx') {
+      resolved = fragLinks.findIndex(
+        (l) => l.f.conversationId === lookup.conversationId
+            && l.f.fragmentIndex === lookup.fragmentIndex,
+      );
+    } else {
+      resolved = fragLinks.findIndex((l) => l.f.conversationId === lookup.conversationId);
+    }
+    if (resolved >= 0) idx = resolved;
+    // Not found → keep the position chosen above (fallback to first
+    // unfinished, which is what the user expects when they typo an ID).
+  }
+
   const link = fragLinks[idx];
-  if (!link) return { ...empty, package: pkg, discrepantIndexes };
+  if (!link) {
+    return { ...empty, package: pkg, discrepantIndexes, fragmentIdentity: emptyIdentity };
+  }
   const fragment = link.f;
   const existing = await db.select()
     .from(annotations)
@@ -893,6 +973,15 @@ export async function getTaggingData(projectId: string, userId: string, fragment
     if (!a.skipped && a.value !== null) answers[a.dimensionId] = a.value;
   }
 
+  const fragmentIdentity = {
+    conversationId: fragment.conversationId ?? null,
+    fragmentIndex: fragment.fragmentIndex,
+    fragmentTotal: fragment.fragmentTotal,
+    displayId: fragment.conversationId
+      ? `${fragment.conversationId}#${fragment.fragmentIndex}`
+      : null,
+  };
+
   return {
     package: pkg, fragment, position: idx + 1, total: fragLinks.length,
     answers, dimensions: dims,
@@ -900,6 +989,7 @@ export async function getTaggingData(projectId: string, userId: string, fragment
     incompleteCount: unfinished.length,
     firstIncomplete: unfinished.length > 0 ? unfinished[0]! + 1 : 0,
     discrepantIndexes,
+    fragmentIdentity,
   };
 }
 
@@ -917,6 +1007,11 @@ export type MirrorComparison = {
     dimension: string;
     values: Record<string, string>;
     agreed: boolean;
+    /** Mentionable ID for the row: `<conversationId>#<fragmentIndex>`
+     *  or `null` when the fragment has no conversationId. */
+    displayId: string | null;
+    conversationId: string | null;
+    fragmentIndex: number;
   }>;
 };
 
@@ -946,13 +1041,23 @@ export async function getMirrorComparison(projectId: string, packageId?: string)
   const report = computeDiscrepancies(ratings);
 
   // Fragment-by-fragment rows, only where annotators diverged.
-  type Cell = { text: string; values: Record<string, string> };
+  type Cell = {
+    text: string; values: Record<string, string>;
+    conversationId: string | null; fragmentIndex: number;
+  };
   const cells = new Map<string, Cell>();
   const order: string[] = [];
   for (const { a, f, u } of rows) {
     if (freeText.has(a.dimensionId)) continue;
     const key = `${f.id}::${a.dimensionId}`;
-    if (!cells.has(key)) { cells.set(key, { text: f.text, values: {} }); order.push(key); }
+    if (!cells.has(key)) {
+      cells.set(key, {
+        text: f.text, values: {},
+        conversationId: f.conversationId ?? null,
+        fragmentIndex: f.fragmentIndex,
+      });
+      order.push(key);
+    }
     cells.get(key)!.values[u.name ?? u.email] = a.skipped || a.value === null ? '—' : a.value;
   }
 
@@ -970,6 +1075,11 @@ export async function getMirrorComparison(projectId: string, packageId?: string)
       index: i, fragmentId, text: cell.text,
       dimension: dimName.get(dimensionId) ?? '—',
       values: cell.values, agreed,
+      displayId: cell.conversationId
+        ? `${cell.conversationId}#${cell.fragmentIndex}`
+        : null,
+      conversationId: cell.conversationId,
+      fragmentIndex: cell.fragmentIndex,
     });
   }
 
