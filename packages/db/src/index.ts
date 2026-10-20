@@ -15,6 +15,7 @@ import {
   integer,
   boolean,
   timestamp,
+  numeric,
   uniqueIndex,
   index,
   primaryKey,
@@ -96,6 +97,8 @@ export const projects = pgTable(
     createdBy: text('created_by').notNull().references(() => users.id),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
+    discrepancyThreshold: numeric('discrepancy_threshold', { precision: 4, scale: 3 })
+      .notNull().default('0.12'),
   },
   (t) => ({
     slugUnique: uniqueIndex('projects_slug_unique').on(t.slug),

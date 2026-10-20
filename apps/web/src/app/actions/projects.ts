@@ -15,7 +15,8 @@ import { eq, like, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db/client';
 import { auditLog, projectMembers, projects } from '@/db/schema';
-import { ACTIVE_PROJECT_COOKIE, requireUser } from '@/lib/session';
+import { ACTIVE_PROJECT_COOKIE, authorize, requireUser } from '@/lib/session';
+import { DEFAULT_THRESHOLD } from '@/lib/threshold';
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -170,6 +171,59 @@ export async function deleteProject(
   if (activeId === projectId) {
     cookieStore.delete(ACTIVE_PROJECT_COOKIE);
   }
+
+  revalidatePath('/', 'layout');
+  return { ok: true, id: projectId };
+}
+
+/**
+ * Update the per-project discrepancy threshold (percentage 1–99).
+ *
+ * Gated on the `quant-validation` matrix entry so both `superadmin` and
+ * the project's own `projectadmin` can edit it — same convention the
+ * validation screens already use. The action receives a percentage in
+ * the human-natural unit (12 = 12%) and persists the corresponding
+ * fraction (0.12) in the schema.
+ *
+ * 0 and 100 are deliberately rejected: 0 would flag every package as
+ * `fail`; 100 would silently approve everything regardless of disagreement.
+ * Both are operational footguns, not "disable the threshold" toggles.
+ */
+export async function updateProjectThreshold(
+  projectId: string,
+  percent: number,
+): Promise<ActionResult> {
+  const gate = await authorize('quant-validation', projectId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  if (!projectId) return { ok: false, error: 'Falta el proyecto.' };
+  if (!Number.isFinite(percent) || percent <= 0 || percent >= 100) {
+    return { ok: false, error: 'El umbral debe estar entre 1 y 99%.' };
+  }
+
+  const db = getDb();
+  const user = await requireUser();
+
+  const fraction = percent / 100;
+  const [prev] = await db.select({ v: projects.discrepancyThreshold })
+    .from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (!prev) return { ok: false, error: 'El proyecto ya no existe.' };
+
+  await db.update(projects)
+    .set({ discrepancyThreshold: fraction.toFixed(3) })
+    .where(eq(projects.id, projectId));
+
+  await db.insert(auditLog).values({
+    actorId: user.id,
+    projectId,
+    action: 'project.update_threshold',
+    targetType: 'project',
+    targetId: projectId,
+    metadata: JSON.stringify({
+      from: prev.v ?? DEFAULT_THRESHOLD,
+      to: fraction,
+    }),
+  });
 
   revalidatePath('/', 'layout');
   return { ok: true, id: projectId };

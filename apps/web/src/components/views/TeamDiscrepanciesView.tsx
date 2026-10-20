@@ -45,6 +45,9 @@ export function TeamDiscrepanciesView({ teams }: { teams: TeamValidationRow[] })
   const avg = withData.reduce((a, t) => a + t.comparableRatings, 0) > 0
     ? withData.reduce((a, t) => a + t.disagreedRatings, 0) / withData.reduce((a, t) => a + t.comparableRatings, 0)
     : 0;
+  // Project-wide (every row carries the same value); fall back to 12% only
+  // when the list is empty, in which case the KPI below isn't shown anyway.
+  const threshold = withData[0]?.threshold ?? 0.12;
   const worst = withData.reduce<TeamValidationRow | null>(
     (best, t) => (!best || (t.errorRate ?? 0) > (best.errorRate ?? 0) ? t : best), null);
 
@@ -75,7 +78,7 @@ export function TeamDiscrepanciesView({ teams }: { teams: TeamValidationRow[] })
         <Kpi small label="Equipos" value={withData.length} delta={`de ${teams.length} totales`} />
         <Kpi small label="Frag. discrepantes" value={num(totalDiscrepant)} tone="warn"
              delta={`de ${num(totalComparable)} comparables`} />
-        <Kpi small label="% valoraciones" value={pct(avg, 1)} tone={avg >= 0.12 ? 'bad' : 'ok'}
+        <Kpi small label="% valoraciones" value={pct(avg, 1)} tone={avg >= threshold ? 'bad' : 'ok'}
              delta="en desacuerdo, sobre el total" />
         <Kpi small label="Mayor %" value={worst ? pct(worst.errorRate ?? 0, 1) : '—'} tone="bad"
              delta={worst ? `${worst.teamName} · ${worst.discrepantFragments} frags` : '—'} />

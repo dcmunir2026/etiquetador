@@ -8,6 +8,7 @@
 
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
+import { DEFAULT_THRESHOLD, getProjectThreshold } from './threshold';
 
 /**
  * Status priority for the annotator's queue. Lower number = picked first.
@@ -541,6 +542,8 @@ export type TeamValidationRow = {
   /** Rating-level disagreement — the figure the threshold is applied to. */
   errorRate: number | null;
   status: 'progress' | 'ok' | 'fail';
+  /** Project-wide threshold (fraction, e.g. 0.12 = 12%) used for `status`. */
+  threshold: number;
   kappa: number | null;
   byDimension: Array<{ dimensionId: string; name: string; pct: number; disagreed: number; comparable: number }>;
 };
@@ -548,11 +551,12 @@ export type TeamValidationRow = {
 /** Per-team agreement, recomputed from annotations on every request. */
 export async function getTeamValidations(projectId: string): Promise<TeamValidationRow[]> {
   const db = getDb();
-  const [teamRows, pkgRows, dimRows, freeText] = await Promise.all([
+  const [teamRows, pkgRows, dimRows, freeText, threshold] = await Promise.all([
     getTeams(projectId),
     getPackages(projectId),
     db.select({ id: dimensions.id, name: dimensions.name }).from(dimensions),
     freeTextDimensionIds(),
+    getProjectThreshold(projectId),
   ]);
   const dimName = new Map(dimRows.map((d) => [d.id, d.name]));
 
@@ -571,7 +575,7 @@ export async function getTeamValidations(projectId: string): Promise<TeamValidat
       && pkg!.assignments.every((a) => a.status === 'submitted');
     const status: TeamValidationRow['status'] = !allSubmitted
       ? 'progress'
-      : (errorRate ?? 0) < DISCREPANCY_THRESHOLD ? 'ok' : 'fail';
+      : (errorRate ?? 0) < threshold ? 'ok' : 'fail';
 
     out.push({
       teamId: team.id, teamName: team.name, members: team.members.map((m) => m.name),
@@ -582,7 +586,7 @@ export async function getTeamValidations(projectId: string): Promise<TeamValidat
       comparableFragments: report.comparableFragments,
       disagreedRatings: report.disagreedRatings,
       comparableRatings: report.comparableRatings,
-      errorRate, status,
+      errorRate, status, threshold,
       kappa: report.overallKappa,
       byDimension: report.byDimension.map((d) => ({
         dimensionId: d.dimensionId, name: dimName.get(d.dimensionId) ?? '—',
@@ -594,7 +598,49 @@ export async function getTeamValidations(projectId: string): Promise<TeamValidat
 }
 
 /** Project-wide discrepancy threshold above which a package is returned. */
-export const DISCREPANCY_THRESHOLD = 0.12;
+export const DEFAULT_DISCREPANCY_THRESHOLD = DEFAULT_THRESHOLD;
+
+// ─── Project settings (admin view) ─────────────────────────────────
+
+export type ProjectSettings = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: 'active' | 'archived';
+  /** Project-wide discrepancy threshold (fraction, e.g. 0.12 = 12%). */
+  discrepancyThreshold: number;
+};
+
+/**
+ * Load the per-project settings for the new "Ajustes del proyecto"
+ * view. The discrepancy threshold is read here (not via getProjectThreshold)
+ * so the view can show the value *and* persist edits without two round
+ * trips; both paths go through the same `projects.discrepancy_threshold`
+ * column.
+ */
+export async function getProjectSettings(projectId: string): Promise<ProjectSettings | null> {
+  const db = getDb();
+  const rows = await db.select({
+    id: projects.id,
+    name: projects.name,
+    slug: projects.slug,
+    description: projects.description,
+    status: projects.status,
+    threshold: projects.discrepancyThreshold,
+  }).from(projects).where(eq(projects.id, projectId)).limit(1);
+  const row = rows[0];
+  if (!row) return null;
+  const t = typeof row.threshold === 'string' ? Number(row.threshold) : row.threshold;
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    status: row.status as ProjectSettings['status'],
+    discrepancyThreshold: Number.isFinite(t) && t > 0 && t < 1 ? t : DEFAULT_THRESHOLD,
+  };
+}
 
 // ─── Team discrepancies (fragment level) ─────────────────────────────
 
@@ -1001,6 +1047,8 @@ export type MirrorComparison = {
   comparedFragments: number;
   discrepantFragments: number;
   pct: number;
+  /** Project-wide discrepancy threshold (fraction, e.g. 0.12 = 12%). */
+  threshold: number;
   byDimension: Array<{ name: string; pct: number; disagreed: number; comparable: number }>;
   rows: Array<{
     index: number; fragmentId: string; text: string;
@@ -1017,7 +1065,10 @@ export type MirrorComparison = {
 
 export async function getMirrorComparison(projectId: string, packageId?: string): Promise<MirrorComparison | null> {
   const db = getDb();
-  const pkgs = await getPackages(projectId);
+  const [pkgs, threshold] = await Promise.all([
+    getPackages(projectId),
+    getProjectThreshold(projectId),
+  ]);
   const pkg = packageId ? pkgs.find((p) => p.id === packageId) : pkgs[0];
   if (!pkg) return null;
 
@@ -1089,11 +1140,179 @@ export async function getMirrorComparison(projectId: string, packageId?: string)
     comparedFragments: report.comparableFragments,
     discrepantFragments: report.discrepantFragments,
     pct: report.ratingPct,
+    threshold,
     byDimension: report.byDimension.map((d) => ({
       name: dimName.get(d.dimensionId) ?? '—', pct: d.pct,
       disagreed: d.disagreed, comparable: d.comparable,
     })),
     rows: outRows.slice(0, 60),
+  };
+}
+
+// ─── Raw labelled export ─────────────────────────────────────────────
+
+/**
+ * Every label assigned to a package, surfaced verbatim — without the 60-row
+ * cap or the discrepant-only filter that the on-screen table applies. The
+ * XLSX endpoint at `app/api/discrepancias/crudo/route.ts` is the only
+ * caller today. Free-text dimensions are excluded (same as
+ * `getMirrorComparison`): they have no comparable value for the
+ * side-by-side cell layout.
+ */
+export type PackageRawLabels = {
+  packageCode: string;
+  packageStatus: string;
+  /** Order matters: the sheet lays these out as columns, lead first. */
+  annotators: Array<{ userId: string; name: string; isLead: boolean }>;
+  rows: Array<{
+    fragmentIndex: number;
+    fragmentId: string;
+    displayId: string | null;
+    question: string | null;
+    text: string;
+    dimensionId: string;
+    dimension: string;
+    /** annotator name → label string, with `—` for skipped / null. */
+    values: Record<string, string>;
+    /** Most common non-skipped value across annotators, or null when no
+     *  values contribute or there's a perfect tie. */
+    consensus: string | null;
+    agreed: boolean;
+  }>;
+};
+
+export async function getPackageRawLabels(
+  packageId: string,
+): Promise<PackageRawLabels | null> {
+  if (!packageId) return null;
+  const db = getDb();
+
+  const [pkgRows, freeText] = await Promise.all([
+    db.select({ p: packages, t: teams })
+      .from(packages)
+      .leftJoin(teams, eq(teams.id, packages.teamId))
+      .where(eq(packages.id, packageId))
+      .limit(1),
+    freeTextDimensionIds(),
+  ]);
+  const pkg = pkgRows[0];
+  if (!pkg) return null;
+
+  const [annotatorRows, annotRows, dimRows, fragRows] = await Promise.all([
+    db.select({ a: packageAssignments, u: users })
+      .from(packageAssignments)
+      .innerJoin(users, eq(users.id, packageAssignments.userId))
+      .where(eq(packageAssignments.packageId, packageId))
+      // match getPackages ordering: lead first, then creation order
+      .orderBy(desc(packageAssignments.isLead)),
+    db.select({ a: annotations, f: fragments, u: users })
+      .from(annotations)
+      .innerJoin(fragments, eq(fragments.id, annotations.fragmentId))
+      .innerJoin(users, eq(users.id, annotations.userId))
+      .where(eq(annotations.packageId, packageId)),
+    db.select({ id: dimensions.id, name: dimensions.name }).from(dimensions),
+    // Map fragmentId → meta so we can show question + displayId even for
+    // fragments where the annotation join above leaves gaps.
+    db.select({
+      id: fragments.id, text: fragments.text, question: fragments.question,
+      fragmentIndex: fragments.fragmentIndex, conversationId: fragments.conversationId,
+    })
+      .from(fragments)
+      .innerJoin(packageFragments, eq(packageFragments.fragmentId, fragments.id))
+      .where(eq(packageFragments.packageId, packageId)),
+  ]);
+
+  const dimName = new Map(dimRows.map((d) => [d.id, d.name]));
+  const fragMeta = new Map(fragRows.map((f) => [f.id, f]));
+
+  const annotators = annotatorRows.map((r) => ({
+    userId: r.u.id,
+    name: r.u.name ?? r.u.email,
+    isLead: r.a.isLead,
+  }));
+
+  // Build (fragmentId × dimensionId) → cell, mirroring the layout used
+  // by getMirrorComparison but WITHOUT filtering agreed rows. The shape
+  // intentionally matches so a future collapse is one deletion away.
+  type Cell = {
+    values: Record<string, string>;
+    seenAnnotators: Set<string>;
+    consensus: string | null;
+    agreed: boolean;
+  };
+  const cells = new Map<string, Cell>();
+  const order: string[] = [];
+  for (const { a, f, u } of annotRows) {
+    if (freeText.has(a.dimensionId)) continue;
+    const key = `${f.id}::${a.dimensionId}`;
+    if (!cells.has(key)) {
+      cells.set(key, { values: {}, seenAnnotators: new Set(), consensus: null, agreed: false });
+      order.push(key);
+    }
+    const cell = cells.get(key)!;
+    const who = u.name ?? u.email;
+    const rawValue: string | null = a.skipped || a.value === null ? '—' : a.value;
+    cell.values[who] = rawValue;
+    cell.seenAnnotators.add(who);
+  }
+
+  // Compute consensus & agreed per cell in a second pass so we have the
+  // full annotator set before deciding the majority. `—` is excluded
+  // from the vote; if everyone skipped, consensus is null.
+  const rows: PackageRawLabels['rows'] = [];
+  let orderedIdx = 0;
+  for (const key of order) {
+    const [fragmentId = '', dimensionId = ''] = key.split('::');
+    const cell = cells.get(key)!;
+    const counts = new Map<string, number>();
+    let total = 0;
+    for (const v of Object.values(cell.values)) {
+      if (v === '—') continue;
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+      total += 1;
+    }
+    let consensus: string | null = null;
+    let agreed = false;
+    if (total > 0) {
+      let bestCount = 0;
+      let bestValue: string | null = null;
+      let tied = false;
+      for (const [v, c] of counts) {
+        if (c > bestCount) { bestCount = c; bestValue = v; tied = false; }
+        else if (c === bestCount) { tied = true; }
+      }
+      // A perfect tie (every value distinct with same count) yields null;
+      // every other case picks the plurality.
+      if (!(tied && counts.size > 1)) consensus = bestValue;
+      // "Agreed" needs ≥2 distinct voters that all picked the same value.
+      // A single annotator who answered alone is NOT consensus — that's
+      // the dispute, not the agreement.
+      agreed = total >= 2 && counts.size === 1;
+    }
+    const meta = fragMeta.get(fragmentId);
+    if (!meta) continue;
+    orderedIdx++;
+    rows.push({
+      fragmentIndex: orderedIdx,
+      fragmentId,
+      displayId: meta.conversationId
+        ? `${meta.conversationId}#${meta.fragmentIndex}`
+        : null,
+      question: meta.question,
+      text: meta.text,
+      dimensionId,
+      dimension: dimName.get(dimensionId) ?? '—',
+      values: cell.values,
+      consensus,
+      agreed,
+    });
+  }
+
+  return {
+    packageCode: pkg.p.code,
+    packageStatus: pkg.p.status,
+    annotators,
+    rows,
   };
 }
 
@@ -1277,11 +1496,12 @@ export type ReportData = {
 
 export async function getReportData(projectId: string): Promise<ReportData> {
   const db = getDb();
-  const [pkgs, teamValidations, dimRows, freeText] = await Promise.all([
+  const [pkgs, teamValidations, dimRows, freeText, threshold] = await Promise.all([
     getPackages(projectId),
     getTeamValidations(projectId),
     db.select({ id: dimensions.id, name: dimensions.name }).from(dimensions),
     freeTextDimensionIds(),
+    getProjectThreshold(projectId),
   ]);
   const dimName = new Map(dimRows.map((d) => [d.id, d.name]));
   const ratings = await ratingsForPackages(pkgs.map((p) => p.id));
@@ -1293,8 +1513,8 @@ export async function getReportData(projectId: string): Promise<ReportData> {
     packagesReviewed: pkgs.length,
     fragmentsCompared: report.comparableFragments,
     inconsistencyRate: report.ratingPct,
-    threshold: DISCREPANCY_THRESHOLD,
-    overThreshold: teamValidations.filter((t) => (t.errorRate ?? 0) >= DISCREPANCY_THRESHOLD).length,
+    threshold,
+    overThreshold: teamValidations.filter((t) => (t.errorRate ?? 0) >= threshold).length,
     worstDimension: byDimension[0] ?? null,
     byDimension: byDimension.slice(0, 8),
     returnedPackages: pkgs

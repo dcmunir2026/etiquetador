@@ -52,6 +52,10 @@ const MATRIX: Record<string, Partial<Record<Role, Access>>> = {
   paquetes: { superadmin: 'write', projectadmin: 'write' },
   segmentation: { superadmin: 'write', projectadmin: 'write' },
 
+  // Project settings (threshold, future knobs). Restricted to admins —
+  // changing the validation gate is not for annotators or validators.
+  'project-settings': { superadmin: 'write', projectadmin: 'write' },
+
   // Annotation is the annotator's job; admins keep access to test the flow.
   tagging: { superadmin: 'write', annotator: 'write' },
 

@@ -15,6 +15,7 @@ export const VIEW_FROM_PATH: Record<string, string> = {
   '/proyecto/roles': 'roles',
   '/proyecto/paquetes': 'paquetes',
   '/proyecto/segmentacion': 'segmentation',
+  '/proyecto/ajustes': 'project-settings',
   '/etiquetar': 'tagging',
   '/discrepancias': 'discrepancias',
   '/discrepancias-equipos': 'discrepancias-equipos',
@@ -46,5 +47,5 @@ export function viewFromPath(pathname: string): string | null {
 export const REQUIRES_PROJECT = new Set([
   'dimensions', 'roles', 'paquetes', 'segmentation', 'upload', 'tagging',
   'discrepancias', 'discrepancias-equipos', 'graph-deps', 'quant-validation',
-  'validacion', 'reporte', 'kappa',
+  'validacion', 'reporte', 'kappa', 'project-settings',
 ]);

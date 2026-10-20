@@ -7,8 +7,6 @@ import { returnPackageToTeam } from '@/app/actions/workflow';
 import { BenchRow, EmptyState, Kpi, Progress, num, pct } from './shared';
 import { Modal } from './TeamDiscrepanciesView';
 
-const THRESHOLD = 0.12;
-
 const STATUS_STYLE: Record<string, { label: string; bg: string; txt: string; dot: string }> = {
   progress: { label: 'En progreso', bg: '#fdf6e3', txt: '#7d6c4f', dot: 'var(--warn)' },
   ok: { label: 'Aprobado', bg: '#e6f4ec', txt: '#1c6e3a', dot: 'var(--ok)' },
@@ -23,6 +21,11 @@ export function QuantValidationView({ teams, readOnly = false }: { teams: TeamVa
   const [detail, setDetail] = useState<TeamValidationRow | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Project-wide: every team shares the same threshold (it lives on the
+  // project row). Reading it from the first team avoids a second query;
+  // every row carries the same value.
+  const threshold = teams[0]?.threshold ?? 0.12;
 
   const visible = teams.filter((t) => {
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
@@ -55,14 +58,14 @@ export function QuantValidationView({ teams, readOnly = false }: { teams: TeamVa
         Supervisión por métricas de acuerdo. Cada equipo anota un paquete espejo y se compara
         anotador contra anotador. La <b>tasa de error</b> es el porcentaje de valoraciones
         (fragmento × dimensión) en desacuerdo — no de fragmentos, que se satura al crecer el número
-        de dimensiones. El umbral del proyecto es {pct(THRESHOLD)}.
+        de dimensiones. El umbral del proyecto es {pct(threshold)}.
       </p>
 
       <div className="grid g-4" style={{ marginBottom: 18 }}>
         <Kpi label="Equipos" value={teams.length} delta={`${teams.filter((t) => t.packageId).length} con paquete`} />
         <Kpi label="En progreso" value={inProgress} tone="warn" delta="sin enviar todavía" />
-        <Kpi label="Aprobado" value={approved} tone="ok" delta={`error < ${pct(THRESHOLD)}`} />
-        <Kpi label="Con discrepancias" value={failing} tone="bad" delta={`error ≥ ${pct(THRESHOLD)}`} />
+        <Kpi label="Aprobado" value={approved} tone="ok" delta={`error < ${pct(threshold)}`} />
+        <Kpi label="Con discrepancias" value={failing} tone="bad" delta={`error ≥ ${pct(threshold)}`} />
       </div>
 
       {notice && (
@@ -102,7 +105,7 @@ export function QuantValidationView({ teams, readOnly = false }: { teams: TeamVa
             {visible.map((t) => {
               const st = STATUS_STYLE[t.status]!;
               const errColor = t.errorRate === null ? 'var(--ink-3)'
-                : t.errorRate < THRESHOLD ? 'var(--ok)' : 'var(--bad)';
+                : t.errorRate < t.threshold ? 'var(--ok)' : 'var(--bad)';
               return (
                 <tr key={t.teamId}>
                   <td>

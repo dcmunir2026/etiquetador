@@ -7,7 +7,8 @@ import { canReadForRoles, canWriteForRoles } from '@/lib/permissions';
 import { REQUIRES_PROJECT } from '@/lib/views';
 import {
   getDashboard, getDimensionCatalog, getFragmentSample, getKappaData, getMirrorComparison,
-  getPackages, getProjectDimensions, getProjectMembers, getQualValidationTeams, getReportData,
+  getPackages, getProjectDimensions, getProjectMembers, getProjectSettings,
+  getQualValidationTeams, getReportData,
   getScales, getSegmentationConfigs, getTaggingData, getTaxonomyCatalog, getTeamValidations,
   getTeams, getUploads,
 } from '@/lib/queries';
@@ -22,6 +23,7 @@ import { PackagesView } from '@/components/views/PackagesView';
 import { SegmentationView } from '@/components/views/SegmentationView';
 import { TaggingView } from '@/components/views/TaggingView';
 import { DiscrepanciasView } from '@/components/views/DiscrepanciasView';
+import { ProjectSettingsView } from '@/components/views/ProjectSettingsView';
 import { TeamDiscrepanciesView } from '@/components/views/TeamDiscrepanciesView';
 import { GraphDepsView } from '@/components/views/GraphDepsView';
 import { QuantValidationView } from '@/components/views/QuantValidationView';
@@ -217,6 +219,21 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
     case 'kappa': {
       const kappa = await getKappaData(projectId);
       return <KappaView data={kappa} />;
+    }
+
+    case 'project-settings': {
+      const settings = await getProjectSettings(projectId);
+      if (!settings) {
+        return (
+          <div className="page">
+            <h1>Ajustes del proyecto</h1>
+            <p className="lead">El proyecto activo no existe o no tienes acceso a él.</p>
+          </div>
+        );
+      }
+      // The matrix gates superadmin+projectadmin as write; everyone else
+      // gets read-only access (readOnly from canWriteForRoles above).
+      return <ProjectSettingsView settings={settings} canEdit={!readOnly} />;
     }
 
     default: {

@@ -4,8 +4,6 @@ import { useRouter } from 'next/navigation';
 import type { MirrorComparison, PackageRow } from '@/lib/queries';
 import { BenchRow, EmptyState, Kpi, num, pct } from './shared';
 
-const THRESHOLD = 0.12;
-
 /** Annotator-vs-annotator comparison inside one mirror package (H15). */
 export function DiscrepanciasView({
   comparison, packages, selected,
@@ -25,7 +23,9 @@ export function DiscrepanciasView({
     );
   }
 
-  const over = comparison.pct >= THRESHOLD;
+  // `threshold` is the project's configured discrepancy threshold —
+  // comes from getMirrorComparison → projects.discrepancy_threshold.
+  const over = comparison.pct >= comparison.threshold;
 
   return (
     <div className="page">
@@ -33,7 +33,7 @@ export function DiscrepanciasView({
       <p className="lead">
         Comparación automática entre los anotadores del paquete espejo{' '}
         <b>{comparison.packageCode}</b> ({comparison.annotators.join(', ') || 'sin asignar'}).
-        Las discrepancias por encima del umbral del proyecto ({pct(THRESHOLD)}) bloquean la
+        Las discrepancias por encima del umbral del proyecto ({pct(comparison.threshold)}) bloquean la
         aprobación y devuelven el paquete al etiquetado.
       </p>
 
@@ -44,6 +44,15 @@ export function DiscrepanciasView({
             <option key={p.id} value={p.id}>{p.code} · {p.teamName ?? 'sin equipo'}</option>
           ))}
         </select>
+        <a
+          className="btn"
+          href={`/api/discrepancias/crudo?packageId=${selected ?? packages[0]?.id ?? ''}`}
+          // `download` lets the browser respect the server-supplied
+          // Content-Disposition filename instead of the URL path.
+          download
+          style={{ marginLeft: 'auto' }}>
+          Descargar crudo (.xlsx)
+        </a>
       </div>
 
       <div className="grid g-2" style={{ marginBottom: 18 }}>
@@ -51,7 +60,7 @@ export function DiscrepanciasView({
              delta="con dos o más anotadores" />
         <Kpi label="Fragmentos con discrepancia" value={num(comparison.discrepantFragments)}
              tone={over ? 'bad' : 'ok'}
-             delta={`tasa por valoración ${pct(comparison.pct, 1)} · umbral ${pct(THRESHOLD)}`} />
+             delta={`tasa por valoración ${pct(comparison.pct, 1)} · umbral ${pct(comparison.threshold)}`} />
       </div>
 
       <div className="card" style={{ padding: '14px 16px', marginBottom: 18 }}>
