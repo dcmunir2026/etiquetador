@@ -1273,7 +1273,12 @@ export async function getPackageRawLabels(
     }
     let consensus: string | null = null;
     let agreed = false;
-    if (total > 0) {
+    // Consensus and agreement both require ≥2 distinct voters — same
+    // gate as `agreed`. A single annotator alone has nothing to compare
+    // against, so a one-vote majority isn't a "consensus" worth
+    // surfacing in the export column. (Mirrors Excel's `Estado` helper
+    // which also keys off Votos ≥ 2.)
+    if (total >= 2) {
       let bestCount = 0;
       let bestValue: string | null = null;
       let tied = false;
@@ -1282,12 +1287,10 @@ export async function getPackageRawLabels(
         else if (c === bestCount) { tied = true; }
       }
       // A perfect tie (every value distinct with same count) yields null;
-      // every other case picks the plurality.
+      // every other case picks the plurality among the ≥2 voters.
       if (!(tied && counts.size > 1)) consensus = bestValue;
-      // "Agreed" needs ≥2 distinct voters that all picked the same value.
-      // A single annotator who answered alone is NOT consensus — that's
-      // the dispute, not the agreement.
-      agreed = total >= 2 && counts.size === 1;
+      // "Agreed" needs all voters picking the same value.
+      agreed = counts.size === 1;
     }
     const meta = fragMeta.get(fragmentId);
     if (!meta) continue;
