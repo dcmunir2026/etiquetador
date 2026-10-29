@@ -9,7 +9,9 @@ import {
   type AnswerMap, type CascadeDimension,
 } from '@/lib/cascade';
 import { copyText } from '@/lib/clipboard';
+import { discrepancyCounters } from '@/lib/discrepancy';
 import { EmptyState, dimColor } from './shared';
+import { TaggingEmptyState } from './TaggingEmptyState';
 
 /** Validates the shape of a pasted ID or position before we bother the
  *  server with it. Numeric-only inputs are allowed: they map to the same
@@ -41,11 +43,19 @@ export function TaggingView({
   const [notice, setNotice] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
 
+  // The server tells us when this user MUST work only through the
+  // discrepant fragments: an annotator on a package that came back from
+  // the supervisor. When it does, the toggle is not offered — the filter
+  // is not a convenience there, it is the assignment.
+  const forced = data.forceDiscrepantOnly;
+
   // Filter Anterior/Siguiente to discrepant fragments when the package has
   // been returned. Default on for returned packages — the annotator came
   // here to fix the disagreements, not browse the corpus again.
   const [onlyDiscrepant, setOnlyDiscrepant] = useState(
-    () => (data.package?.returnCount ?? 0) > 0 || data.package?.status === 'returned',
+    () => data.forceDiscrepantOnly
+      || (data.package?.returnCount ?? 0) > 0
+      || data.package?.status === 'returned',
   );
 
   // Jump-to-ID: text typed in the Navegación card.
@@ -82,6 +92,10 @@ export function TaggingView({
     () => (currentIsDiscrepant ? discrepantOrder.indexOf(data.position) : -1),
     [currentIsDiscrepant, discrepantOrder, data.position],
   );
+  // The filter is on when the user asked for it, or when the server forces
+  // it. Computed here (before any early return) because the forced mode
+  // also drives the empty state further down.
+  const filterActive = (forced || onlyDiscrepant) && discrepantOrder.length > 0;
 
   if (!data.fragment || !data.package) {
     return (
@@ -95,6 +109,26 @@ export function TaggingView({
   }
 
   const frag = data.fragment;
+
+  // Forced discrepant-only mode with nothing left to fix: the annotator
+  // has worked through every disagreement (or there never was one), so
+  // there is no fragment to show. Offer the re-send instead of a form on
+  // a fragment that is not their assignment.
+  if (forced && discrepantOrder.length === 0) {
+    return (
+      <TaggingEmptyState
+        packageCode={data.package.code}
+        userName={userName}
+        notes={data.package.notes}
+        round={Math.max(1, data.package.version)}
+        notice={notice}
+        saving={saving}
+        hasUnsavedAnswers={Object.keys(answers).length > 0}
+        onSave={() => save(false)}
+        onResend={resend}
+      />
+    );
+  }
 
   function pick(dimId: string, value: string) {
     // Re-selecting the same value clears it, so a gate can be reopened.
@@ -143,8 +177,9 @@ export function TaggingView({
     });
     setSaving(false);
     if (!res.ok) { setNotice(res.error); return; }
-    if (goNext && data.position < data.total) {
-      startTransition(() => router.push(`/etiquetar?fragment=${data.position + 1}`));
+    const target = goNext ? nextTarget() : null;
+    if (target !== null) {
+      startTransition(() => router.push(`/etiquetar?fragment=${target}`));
     } else {
       setNotice('Guardado.');
       router.refresh();
@@ -198,7 +233,32 @@ export function TaggingView({
     startTransition(() => router.push(`/etiquetar?fragment=${pos}`));
   }
 
-  const filterActive = onlyDiscrepant && discrepantOrder.length > 0;
+  /**
+   * Where "Guardar y siguiente" lands. With the discrepant-only filter on
+   * — either the user turned it on or the server forced it — it advances
+   * to the next discrepant fragment rather than to the next number in the
+   * corpus. Otherwise the filter would only hold for the two arrow
+   * buttons, and the annotator would fall off the list on every save.
+   */
+  function nextTarget(): number | null {
+    if (!filterActive) return data.position < data.total ? data.position + 1 : null;
+    return discrepantOrder.find((p) => p > data.position) ?? null;
+  }
+
+  /**
+   * Re-send a returned package once its discrepant fragments have been
+   * dealt with. Used by the empty state, where there is no fragment on
+   * screen whose answers would need saving first.
+   */
+  async function resend() {
+    setSaving(true);
+    setNotice(null);
+    const res = await submitPackage(data.package!.id);
+    setSaving(false);
+    if (!res.ok) { setNotice(res.error); return; }
+    setNotice('Paquete reenviado a validación.');
+    router.push('/etiquetar');
+  }
 
   // Anterior/Siguiente under the filter: walk the discrepant list.
   // When the filter is off, fall through to plain +1/-1.
@@ -227,11 +287,18 @@ export function TaggingView({
       ? filteredIdx < discrepantOrder.length - 1
       : discrepantOrder.some((p) => p > data.position);
 
-  const counterLabel = filterActive
-    ? currentIsDiscrepant
-      ? `${data.position} / ${data.total} · discrep. ${filteredIdx + 1}/${discrepantOrder.length}`
-      : `${data.position} / ${data.total} · no discrepante`
-    : `${data.position} / ${data.total}`;
+  // Con el filtro activo, el trabajo real del anotador son los fragmentos
+  // discrepantes: mezclar "4 / 23" (total del paquete) con "3/18" le
+  // hace pensar que tiene 23 fragmentos que recorrer cuando sólo va a
+  // cambiar 18. La regla vive en lib/discrepancy.ts.
+  const { counter: counterLabel, badge: fragBadge } = discrepancyCounters({
+    filterActive,
+    currentIsDiscrepant,
+    filteredIdx,
+    discrepantTotal: discrepantOrder.length,
+    position: data.position,
+    packageTotal: data.total,
+  });
 
   /** Submit the jump-to-ID input. Persists first, then routes. */
   function submitJump() {
@@ -273,13 +340,27 @@ export function TaggingView({
           </p>
         </div>
         <div className="prog">
-          <div><span className="count">{data.doneCount}</span> / {data.total}</div>
-          <div className="progress">
-            <div className="bar" style={{ width: `${Math.round((data.doneCount / data.total) * 100)}%` }} />
-          </div>
-          <div style={{ color: 'var(--ink-3)', fontSize: 12 }}>
-            {Math.round((data.doneCount / data.total) * 100)}%
-          </div>
+          {filterActive ? (
+            /* En la ronda 2 el progreso del paquete dice "23/23 · 100%":
+               las respuestas de la ronda 1 siguen guardadas, así que ese
+               porcentaje no significa nada para quien tiene que corregir
+               las discrepancias. Lo que cuenta es lo que queda por
+               resolver, y la lista se acorta conforme se concuerda. */
+            <>
+              <div><span className="count">{discrepantOrder.length}</span> discrepantes</div>
+              <div style={{ color: 'var(--ink-3)', fontSize: 12 }}>por revisar</div>
+            </>
+          ) : (
+            <>
+              <div><span className="count">{data.doneCount}</span> / {data.total}</div>
+              <div className="progress">
+                <div className="bar" style={{ width: `${Math.round((data.doneCount / data.total) * 100)}%` }} />
+              </div>
+              <div style={{ color: 'var(--ink-3)', fontSize: 12 }}>
+                {Math.round((data.doneCount / data.total) * 100)}%
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -319,9 +400,14 @@ export function TaggingView({
                     color: 'var(--primary-2)', textDecoration: 'underline',
                     cursor: pending ? 'wait' : 'pointer', font: 'inherit',
                   }}>
-                  Ir al primero (nº {data.discrepantIndexes[0]}) →
+                  Ir al primero ({filterActive
+                    ? `discrep. 1/${discrepantOrder.length}`
+                    : `nº ${data.discrepantIndexes[0]}`}) →
                 </button>
-                {' '}— usa «Solo discrepantes» en Navegación para saltar sólo entre ellos.
+                {' '}
+                {forced
+                  ? '— la navegación está restringida a estos fragmentos.'
+                  : '— usa «Solo discrepantes» en Navegación para saltar sólo entre ellos.'}
               </div>
             ) : (
               <div style={{ marginTop: 6, color: 'var(--ink-3)' }}>
@@ -379,24 +465,38 @@ export function TaggingView({
           <div className="card" style={{ padding: '14px 16px', marginTop: 14 }}>
             <h3>Navegación</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label
-                title={discrepantOrder.length === 0
-                  ? 'No hay fragmentos discrepantes para filtrar'
-                  : 'Restringe Anterior/Siguiente a los fragmentos con discrepancia'}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 12.5, color: 'var(--ink-2)',
-                  cursor: discrepantOrder.length > 0 ? 'pointer' : 'not-allowed',
-                  opacity: discrepantOrder.length > 0 ? 1 : 0.5,
-                }}>
-                <input
-                  type="checkbox"
-                  checked={onlyDiscrepant && discrepantOrder.length > 0}
-                  onChange={(e) => setOnlyDiscrepant(e.target.checked)}
-                  disabled={discrepantOrder.length === 0}
-                />
-                Solo discrepantes ({discrepantOrder.length})
-              </label>
+              {forced ? (
+                // The filter is imposed by the return, not chosen: show it
+                // as a fact so the annotator knows why the arrows skip
+                // fragments.
+                <div
+                  data-testid="forced-filter"
+                  style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                  Sólo los fragmentos discrepantes ({discrepantOrder.length}) —{' '}
+                  <span style={{ color: 'var(--ink-3)' }}>
+                    activado por la devolución del paquete.
+                  </span>
+                </div>
+              ) : (
+                <label
+                  title={discrepantOrder.length === 0
+                    ? 'No hay fragmentos discrepantes para filtrar'
+                    : 'Restringe Anterior/Siguiente a los fragmentos con discrepancia'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    fontSize: 12.5, color: 'var(--ink-2)',
+                    cursor: discrepantOrder.length > 0 ? 'pointer' : 'not-allowed',
+                    opacity: discrepantOrder.length > 0 ? 1 : 0.5,
+                  }}>
+                  <input
+                    type="checkbox"
+                    checked={onlyDiscrepant && discrepantOrder.length > 0}
+                    onChange={(e) => setOnlyDiscrepant(e.target.checked)}
+                    disabled={discrepantOrder.length === 0}
+                  />
+                  Solo discrepantes ({discrepantOrder.length})
+                </label>
+              )}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button className="btn" onClick={() => step(-1)} disabled={!canPrev || pending}>
                   ← Anterior
@@ -456,7 +556,7 @@ export function TaggingView({
 
         <div>
           <div className="frag-card">
-            <span className="frag-num">FRAGMENTO ACTIVO · {data.position}/{data.total}</span>
+            <span className="frag-num">FRAGMENTO ACTIVO · {fragBadge}</span>
             {frag.text}
           </div>
 
@@ -554,7 +654,7 @@ export function TaggingView({
               <button className="btn" onClick={() => save(false)} disabled={saving}>
                 {saving ? 'Guardando…' : 'Guardar'}
               </button>
-              {data.position < data.total ? (
+              {data.position < data.total && nextTarget() !== null ? (
                 <button className="btn primary" onClick={() => save(true)} disabled={saving}>
                   Guardar y siguiente →
                 </button>
@@ -568,7 +668,19 @@ export function TaggingView({
             </div>
             <p style={{ fontSize: 11.5, color: 'var(--ink-4)', margin: '10px 0 0', textAlign: 'right' }}>
               Las dimensiones marcadas SKIPPED se guardan como salto explícito, no como vacío.
-              {data.incompleteCount > 0 && (
+              {forced ? (
+                discrepantOrder.length > 0 && (
+                  <>
+                    <br />
+                    Quedan <b style={{ color: 'var(--ink-2)' }}>{discrepantOrder.length}</b>{' '}
+                    fragmentos discrepantes por revisar;{' '}
+                    <button className="btn ghost" style={{ padding: 0, fontSize: 11.5, color: 'var(--primary-2)' }}
+                            onClick={() => goTo(discrepantOrder[0]!)}>
+                      ir al primero (discrep. 1/{discrepantOrder.length}) →
+                    </button>
+                  </>
+                )
+              ) : data.incompleteCount > 0 ? (
                 <>
                   <br />
                   Quedan <b style={{ color: 'var(--ink-2)' }}>{data.incompleteCount}</b> de {data.total} fragmentos
@@ -578,7 +690,7 @@ export function TaggingView({
                     ir al primero (nº {data.firstIncomplete}) →
                   </button>
                 </>
-              )}
+              ) : null}
             </p>
           </div>
         </div>

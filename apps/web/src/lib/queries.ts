@@ -51,6 +51,7 @@ import {
   taxonomyDimensions, teamMembers, teams, users,
 } from '@/db/schema';
 import { isComplete, type CascadeDimension } from './cascade';
+import { mustWorkOnlyDiscrepant, type DiscrepancyRole } from './discrepancy';
 import { computeDiscrepancies, fleissKappa, type RatingRow } from './metrics';
 
 // ─── Catalogue ───────────────────────────────────────────────────────
@@ -853,6 +854,13 @@ export type TaggingData = {
    */
   discrepantIndexes: number[];
   /**
+   * True when this user must work only through the discrepant fragments:
+   * the package came back from the supervisor and the user is an
+   * annotator. Super admins keep the toggle — they open /etiquetar to
+   * debug the flow, not to do the round.
+   */
+  forceDiscrepantOnly: boolean;
+  /**
    * Stable, mentionable identity for the current fragment.
    * `displayId` is the canonical `<conversationId>#<fragmentIndex>` string
    * the annotator can copy-paste into chat; `null` when the fragment
@@ -911,7 +919,24 @@ export async function getTaggingData(
   fragmentLookup?: string,
 ): Promise<TaggingData> {
   const db = getDb();
-  const dims = await getProjectDimensions(projectId);
+  const [dims, roleRows] = await Promise.all([
+    getProjectDimensions(projectId),
+    // The forced discrepant-only mode is an annotator rule. A super admin
+    // opening /etiquetar is usually inspecting the flow, so they keep the
+    // toggle. Read every role: a person can wear several hats in the same
+    // project, and `annotator` is what matters here.
+    db.select({ isSuperAdmin: users.isSuperAdmin, role: projectMembers.role })
+      .from(users)
+      .leftJoin(projectMembers, and(
+        eq(projectMembers.userId, users.id),
+        eq(projectMembers.projectId, projectId),
+      ))
+      .where(eq(users.id, userId)),
+  ]);
+  const userRow = roleRows[0];
+  const roles = roleRows
+    .map((r) => r.role)
+    .filter((r): r is DiscrepancyRole => !!r);
 
   // Pick the package this user should work on next. Order by status priority
   // (in_progress > assigned > returned) so that:
@@ -937,6 +962,7 @@ export async function getTaggingData(
     package: null, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
     incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
+    forceDiscrepantOnly: false,
     fragmentIdentity: emptyIdentity,
   };
   if (assigned.length === 0) return empty;
@@ -957,8 +983,20 @@ export async function getTaggingData(
   // this when there's been at least one return: before that, the package
   // is mid-progress and this view has no business pointing at fragments
   // the supervisor hasn't acted on yet.
+  const wasReturned = !!pkg && (pkg.returnCount > 0 || pkg.status === 'returned');
+  // An annotator working on a returned package walks the discrepant
+  // fragments and nothing else. A returned package with no team cannot
+  // be compared, so there is no list to force anyone into.
+  const forceDiscrepantOnly = mustWorkOnlyDiscrepant({
+    isSuperAdmin: !!userRow?.isSuperAdmin,
+    roles,
+    returnCount: pkg?.returnCount ?? 0,
+    status: pkg?.status ?? null,
+    hasTeam: !!pkg?.teamId,
+  });
+
   let discrepantIndexes: number[] = [];
-  if (pkg && pkg.teamId && (pkg.returnCount > 0 || pkg.status === 'returned')) {
+  if (pkg && pkg.teamId && wasReturned) {
     const idToIndex = new Map(fragLinks.map((l, i) => [l.f.id, i + 1]));
     const fragIdsInPkg = new Set(idToIndex.keys());
     const allDiscrepant = await getTeamDiscrepantFragments(pkg.teamId);
@@ -970,7 +1008,8 @@ export async function getTaggingData(
   }
 
   if (fragLinks.length === 0) {
-    return { ...empty, package: pkg, discrepantIndexes, fragmentIdentity: emptyIdentity };
+    return { ...empty, package: pkg, discrepantIndexes, forceDiscrepantOnly,
+             fragmentIdentity: emptyIdentity };
   }
 
   // Progress is measured in finished fragments, not merely touched ones:
@@ -981,7 +1020,15 @@ export async function getTaggingData(
   // Default to the first unfinished fragment; honour an explicit index.
   let idx = fragmentIndex;
   if (idx === undefined || idx < 0 || idx >= fragLinks.length) {
-    idx = unfinished[0] ?? 0;
+    // A forced annotator lands on the first discrepant fragment: the
+    // package came back precisely so those get fixed, and everything was
+    // already completed in round 1 (so `unfinished` is empty and the
+    // plain fallback would drop them on fragment #1).
+    if (forceDiscrepantOnly && discrepantIndexes.length > 0) {
+      idx = discrepantIndexes[0]! - 1;
+    } else {
+      idx = unfinished[0] ?? 0;
+    }
   }
 
   // Resolve an ID-style lookup against the package's fragments. This must
@@ -1007,7 +1054,8 @@ export async function getTaggingData(
 
   const link = fragLinks[idx];
   if (!link) {
-    return { ...empty, package: pkg, discrepantIndexes, fragmentIdentity: emptyIdentity };
+    return { ...empty, package: pkg, discrepantIndexes, forceDiscrepantOnly,
+             fragmentIdentity: emptyIdentity };
   }
   const fragment = link.f;
   const existing = await db.select()
@@ -1035,6 +1083,7 @@ export async function getTaggingData(
     incompleteCount: unfinished.length,
     firstIncomplete: unfinished.length > 0 ? unfinished[0]! + 1 : 0,
     discrepantIndexes,
+    forceDiscrepantOnly,
     fragmentIdentity,
   };
 }
