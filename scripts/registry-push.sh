@@ -19,6 +19,10 @@
 #                             supports a single platform, so single-target builds
 #                             use --load and multi-arch uses --push directly from
 #                             buildx.
+#   APP_VERSION     default: version of the root package.json. Baked into the
+#                             image so the app can name the build it runs.
+#   APP_SHA         default: short SHA of HEAD ("-dirty" if the tree is dirty).
+#                             Also baked into the image.
 #
 # The data services (postgres/redis/minio/meilisearch) are NOT pushed here.
 # They come from upstream images and are started on the prod host via
@@ -76,6 +80,24 @@ fi
 REVISION="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 CREATED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# Build identity baked into the image. The container has no repo checkout
+# (the build context excludes .git) and runs with cwd=/app, so the app
+# cannot work the version or the commit out at runtime — without these
+# the footer of the login screen shows "v0.0.0 · unknown".
+if [ -z "${APP_VERSION:-}" ]; then
+  APP_VERSION="$(node -p "require('$REPO_ROOT/package.json').version" 2>/dev/null || true)"
+  [ -n "$APP_VERSION" ] || APP_VERSION="$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO_ROOT/package.json" 2>/dev/null | head -1)"
+  [ -n "$APP_VERSION" ] || APP_VERSION="0.0.0"
+fi
+if [ -z "${APP_SHA:-}" ]; then
+  APP_SHA="$REVISION"
+  # A dirty tree does not correspond to that commit — say so, the same way
+  # the image tag does.
+  if [ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" ]; then
+    APP_SHA="${APP_SHA}-dirty"
+  fi
+fi
+
 say "Building ${FULL_IMAGE}:${IMAGE_TAG} (platform=${PLATFORM})"
 
 # Single-target builds use --load (image lands in the local docker daemon
@@ -86,6 +108,8 @@ if [[ "$PLATFORM" == *","* ]]; then
   docker buildx build \
     --file Dockerfile.web \
     --platform "$PLATFORM" \
+    --build-arg "APP_VERSION=${APP_VERSION}" \
+    --build-arg "APP_SHA=${APP_SHA}" \
     --tag "${FULL_IMAGE}:${IMAGE_TAG}" \
     --tag "${FULL_IMAGE}:latest" \
     --label "org.opencontainers.image.source=https://github.com/${IMAGE_OWNER}/etiquetador" \
@@ -103,6 +127,8 @@ else
   docker buildx build \
     --file Dockerfile.web \
     --platform "$PLATFORM" \
+    --build-arg "APP_VERSION=${APP_VERSION}" \
+    --build-arg "APP_SHA=${APP_SHA}" \
     --tag "${FULL_IMAGE}:${IMAGE_TAG}" \
     --tag "${FULL_IMAGE}:latest" \
     --label "org.opencontainers.image.source=https://github.com/${IMAGE_OWNER}/etiquetador" \
