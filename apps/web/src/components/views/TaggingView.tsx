@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaggingData } from '@/lib/queries';
 import { saveAnnotations, submitPackage } from '@/app/actions/workflow';
@@ -10,6 +10,7 @@ import {
 } from '@/lib/cascade';
 import { copyText } from '@/lib/clipboard';
 import { discrepancyCounters } from '@/lib/discrepancy';
+import { fragmentUrl, previewUrlWithDiscrep, TAGGING_PATH } from '@/lib/preview';
 import { EmptyState, dimColor } from './shared';
 import { TaggingEmptyState } from './TaggingEmptyState';
 
@@ -30,11 +31,29 @@ function isLikelyId(value: string): boolean {
  * The annotation screen. Dimensions render as a cascade: a child only
  * appears once its parent has been answered with a matching value, and is
  * greyed out as SKIPPED otherwise.
+ *
+ * The same component backs the admin's preview: with `readOnly` it renders
+ * the screen somebody else sees — their answers, their progress, their
+ * forced navigation — without a single write. The writes are blocked
+ * twice over: the buttons are not rendered, and `saveAnnotations`
+ * authorizes on the 'tagging' view, which admins do not hold.
  */
 export function TaggingView({
-  projectId, data, userName,
+  projectId, data, userName, readOnly = false, navBase = TAGGING_PATH,
+  discrepOnly = false, banner = null,
 }: {
-  projectId: string; data: TaggingData; userName: string;
+  projectId: string;
+  data: TaggingData;
+  /** Whose screen this is: the annotator's name, or the previewed one. */
+  userName: string;
+  /** Admin preview: the screen renders, but nothing can be written. */
+  readOnly?: boolean;
+  /** Address of this screen without the fragment parameter. */
+  navBase?: string;
+  /** Whether the navigation is restricted to discrepant fragments. */
+  discrepOnly?: boolean;
+  /** Extra content above the header — the preview's picker lives there. */
+  banner?: ReactNode;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -52,10 +71,15 @@ export function TaggingView({
   // Filter Anterior/Siguiente to discrepant fragments when the package has
   // been returned. Default on for returned packages — the annotator came
   // here to fix the disagreements, not browse the corpus again.
+  //
+  // In the preview the URL decides: the admin is reproducing somebody
+  // else's screen, and the filter has to survive the navigation.
   const [onlyDiscrepant, setOnlyDiscrepant] = useState(
-    () => data.forceDiscrepantOnly
-      || (data.package?.returnCount ?? 0) > 0
-      || data.package?.status === 'returned',
+    () => (readOnly
+      ? discrepOnly
+      : data.forceDiscrepantOnly
+        || (data.package?.returnCount ?? 0) > 0
+        || data.package?.status === 'returned'),
   );
 
   // Jump-to-ID: text typed in the Navegación card.
@@ -131,6 +155,8 @@ export function TaggingView({
   }
 
   function pick(dimId: string, value: string) {
+    // A preview is a looking glass, not a pen.
+    if (readOnly) return;
     // Re-selecting the same value clears it, so a gate can be reopened.
     const next = { ...answers, [dimId]: answers[dimId] === value ? '' : value };
     if (next[dimId] === '') delete next[dimId];
@@ -148,6 +174,8 @@ export function TaggingView({
 
   /** Persist the current fragment. Returns false when the write failed. */
   async function persist(): Promise<boolean> {
+    // A preview never writes: the admin is watching, not labelling.
+    if (readOnly) return true;
     const res = await saveAnnotations({
       projectId, fragmentId: frag.id, packageId: data.package!.id,
       answers: answers as Record<string, string>,
@@ -215,22 +243,28 @@ export function TaggingView({
    * "Guardar y siguiente": the current answers are always persisted first,
    * and moving *forward* is refused while anything is unanswered. Going back
    * stays free — revisiting an earlier fragment is not skipping work.
+   *
+   * In the preview nothing is persisted and nothing blocks the move: the
+   * admin is browsing somebody else's screen, and the rule about missing
+   * answers belongs to the annotator, not to the visitor.
    */
   async function goTo(pos: number) {
     if (pos < 1 || pos > data.total || pos === data.position) return;
 
-    setSaving(true);
-    const ok = await persist();
-    setSaving(false);
-    if (!ok) return;
+    if (!readOnly) {
+      setSaving(true);
+      const ok = await persist();
+      setSaving(false);
+      if (!ok) return;
 
-    if (pos > data.position && missing.length > 0) {
-      setShowMissing(true);
-      setNotice(missingNotice());
-      return;
+      if (pos > data.position && missing.length > 0) {
+        setShowMissing(true);
+        setNotice(missingNotice());
+        return;
+      }
     }
     setNotice(null);
-    startTransition(() => router.push(`/etiquetar?fragment=${pos}`));
+    startTransition(() => router.push(fragmentUrl(navBase, pos)));
   }
 
   /**
@@ -316,8 +350,23 @@ export function TaggingView({
       setSaving(false);
       if (!ok) return;
       setJumpInput('');
-      startTransition(() => router.push(`/etiquetar?fragment=${encodeURIComponent(value)}`));
+      startTransition(() => router.push(fragmentUrl(navBase, value)));
     })();
+  }
+
+  /**
+   * Turn the discrepant-only filter on or off.
+   *
+   * In the annotator's own screen the choice lives in the component. In
+   * the preview it lives in the URL, because it has to survive the move
+   * to the next fragment — otherwise every arrow press would reset it
+   * and the admin would lose the restricted view they asked for.
+   */
+  function toggleDiscrepant(on: boolean) {
+    setOnlyDiscrepant(on);
+    if (!readOnly) return;
+    const base = previewUrlWithDiscrep(navBase, on);
+    startTransition(() => router.push(fragmentUrl(base, data.position)));
   }
 
   /** Copy the current fragment's mentionable ID. */
@@ -331,6 +380,8 @@ export function TaggingView({
 
   return (
     <div className="page">
+      {banner}
+
       <div className="et-head">
         <div>
           <h1 style={{ marginBottom: 4 }}>Etiquetar fragmento</h1>
@@ -491,7 +542,7 @@ export function TaggingView({
                   <input
                     type="checkbox"
                     checked={onlyDiscrepant && discrepantOrder.length > 0}
-                    onChange={(e) => setOnlyDiscrepant(e.target.checked)}
+                    onChange={(e) => toggleDiscrepant(e.target.checked)}
                     disabled={discrepantOrder.length === 0}
                   />
                   Solo discrepantes ({discrepantOrder.length})
@@ -618,7 +669,7 @@ export function TaggingView({
                   )}
 
                   {d.kind === 'free-text' ? (
-                    <textarea className="notes" rows={3} disabled={skipped}
+                    <textarea className="notes" rows={3} disabled={skipped || readOnly}
                               style={{ width: '100%', marginTop: 8, padding: 8, border: '1px solid var(--line)',
                                        borderRadius: 6, fontFamily: 'inherit', fontSize: 13, resize: 'vertical',
                                        background: skipped ? '#fafaf7' : 'var(--surface-2)' }}
@@ -630,7 +681,7 @@ export function TaggingView({
                       {d.values.map((opt) => (
                         <div key={opt}
                              className={`opt${answers[d.id] === opt ? ' selected' : ''}`}
-                             style={skipped ? { pointerEvents: 'none' } : undefined}
+                             style={(skipped || readOnly) ? { pointerEvents: 'none' } : undefined}
                              onClick={() => !skipped && pick(d.id, opt)}>
                           {opt}
                         </div>
@@ -646,26 +697,36 @@ export function TaggingView({
           </div>
 
           <div className="card" style={{ padding: 14, marginTop: 14 }}>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
-              {notice && (
-                <span style={{ fontSize: 12.5, marginRight: 'auto', fontWeight: showMissing ? 600 : 400,
-                               color: showMissing ? 'var(--bad)' : 'var(--ink-3)' }}>{notice}</span>
-              )}
-              <button className="btn" onClick={() => save(false)} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
-              </button>
-              {data.position < data.total && nextTarget() !== null ? (
-                <button className="btn primary" onClick={() => save(true)} disabled={saving}>
-                  Guardar y siguiente →
+            {readOnly ? (
+              /* The preview has no write affordance at all: what the
+                 annotator answered is shown, and that is all. */
+              <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>
+                <b style={{ color: 'var(--ink-2)' }}>Sólo lectura.</b>{' '}
+                Esta pantalla reproduce lo que ve {userName}: sus respuestas se
+                muestran, pero desde aquí no se guarda ni se modifica nada.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
+                {notice && (
+                  <span style={{ fontSize: 12.5, marginRight: 'auto', fontWeight: showMissing ? 600 : 400,
+                                 color: showMissing ? 'var(--bad)' : 'var(--ink-3)' }}>{notice}</span>
+                )}
+                <button className="btn" onClick={() => save(false)} disabled={saving}>
+                  {saving ? 'Guardando…' : 'Guardar'}
                 </button>
-              ) : (
-                <button className="btn primary" onClick={finish} disabled={saving}>
-                  {data.package.returnCount > 0
-                    ? `Reenviar paquete (ronda ${Math.max(1, data.package.version)}) →`
-                    : 'Enviar paquete →'}
-                </button>
-              )}
-            </div>
+                {data.position < data.total && nextTarget() !== null ? (
+                  <button className="btn primary" onClick={() => save(true)} disabled={saving}>
+                    Guardar y siguiente →
+                  </button>
+                ) : (
+                  <button className="btn primary" onClick={finish} disabled={saving}>
+                    {data.package.returnCount > 0
+                      ? `Reenviar paquete (ronda ${Math.max(1, data.package.version)}) →`
+                      : 'Enviar paquete →'}
+                  </button>
+                )}
+              </div>
+            )}
             <p style={{ fontSize: 11.5, color: 'var(--ink-4)', margin: '10px 0 0', textAlign: 'right' }}>
               Las dimensiones marcadas SKIPPED se guardan como salto explícito, no como vacío.
               {forced ? (

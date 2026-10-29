@@ -39,6 +39,32 @@ describe('reordenar el grafo de dependencias', () => {
   });
 });
 
+describe('la pantalla del anotador vista por el admin', () => {
+  it('el admin de proyecto y el superadmin pueden abrirla', () => {
+    expect(canReadForRoles('tagging-preview', ['projectadmin'])).toBe(true);
+    expect(canReadForRoles('tagging-preview', ['superadmin'])).toBe(true);
+  });
+
+  it('nadie más la ve', () => {
+    for (const role of ['annotator', 'validador_cualitativo',
+      'validador_cuantitativo', 'viewer'] as const) {
+      expect(canReadForRoles('tagging-preview', [role])).toBe(false);
+    }
+  });
+
+  it('no otorga escritura: la pantalla es de sólo lectura', () => {
+    expect(canWriteForRoles('tagging-preview', ['projectadmin'])).toBe(false);
+    expect(canWriteForRoles('tagging-preview', ['superadmin'])).toBe(false);
+  });
+
+  it('y guardar exige la pantalla de etiquetado, que el admin de proyecto no tiene', () => {
+    // La acción de guardar se autoriza contra 'tagging'. Además escribe
+    // siempre con el id de quien la llama: nadie puede guardar en nombre
+    // del anotador que se está mirando.
+    expect(canWriteForRoles('tagging', ['projectadmin'])).toBe(false);
+  });
+});
+
 describe('varios roles por persona', () => {
   describe('pickPrimaryRole', () => {
     it('lista vacía devuelve null', () => {

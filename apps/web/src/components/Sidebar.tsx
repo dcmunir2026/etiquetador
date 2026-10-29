@@ -37,6 +37,7 @@ const NAV: Array<{ section: string; items: Array<{ id: string; label: string; ic
     section: 'Etiquetado',
     items: [
       { id: 'tagging', label: 'Etiquetar fragmento', icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></> },
+      { id: 'tagging-preview', label: 'Ver como etiquetador', icon: <><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></> },
       { id: 'discrepancias', label: 'Discrepancias', icon: <><path d="M16 3h5v5" /><path d="M3 21l8-8" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M3 8V3h5" /></> },
       { id: 'discrepancias-equipos', label: 'Discrepancias de equipos', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M12 8L8 12l4 4" stroke="#b58300" strokeWidth="2.5" /></> },
       { id: 'graph-deps', label: 'Grafo de dependencias', icon: <><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="12" cy="18" r="2.5" /><path d="M7.5 7.5L11 16" /><path d="M16.5 7.5L13 16" /><path d="M8.5 6h7" /></> },

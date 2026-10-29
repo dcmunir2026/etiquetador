@@ -919,24 +919,7 @@ export async function getTaggingData(
   fragmentLookup?: string,
 ): Promise<TaggingData> {
   const db = getDb();
-  const [dims, roleRows] = await Promise.all([
-    getProjectDimensions(projectId),
-    // The forced discrepant-only mode is an annotator rule. A super admin
-    // opening /etiquetar is usually inspecting the flow, so they keep the
-    // toggle. Read every role: a person can wear several hats in the same
-    // project, and `annotator` is what matters here.
-    db.select({ isSuperAdmin: users.isSuperAdmin, role: projectMembers.role })
-      .from(users)
-      .leftJoin(projectMembers, and(
-        eq(projectMembers.userId, users.id),
-        eq(projectMembers.projectId, projectId),
-      ))
-      .where(eq(users.id, userId)),
-  ]);
-  const userRow = roleRows[0];
-  const roles = roleRows
-    .map((r) => r.role)
-    .filter((r): r is DiscrepancyRole => !!r);
+  const dims = await getProjectDimensions(projectId);
 
   // Pick the package this user should work on next. Order by status priority
   // (in_progress > assigned > returned) so that:
@@ -967,16 +950,69 @@ export async function getTaggingData(
   };
   if (assigned.length === 0) return empty;
 
-  const pkgId = assigned[0]!.p.id;
+  return getTaggingDataForPackage(projectId, assigned[0]!.p.id, userId, {
+    fragmentIndex, fragmentLookup,
+  });
+}
+
+/**
+ * The tagging screen for an explicit package and an explicit person.
+ *
+ * The annotator's own screen is "the package I should work on next"; the
+ * admin preview is "this package, as this person sees it". Same
+ * fragments, same answers, same forced discrepant-only rule — and the
+ * rule is computed for the *previewed* person, because that is what the
+ * admin is trying to see.
+ */
+export async function getTaggingDataForPackage(
+  projectId: string,
+  packageId: string,
+  targetUserId: string,
+  opts: { fragmentIndex?: number; fragmentLookup?: string } = {},
+): Promise<TaggingData> {
+  const { fragmentIndex, fragmentLookup } = opts;
+  const db = getDb();
+  const [dims, roleRows] = await Promise.all([
+    getProjectDimensions(projectId),
+    // The forced discrepant-only mode is an annotator rule. A super admin
+    // opening /etiquetar is usually inspecting the flow, so they keep the
+    // toggle. Read every role: a person can wear several hats in the same
+    // project, and `annotator` is what matters here.
+    db.select({ isSuperAdmin: users.isSuperAdmin, role: projectMembers.role })
+      .from(users)
+      .leftJoin(projectMembers, and(
+        eq(projectMembers.userId, users.id),
+        eq(projectMembers.projectId, projectId),
+      ))
+      .where(eq(users.id, targetUserId)),
+  ]);
+  const userRow = roleRows[0];
+  const roles = roleRows
+    .map((r) => r.role)
+    .filter((r): r is DiscrepancyRole => !!r);
+
   const [allPackages, fragLinks] = await Promise.all([
     getPackages(projectId),
     db.select({ f: fragments, order: packageFragments.order })
       .from(packageFragments)
       .innerJoin(fragments, eq(fragments.id, packageFragments.fragmentId))
-      .where(eq(packageFragments.packageId, pkgId))
+      .where(eq(packageFragments.packageId, packageId))
       .orderBy(asc(packageFragments.order)),
   ]);
-  const pkg = allPackages.find((p) => p.id === pkgId) ?? null;
+  // `pkg` is resolved through the project's own package list, so a
+  // package from another project resolves to null and yields no data.
+  const pkg = allPackages.find((p) => p.id === packageId) ?? null;
+
+  const emptyIdentity = {
+    conversationId: null, fragmentIndex: 0, fragmentTotal: 0, displayId: null,
+  };
+  const empty: TaggingData = {
+    package: pkg, fragment: null, position: 0, total: 0,
+    answers: {}, dimensions: dims, doneCount: 0,
+    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
+    forceDiscrepantOnly: false,
+    fragmentIdentity: emptyIdentity,
+  };
 
   // For returned packages, surface the fragments where annotators still
   // disagree so the annotator knows what to re-review. We only compute
@@ -1008,14 +1044,13 @@ export async function getTaggingData(
   }
 
   if (fragLinks.length === 0) {
-    return { ...empty, package: pkg, discrepantIndexes, forceDiscrepantOnly,
-             fragmentIdentity: emptyIdentity };
+    return { ...empty, discrepantIndexes, forceDiscrepantOnly };
   }
 
   // Progress is measured in finished fragments, not merely touched ones:
   // saving writes a row per dimension, so "has annotations" says nothing
   // about whether the annotator actually answered.
-  const { unfinished } = await packageProgress(pkgId, userId, dims);
+  const { unfinished } = await packageProgress(packageId, targetUserId, dims);
 
   // Default to the first unfinished fragment; honour an explicit index.
   let idx = fragmentIndex;
@@ -1054,13 +1089,12 @@ export async function getTaggingData(
 
   const link = fragLinks[idx];
   if (!link) {
-    return { ...empty, package: pkg, discrepantIndexes, forceDiscrepantOnly,
-             fragmentIdentity: emptyIdentity };
+    return { ...empty, discrepantIndexes, forceDiscrepantOnly };
   }
   const fragment = link.f;
   const existing = await db.select()
     .from(annotations)
-    .where(and(eq(annotations.fragmentId, fragment.id), eq(annotations.userId, userId)));
+    .where(and(eq(annotations.fragmentId, fragment.id), eq(annotations.userId, targetUserId)));
 
   const answers: Record<string, string> = {};
   for (const a of existing) {
@@ -1086,6 +1120,56 @@ export async function getTaggingData(
     forceDiscrepantOnly,
     fragmentIdentity,
   };
+}
+
+/**
+ * A person an admin can watch: everybody with an assignment in a package
+ * of this project, with the packages they were given.
+ */
+export type PreviewTarget = {
+  userId: string;
+  name: string;
+  email: string;
+  color: string | null;
+  packages: Array<{
+    id: string;
+    code: string;
+    /** Status of the package itself (assigned, in_progress, submitted…). */
+    packageStatus: string;
+    /** Status of this person's assignment within the package. */
+    assignmentStatus: string;
+    isLead: boolean;
+  }>;
+};
+
+/**
+ * Who can be previewed, and in which packages.
+ *
+ * The list comes from the assignments rather than from the membership
+ * table: what matters is who was actually given work to label.
+ */
+export async function getPreviewTargets(projectId: string): Promise<PreviewTarget[]> {
+  const db = getDb();
+  const rows = await db.select({ a: packageAssignments, p: packages, u: users })
+    .from(packageAssignments)
+    .innerJoin(packages, eq(packages.id, packageAssignments.packageId))
+    .innerJoin(users, eq(users.id, packageAssignments.userId))
+    .where(eq(packages.projectId, projectId))
+    .orderBy(asc(users.name), asc(packages.code));
+
+  const byUser = new Map<string, PreviewTarget>();
+  for (const { a, p, u } of rows) {
+    const target = byUser.get(u.id) ?? {
+      userId: u.id, name: u.name ?? u.email, email: u.email,
+      color: u.avatarColor, packages: [],
+    };
+    target.packages.push({
+      id: p.id, code: p.code, packageStatus: p.status,
+      assignmentStatus: a.status, isLead: a.isLead,
+    });
+    byUser.set(u.id, target);
+  }
+  return [...byUser.values()];
 }
 
 // ─── Mirror discrepancies (package level, annotator vs annotator) ────

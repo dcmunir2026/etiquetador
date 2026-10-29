@@ -59,6 +59,13 @@ const MATRIX: Record<string, Partial<Record<Role, Access>>> = {
   // Annotation is the annotator's job; admins keep access to test the flow.
   tagging: { superadmin: 'write', annotator: 'write' },
 
+  // The annotator's screen seen from the outside: an admin picks a person
+  // and one of their packages and watches what that annotator sees, their
+  // answers included. Read-only by construction — the screen grants no
+  // writes, and `saveAnnotations` authorizes on 'tagging', a view these
+  // roles do not hold.
+  'tagging-preview': { superadmin: 'read', projectadmin: 'read' },
+
   // Agreement and validation belong to validators and admins. Each
   // specific validator only sees their own write target; they share the
   // disagreement list.

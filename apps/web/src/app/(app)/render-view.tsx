@@ -4,13 +4,14 @@ import { getDb } from '@/db/client';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { canReadForRoles, canWriteForRoles } from '@/lib/permissions';
+import { previewBaseUrl } from '@/lib/preview';
 import { REQUIRES_PROJECT } from '@/lib/views';
 import {
   getDashboard, getDimensionCatalog, getFragmentSample, getKappaData, getMirrorComparison,
-  getPackages, getProjectDimensions, getProjectMembers, getProjectSettings,
+  getPackages, getPreviewTargets, getProjectDimensions, getProjectMembers, getProjectSettings,
   getQualValidationTeams, getReportData,
-  getScales, getSegmentationConfigs, getTaggingData, getTaxonomyCatalog, getTeamValidations,
-  getTeams, getUploads,
+  getScales, getSegmentationConfigs, getTaggingData, getTaggingDataForPackage,
+  getTaxonomyCatalog, getTeamValidations, getTeams, getUploads,
 } from '@/lib/queries';
 
 import { DashboardView } from '@/components/views/DashboardView';
@@ -22,6 +23,7 @@ import { RolesView } from '@/components/views/RolesView';
 import { PackagesView } from '@/components/views/PackagesView';
 import { SegmentationView } from '@/components/views/SegmentationView';
 import { TaggingView } from '@/components/views/TaggingView';
+import { TaggingPreviewView } from '@/components/views/TaggingPreviewView';
 import { DiscrepanciasView } from '@/components/views/DiscrepanciasView';
 import { ProjectSettingsView } from '@/components/views/ProjectSettingsView';
 import { TeamDiscrepanciesView } from '@/components/views/TeamDiscrepanciesView';
@@ -34,7 +36,28 @@ import { ProjectGate } from '@/components/views/ProjectGate';
 
 export type ViewSearchParams = {
   view?: string; team?: string; fragment?: string; pkg?: string; tab?: string;
+  /** Who is being watched on the preview of the tagging screen. */
+  user?: string;
+  /** '1' when the preview navigates only through discrepant fragments. */
+  discrep?: string;
 };
+
+/**
+ * `?fragment=` may carry a 1-based position ("5") or a mentionable ID
+ * ("ABC-456#2"). Numbers keep the old behaviour exactly; anything else is
+ * resolved inside the query against the package on screen.
+ */
+function parseFragmentParam(raw: string | undefined): {
+  fragmentIndex?: number;
+  fragmentLookup?: string;
+} {
+  if (typeof raw !== 'string' || !raw.length) return {};
+  if (/^\d+$/.test(raw)) {
+    const n = Number(raw) - 1;
+    return Number.isFinite(n) ? { fragmentIndex: n } : {};
+  }
+  return { fragmentLookup: raw };
+}
 
 /**
  * Load a view's data and render it.
@@ -141,22 +164,8 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
     }
 
     case 'tagging': {
-      // `?fragment=` may carry a 1-based position ("5") or a mentionable
-      // ID ("ABC-456#2"). Numbers keep the old behaviour exactly;
-      // anything else is resolved inside getTaggingData against the
-      // user's active package.
-      const raw = searchParams.fragment;
-      let posParam: number | undefined;
-      let lookup: string | undefined;
-      if (typeof raw === 'string' && raw.length) {
-        if (/^\d+$/.test(raw)) {
-          const n = Number(raw) - 1;
-          if (Number.isFinite(n)) posParam = n;
-        } else {
-          lookup = raw;
-        }
-      }
-      const data = await getTaggingData(projectId, user?.id ?? '', posParam, lookup);
+      const { fragmentIndex, fragmentLookup } = parseFragmentParam(searchParams.fragment);
+      const data = await getTaggingData(projectId, user?.id ?? '', fragmentIndex, fragmentLookup);
       // Keyed by fragment: moving to another fragment only changes a search
       // param, so without this React keeps the same component instance and
       // its answers state — one fragment's labels would show up, and save,
@@ -164,6 +173,56 @@ export async function renderView(view: string, searchParams: ViewSearchParams = 
       return (
         <TaggingView key={data.fragment?.id ?? 'sin-fragmento'}
                      projectId={projectId} data={data} userName={user?.name ?? user?.email ?? ''} />
+      );
+    }
+
+    case 'tagging-preview': {
+      // The annotator's screen seen by an admin: the same fragments, the
+      // same answers, the same navigation rules — computed for the person
+      // being watched, and without a single write.
+      const targets = await getPreviewTargets(projectId);
+      const target = targets.find((t) => t.userId === searchParams.user) ?? null;
+      // The package comes from the URL when that person has it; otherwise
+      // their first one.
+      const packageId = target
+        ? (target.packages.find((p) => p.id === searchParams.pkg)?.id
+            ?? target.packages[0]?.id
+            ?? null)
+        : null;
+      const discrepOnly = searchParams.discrep === '1';
+
+      if (!target || !packageId) {
+        return (
+          <TaggingPreviewView
+            projectId={projectId}
+            targets={targets}
+            userId={null}
+            packageId={null}
+            data={null}
+            navBase={previewBaseUrl({ userId: null, discrepOnly })}
+            discrepOnly={discrepOnly}
+          />
+        );
+      }
+
+      const { fragmentIndex, fragmentLookup } = parseFragmentParam(searchParams.fragment);
+      const data = await getTaggingDataForPackage(projectId, packageId, target.userId, {
+        fragmentIndex, fragmentLookup,
+      });
+
+      return (
+        <TaggingPreviewView
+          key={`${target.userId}|${packageId}|${discrepOnly ? 'd' : 'n'}`}
+          projectId={projectId}
+          targets={targets}
+          userId={target.userId}
+          packageId={packageId}
+          data={data}
+          navBase={previewBaseUrl({
+            userId: target.userId, packageId, discrepOnly,
+          })}
+          discrepOnly={discrepOnly}
+        />
       );
     }
 
