@@ -131,13 +131,31 @@ export async function GET(req: Request) {
     }
   }
 
-  // Summary footer line so an auditor can see, at a glance, how many
-  // cells agree without opening a separate report.
+  // The summary lives in its own sheet, NOT as a trailing row of the data
+  // sheet: this file is meant to be pivoted in Excel, and a footer row
+  // inside the table would land in the annotator columns (its numbers
+  // would be read as one more rating). Keeping the data sheet pure lets
+  // the user select A1:H<last> and build a pivot over it directly.
   const agreedCount = data.rows.filter((r) => r.agreed).length;
-  ws.addRow([]);
-  const footRow = ws.addRow(['Celdas', data.rows.length, 'Acuerdo',
-    agreedCount, 'Sin acuerdo', data.rows.length - agreedCount]);
-  footRow.font = { italic: true, color: { argb: 'FF5A6B82' } };
+  const singleVoter = data.rows.filter(
+    (r) => Object.values(r.values).filter((v) => v !== '—').length === 1,
+  ).length;
+  const summary = wb.addWorksheet('Resumen');
+  summary.columns = [
+    { header: 'Métrica', key: 'k', width: 34 },
+    { header: 'Valor', key: 'v', width: 14 },
+  ];
+  summary.getRow(1).eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: SHEET_HEADER_FG } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SHEET_HEADER_BG } };
+  });
+  summary.addRows([
+    { k: 'Paquete', v: data.packageCode },
+    { k: 'Celdas (fragmento × dimensión)', v: data.rows.length },
+    { k: 'Acuerdo (todos coinciden)', v: agreedCount },
+    { k: 'Sin acuerdo', v: data.rows.length - agreedCount },
+    { k: 'Sólo un votante (sin consenso)', v: singleVoter },
+  ]);
 
   // 5. Stream.
   const buf = await wb.xlsx.writeBuffer();
