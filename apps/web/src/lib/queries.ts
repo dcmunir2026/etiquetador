@@ -53,6 +53,9 @@ import {
 import { isComplete, type CascadeDimension } from './cascade';
 import { mustWorkOnlyDiscrepant, type DiscrepancyRole } from './discrepancy';
 import { computeDiscrepancies, fleissKappa, type RatingRow } from './metrics';
+import {
+  buildTeamComparison, type ComparisonRow, type DimensionComparison,
+} from './teamComparison';
 
 // ─── Catalogue ───────────────────────────────────────────────────────
 
@@ -854,6 +857,13 @@ export type TaggingData = {
    */
   discrepantIndexes: number[];
   /**
+   * What the rest of the team answered on this fragment, for the
+   * dimensions where they disagree. Empty unless the package has come
+   * back from the supervisor: in the first round the double annotation is
+   * blind on purpose, and showing the others' answers would bias it.
+   */
+  comparison: DimensionComparison[];
+  /**
    * True when this user must work only through the discrepant fragments:
    * the package came back from the supervisor and the user is an
    * annotator. Super admins keep the toggle — they open /etiquetar to
@@ -944,7 +954,7 @@ export async function getTaggingData(
   const empty: TaggingData = {
     package: null, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
-    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
+    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [], comparison: [],
     forceDiscrepantOnly: false,
     fragmentIdentity: emptyIdentity,
   };
@@ -1009,7 +1019,7 @@ export async function getTaggingDataForPackage(
   const empty: TaggingData = {
     package: pkg, fragment: null, position: 0, total: 0,
     answers: {}, dimensions: dims, doneCount: 0,
-    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [],
+    incompleteCount: 0, firstIncomplete: 0, discrepantIndexes: [], comparison: [],
     forceDiscrepantOnly: false,
     fragmentIdentity: emptyIdentity,
   };
@@ -1110,6 +1120,15 @@ export async function getTaggingDataForPackage(
       : null,
   };
 
+  // The comparison with the team only exists once the package has come
+  // back: that is the round where the disagreements have to be settled.
+  // In the first round the labels are blind to each other on purpose.
+  const comparison = wasReturned && pkg?.teamId
+    ? await getFragmentTeamComparison({
+      packageId: pkg.id, fragmentId: fragment.id, userId: targetUserId,
+    })
+    : [];
+
   return {
     package: pkg, fragment, position: idx + 1, total: fragLinks.length,
     answers, dimensions: dims,
@@ -1119,7 +1138,75 @@ export async function getTaggingDataForPackage(
     discrepantIndexes,
     forceDiscrepantOnly,
     fragmentIdentity,
+    comparison,
   };
+}
+
+/**
+ * What the rest of the team answered on one fragment, dimension by
+ * dimension — only where they disagree.
+ *
+ * The comparison is against the *team* of the package: the people who
+ * labelled the same fragments. The person's own answers are the ones the
+ * screen already shows, so they are passed apart to keep the comparison
+ * honest (never the viewer's own labels counting as a second opinion).
+ */
+export async function getFragmentTeamComparison(input: {
+  packageId: string;
+  fragmentId: string;
+  /** Whose screen this is; they are left out of the comparison. */
+  userId: string;
+}): Promise<DimensionComparison[]> {
+  const db = getDb();
+  const pkgRows = await db.select({ teamId: packages.teamId })
+    .from(packages).where(eq(packages.id, input.packageId)).limit(1);
+  const teamId = pkgRows[0]?.teamId;
+  if (!teamId) return [];
+
+  const memberRows = await db.select({
+    userId: teamMembers.userId, name: users.name, color: users.avatarColor,
+  }).from(teamMembers)
+    .innerJoin(users, eq(users.id, teamMembers.userId))
+    .where(eq(teamMembers.teamId, teamId));
+
+  const teammates = memberRows.filter((m) => m.userId !== input.userId);
+  if (teammates.length === 0) return [];
+
+  const [peerRows, myRows] = await Promise.all([
+    db.select({
+      a: annotations, u: users,
+    }).from(annotations)
+      .innerJoin(users, eq(users.id, annotations.userId))
+      .where(and(
+        eq(annotations.fragmentId, input.fragmentId),
+        inArray(annotations.userId, teammates.map((t) => t.userId)),
+      )),
+    db.select().from(annotations).where(and(
+      eq(annotations.fragmentId, input.fragmentId),
+      eq(annotations.userId, input.userId),
+    )),
+  ]);
+
+  const toRow = (r: typeof peerRows[number]): ComparisonRow => ({
+    userId: r.a.userId,
+    name: r.u.name ?? r.u.email,
+    color: r.u.avatarColor,
+    dimensionId: r.a.dimensionId,
+    value: r.a.value,
+    skipped: r.a.skipped,
+  });
+
+  return buildTeamComparison({
+    peers: peerRows.map(toRow),
+    mine: myRows.map((r) => ({
+      userId: r.userId,
+      name: '',
+      color: null,
+      dimensionId: r.dimensionId,
+      value: r.value,
+      skipped: r.skipped,
+    })),
+  });
 }
 
 /**

@@ -10,8 +10,9 @@ import {
 } from '@/lib/cascade';
 import { copyText } from '@/lib/clipboard';
 import { discrepancyCounters } from '@/lib/discrepancy';
+import { ownLabel, peerLabel, labelText, type AnswerLabel, type DimensionComparison } from '@/lib/teamComparison';
 import { fragmentUrl, previewUrlWithDiscrep, TAGGING_PATH } from '@/lib/preview';
-import { EmptyState, dimColor } from './shared';
+import { Avatar, EmptyState, dimColor } from './shared';
 import { TaggingEmptyState } from './TaggingEmptyState';
 
 /** Validates the shape of a pasted ID or position before we bother the
@@ -25,6 +26,16 @@ function isLikelyId(value: string): boolean {
   if (/^[A-Za-z0-9_\-.]+$/.test(s)) return true;
   if (/^[A-Za-z0-9_\-.]+#\d+$/.test(s)) return true;
   return false;
+}
+
+/**
+ * Una respuesta tal y como se lee en pantalla: la etiqueta de verdad
+ * entrecomillada, y los otros dos casos (saltada, sin responder) en
+ * cursiva y atenuados, porque no son etiquetas sino ausencias.
+ */
+function AnswerText({ label }: { label: AnswerLabel }) {
+  if (label.kind === 'value') return <>«{label.text}»</>;
+  return <i style={{ color: 'var(--ink-3)' }}>{label.text}</i>;
 }
 
 /**
@@ -97,6 +108,26 @@ export function TaggingView({
   );
 
   const nodes = useMemo(() => flattenCascade(buildCascade(dims, answers)), [dims, answers]);
+
+  // What the rest of the team answered on this fragment. Empty unless the
+  // package came back from the supervisor — in the first round the labels
+  // are blind to each other on purpose.
+  const comparison: DimensionComparison[] = useMemo(
+    () => data.comparison ?? [],
+    [data.comparison],
+  );
+  const comparisonByDim = useMemo(
+    () => new Map(comparison.map((c) => [c.dimensionId, c])),
+    [comparison],
+  );
+  const discrepantDims = useMemo(
+    () => comparison.filter((c) => c.discrepant),
+    [comparison],
+  );
+  const dimNameById = useMemo(
+    () => new Map(dims.map((d) => [d.id, d.name])),
+    [dims],
+  );
   const visibleCount = nodes.filter((n) => n.visibility === 'visible').length;
   const answeredCount = nodes.filter(
     (n) => n.visibility === 'visible' && (answers[n.dim.id] ?? '') !== '',
@@ -469,6 +500,45 @@ export function TaggingView({
         );
       })()}
 
+      {discrepantDims.length > 0 && (
+        <div
+          data-testid="team-comparison"
+          style={{
+            marginBottom: 14, padding: '12px 14px',
+            background: '#fdf3da', border: '1px solid #e8d49d',
+            borderLeft: '3px solid var(--warn)', borderRadius: '0 8px 8px 0',
+            fontSize: 13, color: '#7d6c4f', lineHeight: 1.5,
+          }}>
+          <div style={{ fontWeight: 600 }}>
+            ⚠ Con el equipo discrepáis en {discrepantDims.length}{' '}
+            {discrepantDims.length === 1 ? 'pregunta de este fragmento' : 'preguntas de este fragmento'}.
+          </div>
+          <div style={{ marginTop: 6 }}>
+            {discrepantDims.map((c) => {
+              const peers = c.peers
+                .map((p) => `${p.name}: ${labelText(peerLabel(p))}`)
+                .join(' · ');
+              return (
+                <div key={c.dimensionId} style={{ marginTop: 3 }}>
+                  <a
+                    href={`#dim-${c.dimensionId}`}
+                    style={{ color: 'var(--primary-2)', fontWeight: 600 }}
+                  >
+                    {dimNameById.get(c.dimensionId) ?? c.dimensionId}
+                  </a>
+                  {' — tú: '}
+                  <b>{labelText(ownLabel(c))}</b>
+                  {peers ? <> · {peers}</> : null}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 12, color: '#8a7a5c' }}>
+            Pulsa el nombre de la pregunta para ir a ella.
+          </div>
+        </div>
+      )}
+
       <div className="et-grid">
         <div>
           <div className="card" style={{ padding: '14px 16px' }}>
@@ -617,11 +687,13 @@ export function TaggingView({
               const skipped = node.visibility === 'skipped';
               const waiting = node.visibility === 'pending-parent';
               const pending = showMissing && missingIds.has(d.id);
+              // What the team answered here, when they disagree.
+              const comparison = comparisonByDim.get(d.id);
               const borderColor = pending ? 'var(--bad)'
                 : skipped ? '#d1d5db' : waiting ? '#e8d49c' : d.dependency ? '#a13d3d' : '#1c8a4a';
 
               return (
-                <div key={d.id} className="dim"
+                <div key={d.id} className="dim" id={`dim-${d.id}`}
                      style={{
                        opacity: skipped ? 0.5 : 1,
                        marginBottom: 14,
@@ -658,6 +730,16 @@ export function TaggingView({
                           sin etiquetar
                         </span>
                       )}
+                      {comparison && (
+                        <span
+                          data-testid="discrepancy-pill"
+                          title="En esta pregunta el equipo no se pone de acuerdo"
+                          style={{ background: '#fdf3da', color: '#8a6300', fontSize: 10.5,
+                                   padding: '2px 8px', borderRadius: 9, fontWeight: 600,
+                                   border: '1px solid #e8d49d' }}>
+                          ⚠ discrepa
+                        </span>
+                      )}
                     </span>
                     {d.shortDescription && <span className="help" title={d.shortDescription}>?</span>}
                   </div>
@@ -689,6 +771,33 @@ export function TaggingView({
                       {d.values.length === 0 && (
                         <small style={{ color: 'var(--ink-4)' }}>Esta dimensión no tiene valores definidos.</small>
                       )}
+                    </div>
+                  )}
+
+                  {comparison && (
+                    <div
+                      data-testid="discrepancy-detail"
+                      style={{
+                        marginTop: 8, padding: '8px 10px',
+                        background: '#fdf9ef', border: '1px solid #ecdcb4',
+                        borderRadius: 6, fontSize: 12.5, color: 'var(--ink-2)',
+                        lineHeight: 1.5,
+                      }}>
+                      <div style={{ fontWeight: 600, color: '#8a6300' }}>
+                        ⚠ Aquí no os ponéis de acuerdo
+                      </div>
+                      <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
+                        <span>
+                          <b>{readOnly ? userName : 'tú'}</b>:{' '}
+                          <AnswerText label={ownLabel(comparison)} />
+                        </span>
+                        {comparison.peers.map((p) => (
+                          <span key={p.userId} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <Avatar name={p.name} color={p.color} size={18} />
+                            <b>{p.name}</b>: <AnswerText label={peerLabel(p)} />
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
