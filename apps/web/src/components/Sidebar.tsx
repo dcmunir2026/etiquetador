@@ -96,8 +96,8 @@ export function Sidebar({
       <div className="brand">
         <div className="logo">D</div>
         <div className="meta">
-          DCM Etiquetador
-          <small>EpData · LLM Juez · v0.4</small>
+          Etiquetador
+          <small>v0.4</small>
         </div>
       </div>
 
